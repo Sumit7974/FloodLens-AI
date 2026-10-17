@@ -105,10 +105,10 @@ def verify_postgis():
             # Insert Location polygon (Patna district bounding box)
             conn.execute(
                 text("""
-                    INSERT INTO locations (id, name, admin_level, geometry, created_at, updated_at)
+                    INSERT INTO locations (id, name, admin_level, geometry, crs_source, metadata_json, created_at, updated_at)
                     VALUES (:id, 'Patna Verification Zone', 3,
                             ST_GeomFromText('POLYGON((85.00 25.50, 85.30 25.50, 85.30 25.75, 85.00 25.75, 85.00 25.50))', 4326),
-                            :now, :now);
+                            'EPSG:4326', '{"verified": true}', :now, :now);
                 """),
                 {"id": loc_id, "now": now},
             )
@@ -119,18 +119,18 @@ def verify_postgis():
                     INSERT INTO facilities (id, type, name, location, capacity, verification_status, details, created_at, updated_at)
                     VALUES (:id, 'shelter', 'Verification Shelter Alpha',
                             ST_SetSRID(ST_MakePoint(85.14, 25.61), 4326),
-                            1000, 'verified', '{}', :now, :now);
+                            1000, 'verified', '{"supplies": "emergency_rations"}', :now, :now);
                 """),
                 {"id": fac_id, "now": now},
             )
 
-            # Insert Flood Event & Extent
+            # Insert Flood Event with required region_id, start_at, mode, source_refs
             conn.execute(
                 text("""
-                    INSERT INTO flood_events (id, name, operational_mode, started_at, created_at, updated_at)
-                    VALUES (:id, 'Verification Flood Event', 'test', :now, :now, :now);
+                    INSERT INTO flood_events (id, region_id, name, start_at, mode, source_refs, description, created_at, updated_at)
+                    VALUES (:id, :region_id, 'Verification Flood Event', :now, 'test', '["source_cwc_01"]', 'Automated PostGIS test event', :now, :now);
                 """),
-                {"id": event_id, "now": now},
+                {"id": event_id, "region_id": loc_id, "now": now},
             )
 
             conn.execute(
@@ -219,15 +219,26 @@ def verify_postgis():
             for row in explain_output:
                 print(f"    {row[0]}")
 
+        except Exception as exc:
+            try:
+                conn.rollback()
+            except Exception:
+                pass
+            print(f"[-] Spatial operations failed: {exc}")
+            raise exc
         finally:
-            # Clean up verification records
-            conn.execute(text("DELETE FROM road_hazards WHERE id = :id;"), {"id": hazard_id})
-            conn.execute(text("DELETE FROM flood_extents WHERE id = :id;"), {"id": extent_id})
-            conn.execute(text("DELETE FROM flood_events WHERE id = :id;"), {"id": event_id})
-            conn.execute(text("DELETE FROM facilities WHERE id = :id;"), {"id": fac_id})
-            conn.execute(text("DELETE FROM locations WHERE id = :id;"), {"id": loc_id})
-            conn.commit()
-            print("[+] Test spatial fixtures cleaned up successfully.")
+            try:
+                conn.rollback()
+                conn.execute(text("DELETE FROM road_hazards WHERE id = :id;"), {"id": hazard_id})
+                conn.execute(text("DELETE FROM flood_extents WHERE id = :id;"), {"id": extent_id})
+                conn.execute(text("DELETE FROM flood_events WHERE id = :id;"), {"id": event_id})
+                conn.execute(text("DELETE FROM facilities WHERE id = :id;"), {"id": fac_id})
+                conn.execute(text("DELETE FROM locations WHERE id = :id;"), {"id": loc_id})
+                conn.commit()
+                print("[+] Test spatial fixtures cleaned up successfully.")
+            except Exception as cleanup_err:
+                print(f"[!] Cleanup note: {cleanup_err}")
+
 
     # 5. Application Readiness Check
     print("\n--- 5. Application Readiness Probe Test ---")

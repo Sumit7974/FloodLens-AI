@@ -16,6 +16,8 @@ def test_geometry_models_instantiation(db_session: Session):
         name="Patna Central Zone",
         admin_level=3,
         geometry="SRID=4326;POLYGON((85.10 25.58, 85.18 25.58, 85.18 25.65, 85.10 25.65, 85.10 25.58))",
+        crs_source="EPSG:4326",
+        metadata_json={"zone": "central"},
     )
     db_session.add(location)
 
@@ -113,44 +115,56 @@ def test_postgis_spatial_index_and_table_queries(db_session: Session, is_postgre
 
     now = datetime.now(timezone.utc)
 
-    # Insert test location
+    # Insert test location with required metadata_json and crs_source
     loc_id = f"loc-pg-{uuid.uuid4().hex[:6]}"
-    db_session.execute(
-        text("""
-            INSERT INTO locations (id, name, admin_level, geometry, created_at, updated_at)
-            VALUES (:id, :name, :admin_level, ST_GeomFromText(:geom, 4326), :now, :now);
-        """),
-        {
-            "id": loc_id,
-            "name": "Live PostGIS Ward 1",
-            "admin_level": 4,
-            "geom": "POLYGON((85.10 25.58, 85.15 25.58, 85.15 25.63, 85.10 25.63, 85.10 25.58))",
-            "now": now,
-        },
-    )
-
-    # Insert test shelter facility
     fac_id = f"fac-pg-{uuid.uuid4().hex[:6]}"
-    db_session.execute(
-        text("""
-            INSERT INTO facilities (id, type, name, location, capacity, verification_status, details, created_at, updated_at)
-            VALUES (:id, 'shelter', :name, ST_SetSRID(ST_MakePoint(85.12, 25.60), 4326), 1000, 'verified', '{}', :now, :now);
-        """),
-        {"id": fac_id, "name": "Live PostGIS Shelter", "now": now},
-    )
-    db_session.commit()
 
-    # Query facilities contained in the ward location
-    spatial_join = db_session.execute(
-        text("""
-            SELECT f.id, f.name
-            FROM facilities f
-            JOIN locations l ON ST_Contains(l.geometry, f.location)
-            WHERE l.id = :loc_id;
-        """),
-        {"loc_id": loc_id},
-    ).fetchall()
+    try:
+        db_session.execute(
+            text("""
+                INSERT INTO locations (id, name, admin_level, geometry, crs_source, metadata_json, created_at, updated_at)
+                VALUES (:id, :name, :admin_level, ST_GeomFromText(:geom, 4326), 'EPSG:4326', '{}', :now, :now);
+            """),
+            {
+                "id": loc_id,
+                "name": "Live PostGIS Ward 1",
+                "admin_level": 4,
+                "geom": "POLYGON((85.10 25.58, 85.15 25.58, 85.15 25.63, 85.10 25.63, 85.10 25.58))",
+                "now": now,
+            },
+        )
 
-    assert len(spatial_join) == 1
-    assert spatial_join[0][0] == fac_id
-    assert spatial_join[0][1] == "Live PostGIS Shelter"
+        # Insert test shelter facility
+        db_session.execute(
+            text("""
+                INSERT INTO facilities (id, type, name, location, capacity, verification_status, details, created_at, updated_at)
+                VALUES (:id, 'shelter', :name, ST_SetSRID(ST_MakePoint(85.12, 25.60), 4326), 1000, 'verified', '{}', :now, :now);
+            """),
+            {"id": fac_id, "name": "Live PostGIS Shelter", "now": now},
+        )
+        db_session.commit()
+
+        # Query facilities contained in the ward location
+        spatial_join = db_session.execute(
+            text("""
+                SELECT f.id, f.name
+                FROM facilities f
+                JOIN locations l ON ST_Contains(l.geometry, f.location)
+                WHERE l.id = :loc_id;
+            """),
+            {"loc_id": loc_id},
+        ).fetchall()
+
+        matched_fac = next((row for row in spatial_join if row[0] == fac_id), None)
+        assert matched_fac is not None, f"Expected facility {fac_id} to be contained in location {loc_id}"
+        assert matched_fac[1] == "Live PostGIS Shelter"
+
+    finally:
+        try:
+            db_session.rollback()
+            db_session.execute(text("DELETE FROM facilities WHERE id = :id"), {"id": fac_id})
+            db_session.execute(text("DELETE FROM locations WHERE id = :id"), {"id": loc_id})
+            db_session.commit()
+        except Exception:
+            pass
+

@@ -97,6 +97,27 @@ class Settings(BaseSettings):
     def is_testing(self) -> bool:
         return self.environment == "testing"
 
+    @property
+    def masked_database_url(self) -> str:
+        """Return database URL with password credentials safely masked."""
+        try:
+            from sqlalchemy.engine.url import make_url
+            return make_url(self.database_url).render_as_string(hide_password=True)
+        except Exception:
+            from urllib.parse import urlsplit, urlunsplit
+            try:
+                parsed = urlsplit(self.database_url)
+                if parsed.password:
+                    user = parsed.username or ""
+                    host = parsed.hostname or ""
+                    port = f":{parsed.port}" if parsed.port else ""
+                    netloc = f"{user}:***@{host}{port}"
+                    return urlunsplit((parsed.scheme, netloc, parsed.path, parsed.query, parsed.fragment))
+                return self.database_url
+            except Exception:
+                return "masked_database_url"
+
+
 
     model_config = SettingsConfigDict(
         env_file=".env",

@@ -275,3 +275,17 @@ def test_production_credential_enforcement():
     # 6. Allow local development defaults
     dev_settings = Settings(environment="development")
     assert dev_settings.environment == "development"
+
+
+def test_masked_database_url_property():
+    """Verify that Settings.masked_database_url masks password and does not expose credentials."""
+    s = Settings(
+        environment="development",
+        database_url="postgresql+psycopg2://test_user:super_secret_pw@db.example.com:5432/floodlens",
+    )
+    masked = s.masked_database_url
+    assert "super_secret_pw" not in masked
+    assert "test_user" in masked
+    assert "db.example.com" in masked
+    assert "***" in masked
+
