@@ -7,6 +7,7 @@ Create Date: 2026-10-17 12:00:00.000000
 """
 from typing import Sequence, Union
 from alembic import op
+import geoalchemy2
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
@@ -18,9 +19,11 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Enable PostGIS extension on PostgreSQL if available
     bind = op.get_bind()
-    if bind.dialect.name == "postgresql":
+    is_postgres = bind.dialect.name == "postgresql"
+
+    # Enable PostGIS extension on PostgreSQL if available
+    if is_postgres:
         op.execute("CREATE EXTENSION IF NOT EXISTS postgis;")
 
     # 1. users
@@ -45,13 +48,18 @@ def upgrade() -> None:
     op.create_index("ix_users_email", "users", ["email"])
     op.create_index("ix_users_role", "users", ["role"])
 
-    # 2. locations
+    # 2. locations (with PostGIS Geometry column)
     op.create_table(
         "locations",
         sa.Column("id", sa.String(length=50), primary_key=True),
         sa.Column("name", sa.String(length=255), nullable=False),
         sa.Column("admin_level", sa.Integer(), nullable=False, server_default="3"),
         sa.Column("parent_id", sa.String(length=50), sa.ForeignKey("locations.id"), nullable=True),
+        sa.Column(
+            "geometry",
+            geoalchemy2.Geometry(geometry_type="GEOMETRY", srid=4326, spatial_index=False).with_variant(sa.Text(), "sqlite"),
+            nullable=True,
+        ),
         sa.Column("crs_source", sa.String(length=50), nullable=False, server_default="EPSG:4326"),
         sa.Column("metadata_json", sa.JSON(), nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
@@ -159,7 +167,7 @@ def upgrade() -> None:
     )
     op.create_index("ix_satellite_scenes_captured_at", "satellite_scenes", ["captured_at"])
 
-    # 8. flood_extents
+    # 8. flood_extents (with PostGIS MultiPolygon Geometry)
     op.create_table(
         "flood_extents",
         sa.Column("id", sa.String(length=100), primary_key=True),
@@ -171,16 +179,26 @@ def upgrade() -> None:
         sa.Column("area_km2", sa.Float(), nullable=False),
         sa.Column("source_scene_ids", sa.JSON(), nullable=False),
         sa.Column("confidence", sa.Float(), nullable=True),
+        sa.Column(
+            "geometry",
+            geoalchemy2.Geometry(geometry_type="MULTIPOLYGON", srid=4326, spatial_index=False).with_variant(sa.Text(), "sqlite"),
+            nullable=True,
+        ),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
     )
     op.create_index("ix_flood_extents_event_id", "flood_extents", ["event_id"])
 
-    # 9. assets
+    # 9. assets (with PostGIS Geometry)
     op.create_table(
         "assets",
         sa.Column("id", sa.String(length=50), primary_key=True),
         sa.Column("asset_type", sa.String(length=50), nullable=False),
+        sa.Column(
+            "geometry",
+            geoalchemy2.Geometry(geometry_type="GEOMETRY", srid=4326, spatial_index=False).with_variant(sa.Text(), "sqlite"),
+            nullable=True,
+        ),
         sa.Column("data_source_id", sa.String(length=50), sa.ForeignKey("data_sources.id"), nullable=True),
         sa.Column("metadata_json", sa.JSON(), nullable=False),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
@@ -188,12 +206,17 @@ def upgrade() -> None:
     )
     op.create_index("ix_assets_type", "assets", ["asset_type"])
 
-    # 10. facilities
+    # 10. facilities (with PostGIS Point Location)
     op.create_table(
         "facilities",
         sa.Column("id", sa.String(length=50), primary_key=True),
         sa.Column("type", sa.String(length=50), nullable=False),
         sa.Column("name", sa.String(length=255), nullable=False),
+        sa.Column(
+            "location",
+            geoalchemy2.Geometry(geometry_type="POINT", srid=4326, spatial_index=False).with_variant(sa.Text(), "sqlite"),
+            nullable=True,
+        ),
         sa.Column("verification_status", sa.String(length=50), nullable=False, server_default="unverified"),
         sa.Column("status_checked_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("capacity", sa.Integer(), nullable=True),
@@ -204,12 +227,17 @@ def upgrade() -> None:
     )
     op.create_index("ix_facilities_type", "facilities", ["type"])
 
-    # 11. road_hazards
+    # 11. road_hazards (with PostGIS Geometry)
     op.create_table(
         "road_hazards",
         sa.Column("id", sa.String(length=50), primary_key=True),
         sa.Column("road_id", sa.String(length=50), nullable=True),
         sa.Column("hazard_type", sa.String(length=50), nullable=False),
+        sa.Column(
+            "geometry",
+            geoalchemy2.Geometry(geometry_type="GEOMETRY", srid=4326, spatial_index=False).with_variant(sa.Text(), "sqlite"),
+            nullable=True,
+        ),
         sa.Column("status", sa.String(length=50), nullable=False, server_default="active"),
         sa.Column("source", sa.String(length=100), nullable=False, server_default="satellite_inferred"),
         sa.Column("observed_at", sa.DateTime(timezone=True), nullable=False),
@@ -247,13 +275,18 @@ def upgrade() -> None:
     op.create_index("ix_alerts_area_id", "alerts", ["area_id"])
     op.create_index("ix_alerts_status", "alerts", ["status"])
 
-    # 13. assistance_requests
+    # 13. assistance_requests (with PostGIS Point Location Geometry)
     op.create_table(
         "assistance_requests",
         sa.Column("id", sa.String(length=50), primary_key=True),
         sa.Column("citizen_id", sa.String(length=36), sa.ForeignKey("users.id"), nullable=False),
         sa.Column("latitude", sa.Float(), nullable=False),
         sa.Column("longitude", sa.Float(), nullable=False),
+        sa.Column(
+            "location_geometry",
+            geoalchemy2.Geometry(geometry_type="POINT", srid=4326, spatial_index=False).with_variant(sa.Text(), "sqlite"),
+            nullable=True,
+        ),
         sa.Column(
             "category",
             sa.Enum("evacuation", "medical", "food_water", "shelter", "other", name="assistancecategory"),
@@ -292,8 +325,28 @@ def upgrade() -> None:
     )
     op.create_index("ix_evaluations_event_id", "evaluations", ["event_id"])
 
+    # PostGIS GIST Spatial Indexes (on PostgreSQL)
+    if is_postgres:
+        op.create_index("idx_locations_geometry", "locations", ["geometry"], postgresql_using="gist")
+        op.create_index("idx_flood_extents_geometry", "flood_extents", ["geometry"], postgresql_using="gist")
+        op.create_index("idx_assets_geometry", "assets", ["geometry"], postgresql_using="gist")
+        op.create_index("idx_facilities_location", "facilities", ["location"], postgresql_using="gist")
+        op.create_index("idx_road_hazards_geometry", "road_hazards", ["geometry"], postgresql_using="gist")
+        op.create_index("idx_assistance_requests_location_geometry", "assistance_requests", ["location_geometry"], postgresql_using="gist")
+
 
 def downgrade() -> None:
+    bind = op.get_bind()
+    is_postgres = bind.dialect.name == "postgresql"
+
+    if is_postgres:
+        op.drop_index("idx_assistance_requests_location_geometry", table_name="assistance_requests")
+        op.drop_index("idx_road_hazards_geometry", table_name="road_hazards")
+        op.drop_index("idx_facilities_location", table_name="facilities")
+        op.drop_index("idx_assets_geometry", table_name="assets")
+        op.drop_index("idx_flood_extents_geometry", table_name="flood_extents")
+        op.drop_index("idx_locations_geometry", table_name="locations")
+
     op.drop_table("evaluations")
     op.drop_table("assistance_requests")
     op.drop_table("alerts")
@@ -309,8 +362,7 @@ def downgrade() -> None:
     op.drop_table("locations")
     op.drop_table("users")
 
-    bind = op.get_bind()
-    if bind.dialect.name == "postgresql":
+    if is_postgres:
         op.execute("DROP TYPE IF EXISTS userrole;")
         op.execute("DROP TYPE IF EXISTS operationalmode;")
         op.execute("DROP TYPE IF EXISTS risklevel;")

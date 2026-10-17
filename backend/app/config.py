@@ -1,7 +1,7 @@
 """Application configuration using Pydantic Settings."""
 from functools import lru_cache
 from typing import List, Union
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -63,6 +63,32 @@ class Settings(BaseSettings):
             return [i.strip() for i in v.split(",") if i.strip()]
         return v
 
+    @model_validator(mode="after")
+    def validate_production_credentials(self) -> "Settings":
+        """Require strong, non-default credentials outside local development."""
+        if self.environment not in ("development", "testing"):
+            insecure_markers = [
+                "dev-insecure-jwt-secret-replace-in-production-123456",
+                "replace-with-a-secure-random-secret-key-at-least-32-characters",
+                "changeme",
+            ]
+            if (
+                any(marker == self.jwt_secret for marker in insecure_markers)
+                or "insecure" in self.jwt_secret.lower()
+                or len(self.jwt_secret) < 32
+            ):
+                raise ValueError(
+                    f"Insecure or default JWT_SECRET detected for environment '{self.environment}'. "
+                    "Non-local environments require a strong, randomly generated JWT secret of at least 32 characters."
+                )
+            if "floodlens_secure_password" in self.database_url:
+                raise ValueError(
+                    f"Default database credentials detected for environment '{self.environment}'. "
+                    "Non-local environments require secure, explicitly provisioned database credentials."
+                )
+        return self
+
+
     @property
     def is_sqlite(self) -> bool:
         return self.database_url.startswith("sqlite")
@@ -70,6 +96,7 @@ class Settings(BaseSettings):
     @property
     def is_testing(self) -> bool:
         return self.environment == "testing"
+
 
     model_config = SettingsConfigDict(
         env_file=".env",

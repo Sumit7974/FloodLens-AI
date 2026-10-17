@@ -46,6 +46,24 @@ async def get_current_user(
     return user
 
 
+async def get_optional_current_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_bearer),
+    db: Session = Depends(get_db),
+) -> Optional[User]:
+    """Retrieve authenticated user if a valid Bearer token is provided, otherwise None."""
+    if not credentials or not credentials.credentials:
+        return None
+    try:
+        payload = decode_access_token(credentials.credentials)
+        user_id = payload.get("sub")
+        if not user_id:
+            return None
+        user = db.query(User).filter(User.id == user_id, User.is_active == True).first()
+        return user
+    except Exception:
+        return None
+
+
 def require_roles(allowed_roles: List[UserRole]) -> Callable:
     """Dependency factory checking that the current user possesses one of the allowed roles."""
     def role_checker(current_user: User = Depends(get_current_user)) -> User:

@@ -35,7 +35,7 @@ class FloodExtent(Base, TimestampMixin):
     area_km2 = Column(Float, nullable=False)
     source_scene_ids = Column(JSON, default=list, nullable=False)
     confidence = Column(Float, nullable=True)
-    geometry = Column(GeometryType("GEOMETRY", 4326), nullable=True)
+    geometry = Column(GeometryType("MULTIPOLYGON", 4326), nullable=True)
 
     # Relationships
     event = relationship("FloodEvent", backref="flood_extents")

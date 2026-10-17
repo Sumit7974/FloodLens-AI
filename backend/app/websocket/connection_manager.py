@@ -64,11 +64,20 @@ class ConnectionManager:
         if websocket not in self.active_connections:
             return False
 
-        # Protect authority_queue from non-authority users
         user_info = self.active_connections[websocket]
-        if channel == "authority_queue" and user_info.get("role") not in (UserRole.AUTHORITY.value, UserRole.ADMIN.value):
-            logger.warning("Unauthorized channel subscription attempt by user %s to %s", user_info.get("user_id"), channel)
+        user_role = user_info.get("role")
+        user_id = user_info.get("user_id")
+
+        # 1. Protect authority-only channels (e.g. authority_queue, authority_alerts)
+        if channel.startswith("authority") and user_role not in (UserRole.AUTHORITY.value, UserRole.ADMIN.value):
+            logger.warning("Unauthorized channel subscription attempt by user %s to %s", user_id, channel)
             return False
+
+        # 2. Protect citizen private direct channels (e.g. user:{user_id})
+        if channel.startswith("user:") and channel != f"user:{user_id}":
+            if user_role not in (UserRole.AUTHORITY.value, UserRole.ADMIN.value):
+                logger.warning("Citizen %s attempted unauthorized subscription to channel %s", user_id, channel)
+                return False
 
         if channel not in self.channel_subscribers:
             self.channel_subscribers[channel] = set()
@@ -76,6 +85,7 @@ class ConnectionManager:
         self.channel_subscribers[channel].add(websocket)
         user_info["channels"].add(channel)
         return True
+
 
     def unsubscribe(self, websocket: WebSocket, channel: str) -> None:
         """Unsubscribe an active connection from a channel."""

@@ -3,8 +3,8 @@ from datetime import datetime, timezone
 from typing import List, Optional
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
-from app.api.deps import get_current_user, require_roles
-from app.core.exceptions import FloodLensAPIException, NotFoundError
+from app.api.deps import get_current_user, get_optional_current_user, require_roles
+from app.core.exceptions import FloodLensAPIException, ForbiddenError, NotFoundError
 from app.database import get_db
 from app.models.alert import Alert
 from app.models.enums import AlertStatus, EventType, UserRole
@@ -52,15 +52,62 @@ async def create_alert_draft(
 async def list_alerts(
     area_id: Optional[str] = None,
     status_filter: Optional[AlertStatus] = None,
+    current_user: Optional[User] = Depends(get_optional_current_user),
     db: Session = Depends(get_db),
 ) -> List[Alert]:
-    """List published or draft alerts."""
+    """List accessible alerts.
+
+    Unpublished alerts (DRAFT, APPROVED) are strictly restricted to authorized
+    authorities. Citizens and unauthenticated clients can only query and view
+    DISPATCHED alerts.
+    """
+    is_authorized = current_user is not None and current_user.role in (UserRole.AUTHORITY, UserRole.ADMIN)
+
+    # Deny explicit requests for unpublished drafts/approvals from non-authorities
+    if status_filter in (AlertStatus.DRAFT, AlertStatus.APPROVED) and not is_authorized:
+        raise ForbiddenError(
+            message="Unpublished alerts (draft/approved) are restricted to authorized authorities.",
+            code="UNPUBLISHED_ALERTS_RESTRICTED",
+        )
+
     query = db.query(Alert)
     if area_id:
         query = query.filter(Alert.area_id == area_id)
-    if status_filter:
-        query = query.filter(Alert.status == status_filter)
+
+    if is_authorized:
+        if status_filter:
+            query = query.filter(Alert.status == status_filter)
+    else:
+        # Non-authority users are strictly limited to DISPATCHED alerts
+        query = query.filter(Alert.status == AlertStatus.DISPATCHED)
+
     return query.order_by(Alert.created_at.desc()).all()
+
+
+@router.get(
+    "/{alert_id}",
+    response_model=AlertResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get alert by ID with authorization checks",
+)
+async def get_alert(
+    alert_id: str,
+    current_user: Optional[User] = Depends(get_optional_current_user),
+    db: Session = Depends(get_db),
+) -> Alert:
+    """Retrieve specific alert. Unpublished alerts require authority authorization."""
+    alert = db.query(Alert).filter(Alert.id == alert_id).first()
+    if not alert:
+        raise NotFoundError(message=f"Alert '{alert_id}' not found", code="ALERT_NOT_FOUND")
+
+    is_authorized = current_user is not None and current_user.role in (UserRole.AUTHORITY, UserRole.ADMIN)
+    if alert.status != AlertStatus.DISPATCHED and not is_authorized:
+        raise ForbiddenError(
+            message="Unpublished alerts (draft/approved) are restricted to authorized authorities.",
+            code="UNPUBLISHED_ALERTS_RESTRICTED",
+        )
+
+    return alert
 
 
 @router.post(
@@ -92,7 +139,7 @@ async def approve_alert(
     db.commit()
     db.refresh(alert)
 
-    # Broadcast WebSocket notification: alert.approved
+    # Broadcast WebSocket notification ONLY to authority channel (not public alerts channel)
     event = WebSocketEvent(
         event_id=f"evt_{alert.id}",
         type=EventType.ALERT_APPROVED.value,
@@ -100,7 +147,7 @@ async def approve_alert(
         location_id=alert.area_id,
         resource_id=alert.id,
     )
-    await connection_manager.broadcast_to_channel("alerts", event)
+    await connection_manager.broadcast_to_channel("authority_queue", event)
 
     return alert
 
@@ -134,7 +181,7 @@ async def dispatch_alert(
     db.commit()
     db.refresh(alert)
 
-    # Broadcast WebSocket notification: alert.published
+    # Broadcast WebSocket notification: alert.published to public alerts channel
     event = WebSocketEvent(
         event_id=f"evt_dispatch_{alert.id}",
         type=EventType.ALERT_PUBLISHED.value,
@@ -145,3 +192,4 @@ async def dispatch_alert(
     await connection_manager.broadcast_to_channel("alerts", event)
 
     return alert
+
