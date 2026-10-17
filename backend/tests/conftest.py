@@ -54,15 +54,26 @@ def setup_test_db():
 @pytest.fixture
 def db_session() -> Generator[Session, None, None]:
     """Provide transactional database session that rolls back after each test."""
+    from sqlalchemy import event
+
     connection = test_engine.connect()
     transaction = connection.begin()
+    nested = [connection.begin_nested()]
     session = TestingSessionLocal(bind=connection)
+
+    @event.listens_for(session, "after_transaction_end")
+    def restart_savepoint(sess, trans):
+        if not connection.closed and not nested[0].is_active:
+            nested[0] = connection.begin_nested()
 
     yield session
 
     session.close()
-    transaction.rollback()
+    if transaction.is_active:
+        transaction.rollback()
     connection.close()
+
+
 
 
 @pytest.fixture
