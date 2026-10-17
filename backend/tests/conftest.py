@@ -40,14 +40,18 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_db():
     """Create all database tables and extensions before test suite executes."""
-    if "postgresql" in str(test_engine.url):
+    is_pg = "postgresql" in str(test_engine.url) or "postgres" in str(test_engine.url)
+    if is_pg:
         with test_engine.connect() as conn:
             conn.execute(text("CREATE EXTENSION IF NOT EXISTS postgis;"))
             conn.commit()
 
     Base.metadata.create_all(bind=test_engine)
     yield
-    Base.metadata.drop_all(bind=test_engine)
+    # Only drop tables on SQLite to preserve test cleanup while avoiding unnecessary
+    # and destructive DDL on PostgreSQL environments where schema is owned by Alembic migrations.
+    if not is_pg:
+        Base.metadata.drop_all(bind=test_engine)
 
 
 
