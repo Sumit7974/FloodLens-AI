@@ -13,7 +13,12 @@ class User(Base, TimestampMixin):
     email = Column(String(255), unique=True, index=True, nullable=False)
     hashed_password = Column(String(255), nullable=False)
     full_name = Column(String(255), nullable=True)
-    role = Column(Enum(UserRole), default=UserRole.CITIZEN, nullable=False, index=True)
+    role = Column(
+        Enum(UserRole, values_callable=lambda obj: [e.value for e in obj], name="userrole"),
+        default=UserRole.CITIZEN,
+        nullable=False,
+        index=True,
+    )
     phone = Column(String(50), nullable=True)
     contact_consent = Column(Boolean, default=False, nullable=False)
     is_active = Column(Boolean, default=True, nullable=False)

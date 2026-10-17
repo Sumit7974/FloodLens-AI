@@ -289,3 +289,40 @@ def test_masked_database_url_property():
     assert "db.example.com" in masked
     assert "***" in masked
 
+
+def test_enum_postgresql_values_and_type_binding():
+    """Verify that all Enum columns compile to exact PostgreSQL types and use configured values."""
+    from app.models.flood_event import FloodEvent
+    from app.models.forecast import ForecastRun, RiskPrediction
+
+    # Check user role binds to 'userrole' type with lowercase values
+    user_ddl = str(CreateTable(User.__table__).compile(dialect=postgresql.dialect()))
+    assert "role userrole" in user_ddl
+    assert User.role.type.enums == ["citizen", "authority", "admin"]
+
+    # Check flood event mode binds to 'operationalmode' type
+    event_ddl = str(CreateTable(FloodEvent.__table__).compile(dialect=postgresql.dialect()))
+    assert "mode operationalmode" in event_ddl
+    assert FloodEvent.mode.type.enums == ["historical_demo", "test", "live_observation", "model_estimate"]
+
+    # Check alert status & mode
+    alert_ddl = str(CreateTable(Alert.__table__).compile(dialect=postgresql.dialect()))
+    assert "status alertstatus" in alert_ddl
+    assert "mode operationalmode" in alert_ddl
+    assert Alert.status.type.enums == ["draft", "approved", "dispatched", "cancelled"]
+
+    # Check assistance category & status
+    assist_ddl = str(CreateTable(AssistanceRequest.__table__).compile(dialect=postgresql.dialect()))
+    assert "category assistancecategory" in assist_ddl
+    assert "status assistancestatus" in assist_ddl
+    assert AssistanceRequest.category.type.enums == ["evacuation", "medical", "food_water", "shelter", "other"]
+    assert AssistanceRequest.status.type.enums == ["pending", "acknowledged", "in_progress", "resolved", "cancelled"]
+
+    # Check forecast run & risk predictions
+    forecast_ddl = str(CreateTable(ForecastRun.__table__).compile(dialect=postgresql.dialect()))
+    assert "mode operationalmode" in forecast_ddl
+    risk_ddl = str(CreateTable(RiskPrediction.__table__).compile(dialect=postgresql.dialect()))
+    assert "risk_level risklevel" in risk_ddl
+    assert "data_quality dataquality" in risk_ddl
+
+

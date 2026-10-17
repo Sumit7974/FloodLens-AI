@@ -14,11 +14,20 @@ class Alert(Base, TimestampMixin):
     area_id = Column(String(50), nullable=False, index=True)
     title = Column(String(255), nullable=False)
     message = Column(Text, nullable=False)
-    status = Column(Enum(AlertStatus), default=AlertStatus.DRAFT, nullable=False, index=True)
+    status = Column(
+        Enum(AlertStatus, values_callable=lambda obj: [e.value for e in obj], name="alertstatus"),
+        default=AlertStatus.DRAFT,
+        nullable=False,
+        index=True,
+    )
     created_by = Column(String(36), ForeignKey("users.id"), nullable=False)
     approved_by = Column(String(36), ForeignKey("users.id"), nullable=True)
     issued_at = Column(DateTime(timezone=True), nullable=True)
-    mode = Column(Enum(OperationalMode), default=OperationalMode.HISTORICAL_DEMO, nullable=False)
+    mode = Column(
+        Enum(OperationalMode, values_callable=lambda obj: [e.value for e in obj], name="operationalmode"),
+        default=OperationalMode.HISTORICAL_DEMO,
+        nullable=False,
+    )
     target_channels = Column(JSON, default=list, nullable=False)
 
     # Relationships

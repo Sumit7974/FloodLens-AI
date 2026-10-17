@@ -15,8 +15,17 @@ class AssistanceRequest(Base, TimestampMixin):
     latitude = Column(Float, nullable=False)
     longitude = Column(Float, nullable=False)
     location_geometry = Column(GeometryType("POINT", 4326), nullable=True)
-    category = Column(Enum(AssistanceCategory), default=AssistanceCategory.OTHER, nullable=False)
-    status = Column(Enum(AssistanceStatus), default=AssistanceStatus.PENDING, nullable=False, index=True)
+    category = Column(
+        Enum(AssistanceCategory, values_callable=lambda obj: [e.value for e in obj], name="assistancecategory"),
+        default=AssistanceCategory.OTHER,
+        nullable=False,
+    )
+    status = Column(
+        Enum(AssistanceStatus, values_callable=lambda obj: [e.value for e in obj], name="assistancestatus"),
+        default=AssistanceStatus.PENDING,
+        nullable=False,
+        index=True,
+    )
     details = Column(Text, nullable=True)
     people_count = Column(Integer, default=1, nullable=False)
     assigned_to = Column(String(36), ForeignKey("users.id"), nullable=True, index=True)

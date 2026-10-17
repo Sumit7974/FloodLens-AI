@@ -15,7 +15,11 @@ class ForecastRun(Base, TimestampMixin):
     issued_at = Column(DateTime(timezone=True), nullable=False)
     model_version = Column(String(50), nullable=False)
     input_data_cutoff_at = Column(DateTime(timezone=True), nullable=True)
-    mode = Column(Enum(OperationalMode), default=OperationalMode.HISTORICAL_DEMO, nullable=False)
+    mode = Column(
+        Enum(OperationalMode, values_callable=lambda obj: [e.value for e in obj], name="operationalmode"),
+        default=OperationalMode.HISTORICAL_DEMO,
+        nullable=False,
+    )
     status = Column(String(50), default="completed", nullable=False)
     limitations = Column(JSON, default=list, nullable=False)
 
@@ -36,10 +40,17 @@ class RiskPrediction(Base, TimestampMixin):
     location_id = Column(String(50), ForeignKey("locations.id"), nullable=False, index=True)
     valid_at = Column(DateTime(timezone=True), nullable=False)
     horizon_hours = Column(Integer, nullable=False)  # 1, 3, 6
-    risk_level = Column(Enum(RiskLevel), nullable=False)
+    risk_level = Column(
+        Enum(RiskLevel, values_callable=lambda obj: [e.value for e in obj], name="risklevel"),
+        nullable=False,
+    )
     calibrated_probability = Column(Float, nullable=True)
     geometry_ref = Column(String(255), nullable=True)
-    data_quality = Column(Enum(DataQuality), default=DataQuality.PARTIAL, nullable=False)
+    data_quality = Column(
+        Enum(DataQuality, values_callable=lambda obj: [e.value for e in obj], name="dataquality"),
+        default=DataQuality.PARTIAL,
+        nullable=False,
+    )
 
     # Relationships
     forecast_run = relationship("ForecastRun", back_populates="predictions")

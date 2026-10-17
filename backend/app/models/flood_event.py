@@ -14,7 +14,12 @@ class FloodEvent(Base, TimestampMixin):
     name = Column(String(255), nullable=False)
     start_at = Column(DateTime(timezone=True), nullable=False)
     end_at = Column(DateTime(timezone=True), nullable=True)
-    mode = Column(Enum(OperationalMode), default=OperationalMode.HISTORICAL_DEMO, nullable=False, index=True)
+    mode = Column(
+        Enum(OperationalMode, values_callable=lambda obj: [e.value for e in obj], name="operationalmode"),
+        default=OperationalMode.HISTORICAL_DEMO,
+        nullable=False,
+        index=True,
+    )
     source_refs = Column(JSON, default=dict, nullable=False)
     description = Column(Text, nullable=True)
 
