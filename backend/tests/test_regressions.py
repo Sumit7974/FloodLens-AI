@@ -326,3 +326,21 @@ def test_enum_postgresql_values_and_type_binding():
     assert "data_quality dataquality" in risk_ddl
 
 
+def test_geometry_type_dialect_none_traversal():
+    """Verify that GeometryType safely handles dialect=None during GeoAlchemy2 DDL event traversal."""
+    from sqlalchemy import Text, Column
+    import geoalchemy2.admin.dialects.postgresql as pg_admin
+    from app.models.base import GeometryType
+
+    geo_point = GeometryType("POINT", 4326)
+    # 1. Direct call with None returns Text without raising AttributeError
+    impl_none = geo_point.load_dialect_impl(None)
+    assert isinstance(impl_none, Text)
+
+    # 2. GeoAlchemy2 postgresql admin check_management handles column safely without AttributeError
+    col = Column("geom", geo_point)
+    assert pg_admin.check_management(col) is False
+
+
+
+

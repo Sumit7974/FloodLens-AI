@@ -32,7 +32,8 @@ class GeometryType(TypeDecorator):
         self.srid = srid
 
     def load_dialect_impl(self, dialect):
-        if dialect.name == "postgresql":
+        if dialect is not None and getattr(dialect, "name", None) == "postgresql":
             from geoalchemy2 import Geometry
             return dialect.type_descriptor(Geometry(geometry_type=self.geometry_type, srid=self.srid))
-        return dialect.type_descriptor(Text())
+        return dialect.type_descriptor(Text()) if dialect is not None else Text()
+
