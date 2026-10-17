@@ -3,11 +3,12 @@ import logging
 import uuid
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from app.api.v1.endpoints.health import get_health, get_readiness
 from app.api.v1.router import api_v1_router
 from app.config import get_settings
 from app.core.exceptions import (
@@ -92,6 +93,17 @@ def create_application() -> FastAPI:
     app.include_router(api_v1_router, prefix=settings.api_v1_prefix)
     app.include_router(ws_router, prefix=settings.ws_v1_prefix)
 
+    # Probes and discovery
+    @app.get("/health", tags=["Root"], include_in_schema=False)
+    async def root_health():
+        """Root health probe alias."""
+        return await get_health()
+
+    @app.get("/ready", tags=["Root"], include_in_schema=False)
+    async def root_ready(response: Response):
+        """Root readiness probe alias."""
+        return await get_readiness(response)
+
     @app.get("/", tags=["Root"])
     async def root_index() -> dict:
         """Root service index."""
@@ -100,10 +112,12 @@ def create_application() -> FastAPI:
             "version": "0.1.0",
             "docs": f"{settings.api_v1_prefix}/docs",
             "health": f"{settings.api_v1_prefix}/health",
+            "ready": f"{settings.api_v1_prefix}/ready",
             "operational_mode": settings.operational_mode,
         }
 
     return app
+
 
 
 app = create_application()

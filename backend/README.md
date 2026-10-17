@@ -161,7 +161,8 @@ Once the server is running, interactive API documentation is available at:
 | Method | Path | Description | Access |
 |---|---|---|---|
 | `GET` | `/` | Service root and discovery | Public |
-| `GET` | `/api/v1/health` | Service and database/PostGIS health status | Public |
+| `GET` | `/api/v1/health` (and `/health`) | Service and database/PostGIS liveness check | Public |
+| `GET` | `/api/v1/ready` (and `/ready`) | Readiness probe checking database & PostGIS availability | Public |
 | `POST` | `/api/v1/auth/register` | Citizen registration (authority self-grant disallowed) | Public |
 | `POST` | `/api/v1/auth/login` | Authenticate and obtain JWT Bearer token | Public |
 | `GET` | `/api/v1/auth/me` | Current authenticated user profile | Authenticated |
@@ -195,19 +196,41 @@ Connect to `/ws/v1/events?token=<JWT_ACCESS_TOKEN>`.
 - `risk.updated`: New forecast run published.
 - `sensor.updated`: New river/weather observation ingested.
 - `flood_extent.updated`: Satellite extent processing completed.
-- `alert.approved`: Authority approved warning.
-- `alert.published`: Warning dispatched to subscribers.
+- `alert.approved`: Authority approved warning (internal responders).
+- `alert.published`: Warning dispatched to public subscribers.
 - `assistance.created`: New citizen help request submitted.
 - `assistance.updated`: Help request assignment/status changed.
 - `processing.completed`: Background GIS/AI analysis completed.
 
 ---
 
-## Automated Test Suite
+## Automated Test Suite & CI
 
-Run all automated unit, contract conformance, and integration tests:
+### 1. Local Testing (SQLite In-Memory)
+Run unit, contract conformance, security RBAC, and regression tests locally:
 ```bash
 python -m pytest backend/tests -v
 ```
 
-The test suite runs with an isolated in-memory SQLite database, requiring no live external PostgreSQL instance.
+### 2. Live PostgreSQL / PostGIS 16 Testing
+When running against a live PostgreSQL 16 / PostGIS database:
+```bash
+# Run live Alembic migrations
+alembic upgrade head
+
+# Run live PostGIS spatial operations and GIST index verification
+python scripts/verify_spatial_postgis.py
+
+# Run full test suite with PostGIS integration
+DATABASE_URL="postgresql+psycopg2://user:pass@localhost:5432/floodlens_db" pytest -v
+```
+
+### 3. Continuous Integration (GitHub Actions)
+The repository includes `.github/workflows/backend-ci.yml` which automatically:
+- Provisions a `postgis/postgis:16-3.4` service container.
+- Verifies PostGIS 16 extensions and GIST indexes.
+- Executes `alembic upgrade head`, migration rollback reversibility, and re-upgrade.
+- Runs `verify_spatial_postgis.py` executing live spatial queries (`ST_Contains`, `ST_DWithin`, `ST_Intersects`, `ST_Area`).
+- Runs the complete automated test suite (`pytest -v`).
+- Validates the `/api/v1/health` and `/api/v1/ready` readiness endpoints against live services.
+

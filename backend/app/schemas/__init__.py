@@ -6,7 +6,7 @@ from app.schemas.common import ErrorDetail, ErrorResponse, GeoJSONFeature, GeoJS
 from app.schemas.event import WebSocketEvent, WebSocketSubscription
 from app.schemas.flood_event import FloodEventResponse, FloodExtentResponse
 from app.schemas.forecast import ForecastResponse, HorizonRisk
-from app.schemas.health import DatabaseHealth, HealthResponse
+from app.schemas.health import DatabaseHealth, HealthResponse, ReadinessCheck, ReadinessResponse
 
 __all__ = [
     "AlertApprovalRequest",
@@ -24,6 +24,9 @@ __all__ = [
     "GeoJSONFeature",
     "GeoJSONGeometry",
     "HealthResponse",
+    "ReadinessCheck",
+    "ReadinessResponse",
+
     "HorizonRisk",
     "TokenPayload",
     "TokenResponse",

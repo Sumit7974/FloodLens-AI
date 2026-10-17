@@ -12,8 +12,20 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 # Configure test environment
 os.environ["ENVIRONMENT"] = "testing"
-os.environ["DATABASE_URL"] = "sqlite:///./test_floodlens.db"
-os.environ["JWT_SECRET"] = "test-secret-key-32-chars-minimum-length-floodlens"
+os.environ.setdefault("JWT_SECRET", "test-secret-key-32-chars-minimum-length-floodlens")
+
+# Dynamically select PostgreSQL if DATABASE_URL or TEST_DATABASE_URL is provided, else fallback to SQLite in-memory
+CONFIGURED_DB_URL = os.environ.get("TEST_DATABASE_URL") or os.environ.get("DATABASE_URL")
+if CONFIGURED_DB_URL and ("postgresql" in CONFIGURED_DB_URL or "postgres" in CONFIGURED_DB_URL):
+    TEST_DB_URL = CONFIGURED_DB_URL
+    os.environ["DATABASE_URL"] = TEST_DB_URL
+    from sqlalchemy import create_engine, text
+    test_engine = create_engine(TEST_DB_URL, pool_pre_ping=True)
+else:
+    TEST_DB_URL = "sqlite:///:memory:"
+    os.environ["DATABASE_URL"] = TEST_DB_URL
+    from sqlalchemy import create_engine, text
+    test_engine = create_engine(TEST_DB_URL, connect_args={"check_same_thread": False})
 
 from app.config import get_settings
 from app.core.security import create_access_token, hash_password
@@ -22,18 +34,21 @@ from app.main import create_application
 from app.models.enums import UserRole
 from app.models.user import User
 
-# Test in-memory SQLite engine
-TEST_DB_URL = "sqlite:///:memory:"
-test_engine = create_engine(TEST_DB_URL, connect_args={"check_same_thread": False})
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
 
 
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_db():
-    """Create all database tables before test suite executes."""
+    """Create all database tables and extensions before test suite executes."""
+    if "postgresql" in str(test_engine.url):
+        with test_engine.connect() as conn:
+            conn.execute(text("CREATE EXTENSION IF NOT EXISTS postgis;"))
+            conn.commit()
+
     Base.metadata.create_all(bind=test_engine)
     yield
     Base.metadata.drop_all(bind=test_engine)
+
 
 
 @pytest.fixture
@@ -51,7 +66,14 @@ def db_session() -> Generator[Session, None, None]:
 
 
 @pytest.fixture
+def is_postgres() -> bool:
+    """True if tests are executing against live PostgreSQL/PostGIS database."""
+    return "postgresql" in str(test_engine.url)
+
+
+@pytest.fixture
 def client(db_session: Session) -> Generator[TestClient, None, None]:
+
     """TestClient configured with overridden get_db dependency."""
     app = create_application()
 
