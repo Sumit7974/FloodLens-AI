@@ -1,37 +1,44 @@
-# FloodLens AI — Project Documents
+# FloodLens AI — Documentation Index
 
-The team keeps its project plans in this folder, alongside the application source code.
+This folder is the project's central reference for development of the **authority web dashboard**, **citizen Android app**, and **shared AI/GIS backend**.
 
-## Five documents
-
-| Document | Searchable text |
+## Existing planning documents (searchable Markdown)
+| Document | File |
 | --- | --- |
-| Project framework (three phases, product scope, modules) | [Framework](FloodLens_AI_Complete_Project_Framework_v1.md) |
-| Software requirements, roles, acceptance criteria | [SRS](FloodLens_AI_SRS_v1.md) |
-| System architecture, APIs, database, WebSockets | [Technical Architecture](FloodLens_AI_Technical_Architecture_API_Design_v1.md) |
-| Comprehensive pre-development requirements and readiness | [Master Blueprint](FloodLens_AI_Master_Predevelopment_Blueprint_v1.md) |
-| Four-person, seven-day schedule and daily deliverables | [Day-wise Work Plan](FloodLens_AI_Day_Wise_Team_Work_Plan.md) |
+| Complete Project Framework v1.0 | [Framework](FloodLens_AI_Complete_Project_Framework_v1.md) |
+| Software Requirements Specification v1.0 | [SRS](FloodLens_AI_SRS_v1.md) |
+| Technical Architecture & API Design v1.0 | [Architecture](FloodLens_AI_Technical_Architecture_API_Design_v1.md) |
+| Master Pre-development Blueprint v1.0 | [Master Blueprint](FloodLens_AI_Master_Predevelopment_Blueprint_v1.md) |
+| Day-wise Team Work Plan | [Work Plan](FloodLens_AI_Day_Wise_Team_Work_Plan.md) |
 
-## PDF originals
+These five text companions were extracted from the original PDFs; some table layouts may differ from the originals.
 
-These are **searchable text companions extracted from the existing PDF documents**. The PDF originals are not yet present in GitHub; to add exact downloadable PDF copies, upload these five matching PDFs to this folder through GitHub's **Add file → Upload files** control or a Git client:
+## Additional implementation-ready documents
+| Area | File |
+| --- | --- |
+| Data acquisition, feasibility and model readiness | [Dataset & Model Readiness](DATASET_AND_MODEL_READINESS.md) |
+| Authority web and citizen Android screen requirements | [Web/Android Screen Specification](WEB_ANDROID_SCREEN_SPEC.md) |
+| Database records, REST APIs and WebSocket contracts | [Database/API/Event Contracts](DATABASE_API_EVENT_CONTRACTS.md) |
+| Functional and model validation tests | [Testing & Validation Plan](TESTING_AND_VALIDATION_PLAN.md) |
+| Data privacy and emergency-safety safeguards | [Security & Emergency Safety](SECURITY_AND_EMERGENCY_SAFETY.md) |
+| Deployment, historical replay and hackathon demonstration | [Deployment & Demo Runbook](DEPLOYMENT_AND_DEMO_RUNBOOK.md) |
 
+## Original PDF status
+**The five original PDFs are not yet stored in GitHub.** These Markdown copies and additional plans are available immediately for collaborative editing and searching. To preserve the exact PDF design and layout, upload the existing original PDFs into this folder through GitHub's **Add file → Upload files** feature or a local Git client.
+
+Original PDF filenames:
 - `FloodLens_AI_Complete_Project_Framework_v1.pdf`
 - `FloodLens_AI_SRS_v1.pdf`
 - `FloodLens_AI_Technical_Architecture_API_Design_v1.pdf`
 - `FloodLens_AI_Master_Predevelopment_Blueprint_v1.pdf`
 - `FloodLens_AI_Day_Wise_Team_Work_Plan.pdf`
 
-Prepared archive (available in the originating ChatGPT conversation): `FloodLens_GitHub_Documents.zip`.
+## Development rules
+- **P0:** Optical satellite pre/post processing, water-index flood detection, affected settlements, maps and a reference-based accuracy test where available.
+- **P1:** Reproducible three-horizon risk prototype, connected apps, authority-reviewed test alerts, assistance requests, and forecast evaluation.
+- **P2:** 3D terrain, radar extension, shelters/hospitals and route assessment, depth-model experiment.
+- **P3:** Extra channels and candidate retraining if validated and time permits.
+- Do not confuse predicted risk, observed extent, modelled depth, or field-confirmed damage.
+- Do not present hackathon alerts or route suggestions as authorized operational emergency services.
 
-## Project planning notes
-
-- Mandatory PS: before/after **optical** satellite imagery, spectral water indices, georeferenced flood extent, affected-settlement report, reference validation where available.
-- Additional research prototypes: short-term flood risk, terrain visualization, radar extension, estimated depth, alerts, routing, candidate model evaluation.
-- Separate estimated risk from observed inundation and estimated damage from verified field reports.
-- Do not present prototype emergency messages, navigation, or predictions as authorized operational guidance.
-- Develop features through Day 5. Reserve Days 6–7 for validation, bug fixing, and demo readiness.
-
-## Contribution workflow
-
-Use pull requests for changes to project requirements and keep the framework, SRS, architecture and task plan consistent when requirements change.
+Four-person team. Days 1–5 are for building and integration; Days 6–7 are for validation, fixes and demo rehearsal.
