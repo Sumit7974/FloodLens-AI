@@ -2,3 +2,8 @@ search-path = [
     ".",
     "backend",
 ]
+
+[errors]
+attribute-assign-on-never = false
+
+
