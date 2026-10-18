@@ -27,6 +27,8 @@ else:
     )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+
 Base = declarative_base()
 
 
@@ -45,7 +47,7 @@ def check_db_connection() -> Dict[str, Any]:
     Returns a status dict containing connectivity state, latency, and PostGIS version if available.
     """
     start_time = time.time()
-    result = {
+    result: Dict[str, Any] = {
         "connected": False,
         "database_type": "sqlite" if settings.is_sqlite else "postgresql",
         "postgis_installed": False,

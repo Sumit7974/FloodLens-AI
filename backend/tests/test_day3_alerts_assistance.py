@@ -31,14 +31,14 @@ from app.websocket.connection_manager import ConnectionManager, connection_manag
 # ==============================================================================
 class MockWS:
     """Mock WebSocket for unit testing channel event dispatch."""
-    def __init__(self):
-        self.sent = []
-        self.accepted = False
+    def __init__(self) -> None:
+        self.sent: list[str] = []
+        self.accepted: bool = False
 
-    async def accept(self):
+    async def accept(self) -> None:
         self.accepted = True
 
-    async def send_text(self, text: str):
+    async def send_text(self, text: str) -> None:
         self.sent.append(text)
 
 
@@ -498,6 +498,7 @@ def test_push_notification_adapter():
     )
     assert len(receipts_unverified) == 1
     assert receipts_unverified[0].status == DeliveryStatus.UNREGISTERED_DEVICE
+    assert isinstance(receipts_unverified[0].error, str)
     assert "not a verified registered test device" in receipts_unverified[0].error
 
     # 4. Malformed token rejected with INVALID_TOKEN
@@ -613,6 +614,7 @@ def test_push_adapter_never_infers_consent_from_token_text():
     )
     assert len(receipts) == 1
     assert receipts[0].status == DeliveryStatus.UNREGISTERED_DEVICE
+    assert isinstance(receipts[0].error, str)
     assert "Consent is never inferred from token text" in receipts[0].error
     assert receipts[0].token_masked == "ExponentPushToken[***9999]"
 
@@ -625,6 +627,7 @@ def test_push_adapter_never_infers_consent_from_token_text():
     )
     assert len(receipts_demo) == 1
     assert receipts_demo[0].status == DeliveryStatus.UNREGISTERED_DEVICE
+    assert isinstance(receipts_demo[0].error, str)
     assert "Consent is never inferred from token text" in receipts_demo[0].error
 
     # 2. Explicitly registering device via register_test_device allows safe sandbox simulation

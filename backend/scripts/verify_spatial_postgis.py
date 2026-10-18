@@ -204,8 +204,10 @@ def verify_postgis():
                 """),
                 {"extent_id": extent_id},
             ).scalar()
-            area_sq_km = res_area_sq_m / 1_000_000.0
-            print(f"[+] Spatial query ST_Area: {round(area_sq_km, 2)} sq km ({round(res_area_sq_m, 1)} sq meters)")
+            assert res_area_sq_m is not None, "ST_Area query returned None"
+            assert isinstance(res_area_sq_m, (int, float)), "ST_Area result must be numeric"
+            area_sq_km = float(res_area_sq_m) / 1_000_000.0
+            print(f"[+] Spatial query ST_Area: {round(area_sq_km, 2)} sq km ({round(float(res_area_sq_m), 1)} sq meters)")
             assert res_area_sq_m > 0, "ST_Area check failed"
 
             # Test 4e: Explain GIST Index Usage

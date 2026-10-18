@@ -50,30 +50,39 @@ def get_request_id(request: Request) -> str:
 
 def make_error_response(code: str, message: str, status_code: int, request_id: str, details: Optional[Dict[str, Any]] = None) -> JSONResponse:
     """Format standardized JSON error response adhering to contract."""
-    error_payload = {
-        "error": {
-            "code": code,
-            "message": message,
-            "request_id": request_id,
-        }
+    error_body: Dict[str, Any] = {
+        "code": code,
+        "message": message,
+        "request_id": request_id,
     }
     if details:
-        error_payload["error"]["details"] = details
+        error_body["details"] = details
+    error_payload: Dict[str, Any] = {"error": error_body}
     return JSONResponse(status_code=status_code, content=error_payload)
 
 
-async def floodlens_exception_handler(request: Request, exc: FloodLensAPIException) -> JSONResponse:
+async def floodlens_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     request_id = get_request_id(request)
+    if isinstance(exc, FloodLensAPIException):
+        code = exc.code
+        message = exc.message
+        status_code = exc.status_code
+        details = exc.details
+    else:
+        code = "INTERNAL_ERROR"
+        message = str(exc)
+        status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+        details = None
     return make_error_response(
-        code=exc.code,
-        message=exc.message,
-        status_code=exc.status_code,
+        code=code,
+        message=message,
+        status_code=status_code,
         request_id=request_id,
-        details=exc.details,
+        details=details,
     )
 
 
-async def http_exception_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
+async def http_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     request_id = get_request_id(request)
     code_map = {
         400: "BAD_REQUEST",
@@ -86,21 +95,24 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException) 
         500: "INTERNAL_SERVER_ERROR",
         501: "NOT_IMPLEMENTED",
     }
-    code = code_map.get(exc.status_code, "HTTP_ERROR")
+    status_code = getattr(exc, "status_code", status.HTTP_500_INTERNAL_SERVER_ERROR)
+    detail = getattr(exc, "detail", str(exc))
+    code = code_map.get(status_code, "HTTP_ERROR")
     return make_error_response(
         code=code,
-        message=str(exc.detail),
-        status_code=exc.status_code,
+        message=str(detail),
+        status_code=status_code,
         request_id=request_id,
     )
 
 
 from fastapi.encoders import jsonable_encoder
 
-async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+async def validation_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     request_id = get_request_id(request)
     error_messages = []
-    for err in exc.errors():
+    errors = getattr(exc, "errors", lambda: [])()
+    for err in errors:
         loc = " -> ".join(str(l) for l in err.get("loc", []))
         msg = err.get("msg", "Validation error")
         error_messages.append(f"{loc}: {msg}")
@@ -110,5 +122,5 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         message=combined_message,
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         request_id=request_id,
-        details={"validation_errors": jsonable_encoder(exc.errors())},
+        details={"validation_errors": jsonable_encoder(errors)},
     )
