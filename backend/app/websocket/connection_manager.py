@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional, Set
 from fastapi import WebSocket
 from app.models.enums import UserRole
 from app.schemas.event import WebSocketEvent
+from app.services.demo_participants import is_authorized_demo_user
 
 logger = logging.getLogger(__name__)
 
@@ -23,13 +24,14 @@ class ConnectionManager:
             "authority_queue": set(),
         }
 
-    async def connect(self, websocket: WebSocket, user_id: str, role: str) -> None:
+    async def connect(self, websocket: WebSocket, user_id: str, role: str, email: Optional[str] = None) -> None:
         """Accept connection, store authenticated user identity, and join default channels."""
         await websocket.accept()
         user_info = {
             "user_id": user_id,
+            "email": email,
             "role": role,
-            "channels": {"public", "alerts", "risk_updates"},
+            "channels": {"public", "alerts", "risk_updates", f"user:{user_id}"},
         }
 
         # Authority and admin users join the authority queue by default
@@ -75,9 +77,17 @@ class ConnectionManager:
 
         # 2. Protect citizen private direct channels (e.g. user:{user_id})
         if channel.startswith("user:") and channel != f"user:{user_id}":
-            if user_role not in (UserRole.AUTHORITY.value, UserRole.ADMIN.value):
-                logger.warning("Citizen %s attempted unauthorized subscription to channel %s", user_id, channel)
-                return False
+            logger.warning("User %s attempted unauthorized subscription to channel %s", user_id, channel)
+            return False
+
+        # 3. Protect demo_alerts channel: restricted to authority/admin or explicitly authorized demo participants by user ID
+        if channel == "demo_alerts" and not is_authorized_demo_user(user_id=user_id, role=user_role):
+            logger.warning(
+                "Unauthorized subscription attempt to demo_alerts by user %s (role=%s). Explicit user ID demo participant authorization required.",
+                user_id,
+                user_role,
+            )
+            return False
 
         if channel not in self.channel_subscribers:
             self.channel_subscribers[channel] = set()
@@ -133,6 +143,16 @@ class ConnectionManager:
                     logger.warning("Error sending to role %s: %s", role, str(exc))
                     self.disconnect(ws)
         return count
+
+    def get_user_channels(self, websocket: WebSocket) -> Set[str]:
+        """Return set of subscribed channels for a specific websocket connection."""
+        if websocket in self.active_connections:
+            return set(self.active_connections[websocket].get("channels", set()))
+        return set()
+
+    async def broadcast_to_user(self, user_id: str, event: WebSocketEvent) -> int:
+        """Broadcast an event strictly to a specific user's private channel."""
+        return await self.broadcast_to_channel(f"user:{user_id}", event)
 
 
 # Singleton instance

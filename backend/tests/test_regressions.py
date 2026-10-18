@@ -84,7 +84,7 @@ def test_unpublished_alerts_restricted_from_citizens(client: TestClient, db_sess
         created_by=test_authority_user.id,
         approved_by=test_authority_user.id,
         issued_at=now,
-        mode=OperationalMode.HISTORICAL_DEMO,
+        mode=OperationalMode.LIVE_OBSERVATION,
     )
     db_session.add_all([draft_alert, approved_alert, dispatched_alert])
     db_session.commit()
