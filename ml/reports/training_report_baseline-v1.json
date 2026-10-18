@@ -1,0 +1,258 @@
+{
+  "run_id": "run_20261018_085118",
+  "timestamp": "2026-10-18T08:51:18Z",
+  "data_source": "ml\\data\\processed\\koshi_event_cleaned.csv",
+  "is_synthetic_data": true,
+  "disclaimer": "PIPELINE TEST ONLY: Model trained on synthetic demonstration data. Metrics reflect software pipeline functionality and code correctness, NOT real-world operational flood prediction accuracy. Do NOT use for real-world alerts.",
+  "model_version": "baseline-v1",
+  "model_type": "RandomForestClassifier",
+  "feature_list_numeric": [
+    "rainfall_mm",
+    "rainfall_rolling_3h_mm",
+    "rainfall_rolling_6h_mm",
+    "rainfall_rolling_24h_mm",
+    "river_stage_m",
+    "river_stage_rate_of_rise_m_per_h",
+    "upstream_discharge_m3s",
+    "forecast_precip_next_3h_mm",
+    "temperature_c",
+    "relative_humidity_pct"
+  ],
+  "feature_list_categorical": [
+    "season",
+    "catchment_saturation_class"
+  ],
+  "train_ratio": 0.75,
+  "train_time_range": {
+    "start": "2024-08-10 00:00:00+00:00",
+    "end": "2024-08-17 11:00:00+00:00"
+  },
+  "test_time_range": {
+    "start": "2024-08-17 12:00:00+00:00",
+    "end": "2024-08-19 23:00:00+00:00"
+  },
+  "horizons": [
+    {
+      "horizon_hours": 1,
+      "target_name": "risk_label_+1h",
+      "dummy_macro_f1": 0.0,
+      "dummy_balanced_accuracy": 0.0,
+      "model_macro_f1": 1.0,
+      "model_balanced_accuracy": 1.0,
+      "per_class_metrics": {
+        "low": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1-score": 0.0,
+          "support": 0
+        },
+        "moderate": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1-score": 1.0,
+          "support": 60
+        },
+        "high": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1-score": 0.0,
+          "support": 0
+        },
+        "critical": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1-score": 0.0,
+          "support": 0
+        }
+      },
+      "confusion_matrix": [
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          60,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "classes_present_in_test": [
+        "moderate"
+      ],
+      "train_samples_count": 180,
+      "test_samples_count": 60,
+      "class_distribution_train": {
+        "critical": 76,
+        "moderate": 71,
+        "low": 26,
+        "high": 7
+      },
+      "class_distribution_test": {
+        "moderate": 60
+      }
+    },
+    {
+      "horizon_hours": 3,
+      "target_name": "risk_label_+3h",
+      "dummy_macro_f1": 0.0,
+      "dummy_balanced_accuracy": 0.0,
+      "model_macro_f1": 1.0,
+      "model_balanced_accuracy": 1.0,
+      "per_class_metrics": {
+        "low": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1-score": 0.0,
+          "support": 0
+        },
+        "moderate": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1-score": 1.0,
+          "support": 59
+        },
+        "high": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1-score": 0.0,
+          "support": 0
+        },
+        "critical": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1-score": 0.0,
+          "support": 0
+        }
+      },
+      "confusion_matrix": [
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          59,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "classes_present_in_test": [
+        "moderate"
+      ],
+      "train_samples_count": 180,
+      "test_samples_count": 59,
+      "class_distribution_train": {
+        "critical": 76,
+        "moderate": 73,
+        "low": 24,
+        "high": 7
+      },
+      "class_distribution_test": {
+        "moderate": 59
+      }
+    },
+    {
+      "horizon_hours": 6,
+      "target_name": "risk_label_+6h",
+      "dummy_macro_f1": 1.0,
+      "dummy_balanced_accuracy": 1.0,
+      "model_macro_f1": 1.0,
+      "model_balanced_accuracy": 1.0,
+      "per_class_metrics": {
+        "low": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1-score": 0.0,
+          "support": 0
+        },
+        "moderate": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1-score": 1.0,
+          "support": 56
+        },
+        "high": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1-score": 0.0,
+          "support": 0
+        },
+        "critical": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1-score": 0.0,
+          "support": 0
+        }
+      },
+      "confusion_matrix": [
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          56,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0
+        ]
+      ],
+      "classes_present_in_test": [
+        "moderate"
+      ],
+      "train_samples_count": 180,
+      "test_samples_count": 56,
+      "class_distribution_train": {
+        "moderate": 76,
+        "critical": 76,
+        "low": 21,
+        "high": 7
+      },
+      "class_distribution_test": {
+        "moderate": 56
+      }
+    }
+  ]
+}
