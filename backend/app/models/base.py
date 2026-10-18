@@ -37,3 +37,13 @@ class GeometryType(TypeDecorator):
             return dialect.type_descriptor(Geometry(geometry_type=self.geometry_type, srid=self.srid))
         return dialect.type_descriptor(Text()) if dialect is not None else Text()
 
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return None
+        if dialect is not None and getattr(dialect, "name", None) == "postgresql":
+            return value
+        from geoalchemy2.elements import WKBElement, WKTElement
+        if isinstance(value, (WKTElement, WKBElement)):
+            return f"SRID={value.srid};{value.data}" if getattr(value, "srid", None) else str(value.data)
+        return str(value)
+

@@ -174,6 +174,26 @@ Once the server is running, interactive API documentation is available at:
 | `GET` | `/api/v1/assistance` | Emergency responder queue | Authority / Admin |
 | `WS` | `/ws/v1/events?token={jwt}` | Authenticated real-time event streaming | Authenticated |
 
+### Key Day 2 Endpoints (Satellite / GIS & AI Forecast Integration)
+
+| Method | Path | Description | Access |
+|---|---|---|---|
+| `POST` | `/api/v1/flood-events` | Register historical demo or live flood event episode | Authority / Admin |
+| `GET` | `/api/v1/flood-events` | List flood event episodes with mode/region filtering | Public |
+| `POST` | `/api/v1/satellite/scenes` | Ingest Sentinel-2 optical or Sentinel-1 SAR scene metadata | Authority / Admin |
+| `GET` | `/api/v1/satellite/scenes` | List stored satellite scenes with cloud cover & overpass timestamp | Public |
+| `POST` | `/api/v1/satellite/jobs` | Enqueue NDWI/MNDWI or SAR water extraction pipeline | Authority / Admin |
+| `POST` | `/api/v1/locations` | Register settlement polygon boundaries or village points | Authority / Admin |
+| `POST` | `/api/v1/flood-events/{id}/extent` | Store georeferenced flood extent in PostGIS & emit WS event | Authority / Admin |
+| `GET` | `/api/v1/flood-events/{id}/extent` | Retrieve observed flood extent with actual RFC 7946 GeoJSON MultiPolygon | Public |
+| `GET` | `/api/v1/flood-events/{id}/extent/geojson` | Direct GeoJSON Feature format for web / mobile map overlays | Public |
+| `GET` | `/api/v1/flood-events/{id}/settlements` | Live PostGIS spatial intersection returning exposed settlements & population | Public |
+| `GET` | `/api/v1/flood-events/{id}/assets` | Spatial intersection computing exposed roads (km), structures, and cropland (ha) | Public |
+| `GET` | `/api/v1/flood-events/{id}/report` | Synthesized flood impact assessment report | Public |
+| `POST` | `/api/v1/predictions/ingest` | Ingest `+1h`, `+3h`, `+6h` risk forecast predictions & emit WS event | Authority / Admin |
+| `GET` | `/api/v1/predictions/latest?location_id=...` | Database-backed multi-horizon forecast for a location | Public |
+| `GET` | `/api/v1/predictions/map` | Database-backed risk-zone vector layer with multi-horizon zones | Public |
+
 ---
 
 ## Real-Time WebSocket Channel

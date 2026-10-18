@@ -168,3 +168,94 @@ def test_postgis_spatial_index_and_table_queries(db_session: Session, is_postgre
         except Exception:
             pass
 
+
+def test_postgis_live_flood_extent_settlements_intersection(db_session: Session, is_postgres: bool):
+    """Test live PostGIS spatial intersection between flood_extents and locations using ST_Intersects & ST_AsGeoJSON."""
+    if not is_postgres:
+        pytest.skip("Spatial extent intersection test requires PostgreSQL with PostGIS extension")
+
+    import json
+    now = datetime.now(timezone.utc)
+    suffix = uuid.uuid4().hex[:6]
+    event_id = f"evt-live-{suffix}"
+    extent_id = f"ext-live-{suffix}"
+    loc_inside_id = f"loc-in-{suffix}"
+    loc_outside_id = f"loc-out-{suffix}"
+
+    try:
+        # 1. Insert flood event
+        db_session.execute(
+            text("""
+                INSERT INTO flood_events (id, region_id, name, start_at, mode, source_refs, description, created_at, updated_at)
+                VALUES (:id, 'nepal_terai_koshi', 'Live PostGIS Nepal Terai Flood', :now, 'historical_demo', '{}', 'Test event', :now, :now);
+            """),
+            {"id": event_id, "now": now},
+        )
+
+        # 2. Insert flood extent MultiPolygon
+        db_session.execute(
+            text("""
+                INSERT INTO flood_extents (id, event_id, observed_at, method, area_km2, source_scene_ids, geometry, created_at, updated_at)
+                VALUES (:id, :event_id, :now, 'MNDWI', 18.75, '["scene_s2_terai"]',
+                        ST_GeomFromText('MULTIPOLYGON(((86.90 26.50, 87.10 26.50, 87.10 26.70, 86.90 26.70, 86.90 26.50)))', 4326),
+                        :now, :now);
+            """),
+            {"id": extent_id, "event_id": event_id, "now": now},
+        )
+
+        # 3. Insert inside settlement location (Barahachhetra village, inside bounding box)
+        db_session.execute(
+            text("""
+                INSERT INTO locations (id, name, admin_level, geometry, crs_source, metadata_json, created_at, updated_at)
+                VALUES (:id, 'Barahachhetra Inundated Settlement', 4,
+                        ST_SetSRID(ST_MakePoint(87.00, 26.60), 4326),
+                        'EPSG:4326', '{"population": 4200}', :now, :now);
+            """),
+            {"id": loc_inside_id, "now": now},
+        )
+
+        # 4. Insert outside settlement location (Kathmandu valley, far away)
+        db_session.execute(
+            text("""
+                INSERT INTO locations (id, name, admin_level, geometry, crs_source, metadata_json, created_at, updated_at)
+                VALUES (:id, 'Kathmandu Outside Settlement', 4,
+                        ST_SetSRID(ST_MakePoint(85.32, 27.71), 4326),
+                        'EPSG:4326', '{"population": 800000}', :now, :now);
+            """),
+            {"id": loc_outside_id, "now": now},
+        )
+        db_session.commit()
+
+        # 5. Query spatial intersection with ST_Intersects and ST_AsGeoJSON
+        intersected = db_session.execute(
+            text("""
+                SELECT l.id, l.name, ST_AsGeoJSON(l.geometry) AS geojson
+                FROM locations l
+                JOIN flood_extents fe ON fe.id = :extent_id
+                WHERE ST_Intersects(l.geometry, fe.geometry);
+            """),
+            {"extent_id": extent_id},
+        ).fetchall()
+
+        matched_ids = [row[0] for row in intersected]
+        assert loc_inside_id in matched_ids, f"Expected {loc_inside_id} to intersect flood extent {extent_id}"
+        assert loc_outside_id not in matched_ids, f"Expected {loc_outside_id} to NOT intersect flood extent"
+
+        # Verify ST_AsGeoJSON returns valid GeoJSON point
+        for row in intersected:
+            if row[0] == loc_inside_id:
+                gj = json.loads(row[2])
+                assert gj["type"] == "Point"
+                assert gj["coordinates"] == [87.00, 26.60]
+
+    finally:
+        try:
+            db_session.rollback()
+            db_session.execute(text("DELETE FROM flood_extents WHERE id = :id"), {"id": extent_id})
+            db_session.execute(text("DELETE FROM flood_events WHERE id = :id"), {"id": event_id})
+            db_session.execute(text("DELETE FROM locations WHERE id = :id"), {"id": loc_inside_id})
+            db_session.execute(text("DELETE FROM locations WHERE id = :id"), {"id": loc_outside_id})
+            db_session.commit()
+        except Exception:
+            pass
+

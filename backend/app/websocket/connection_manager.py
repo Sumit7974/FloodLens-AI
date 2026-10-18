@@ -116,6 +116,10 @@ class ConnectionManager:
                 self.disconnect(ws)
         return count
 
+    async def broadcast(self, event: WebSocketEvent) -> int:
+        """Broadcast an event to all active connections via the default public channel."""
+        return await self.broadcast_to_channel("public", event)
+
     async def broadcast_to_role(self, role: str, event: WebSocketEvent) -> int:
         """Broadcast an event exclusively to connections with a given role."""
         payload = event.model_dump_json()
