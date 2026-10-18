@@ -56,21 +56,17 @@ class Settings(BaseSettings):
     # Logging
     log_level: str = "INFO"
 
-    # Demo Participant Allowlist (for simulation alert access control)
+    # Demo Participant Allowlist (authenticated user IDs only; email authorization is forbidden)
     demo_participant_ids: Union[List[str], str] = Field(
-        default_factory=list,
-        description="Allowlist of user IDs authorized for demo simulation alerts",
-    )
-    demo_participant_emails: Union[List[str], str] = Field(
         default_factory=lambda: [
-            "demo_participant@floodlens.internal",
-            "field_tester_01@floodlens.internal",
-            "mobile_tester_01@floodlens.internal",
+            "user_demo_participant_01",
+            "user_test_participant_01",
+            "demo_participant_field_01",
         ],
-        description="Allowlist of user emails authorized for demo simulation alerts",
+        description="Allowlist of authenticated user IDs authorized for demo simulation alerts",
     )
 
-    @field_validator("cors_origins", "demo_participant_ids", "demo_participant_emails", mode="before")
+    @field_validator("cors_origins", "demo_participant_ids", mode="before")
     @classmethod
     def assemble_string_or_list(cls, v: Union[str, List[str]]) -> List[str]:
         if isinstance(v, str):

@@ -677,6 +677,7 @@ def test_demo_alerts_isolated_from_general_websocket_channel(
     )
     db_session.add(participant)
     db_session.commit()
+    demo_participant_registry.register_participant(participant.id)
     participant_token = create_access_token(subject=participant.id, role="citizen")
 
     # 1. Citizen connects to default channels (public, alerts, risk_updates)
@@ -745,6 +746,7 @@ def test_demo_alerts_isolated_from_public_rest_feed(
     )
     db_session.add(participant)
     db_session.commit()
+    demo_participant_registry.register_participant(participant.id)
     participant_token = create_access_token(subject=participant.id, role="citizen")
 
     # 1. Create and dispatch a demo alert
@@ -812,6 +814,7 @@ def test_unrelated_citizen_and_anonymous_denied_demo_alerts(
         is_active=True,
     )
     db_session.add(participant)
+    demo_participant_registry.register_participant(participant.id)
 
     # Provision demo alert
     demo_alert = Alert(
@@ -869,5 +872,186 @@ def test_unrelated_citizen_and_anonymous_denied_demo_alerts(
     resp_auth_get = client.get(f"/api/v1/alerts/{demo_alert.id}", headers={"Authorization": f"Bearer {authority_token}"})
     assert resp_auth_get.status_code == status.HTTP_200_OK
     assert resp_auth_get.json()["id"] == demo_alert.id
+
+
+def test_self_register_with_allowlisted_email_does_not_grant_demo_access(
+    client: TestClient,
+    db_session: Session,
+    test_authority_user: User,
+):
+    """Regression test: Self-registering with a previously allowlisted email
+    (e.g. demo_participant@floodlens.internal) must NOT grant demo access
+    because email-only authorization has been completely removed."""
+    # Attempt to register an email via the registry - must fail and be rejected
+    rejected = demo_participant_registry.register_participant("demo_participant@floodlens.internal")
+    assert rejected is False
+
+    # Create a user whose email matches what used to be in the email allowlist
+    unauthorized_user = User(
+        id="user_sneaky_self_registered",
+        email="demo_participant@floodlens.internal",
+        hashed_password=hash_password("mypassword"),
+        full_name="Self Registered Attacker",
+        role=UserRole.CITIZEN,
+        is_active=True,
+    )
+    db_session.add(unauthorized_user)
+
+    # Seed a dispatched demo alert
+    demo_alert = Alert(
+        id="alert_regression_email_01",
+        area_id="loc_reg_01",
+        title="[DEMO ONLY] Fluvial Inundation Test",
+        message="Demo simulation message",
+        status=AlertStatus.DISPATCHED,
+        created_by=test_authority_user.id,
+        approved_by=test_authority_user.id,
+        issued_at=datetime.now(timezone.utc),
+        mode=OperationalMode.HISTORICAL_DEMO,
+        target_channels=["in_app"],
+    )
+    db_session.add(demo_alert)
+    db_session.commit()
+
+    # Verify helper function rejects user
+    assert demo_participant_registry.is_authorized_participant(unauthorized_user) is False
+    assert demo_participant_registry.is_authorized_user_id(unauthorized_user.id) is False
+
+    token = create_access_token(subject=unauthorized_user.id, role="citizen")
+
+    # 1. Attempt WebSocket subscription to 'demo_alerts' -> forbidden
+    with client.websocket_connect(f"/ws/v1/events?token={token}") as ws:
+        ws.receive_json()  # connection.established
+        ws.send_json({"action": "subscribe", "channel": "demo_alerts"})
+        sub_resp = ws.receive_json()
+        assert sub_resp["type"] == "subscription.result"
+        assert sub_resp["channel"] == "demo_alerts"
+        assert sub_resp["status"] == "forbidden"
+
+    # 2. REST GET /alerts?include_demo=true -> 403 Forbidden
+    resp_inc = client.get("/api/v1/alerts?include_demo=true", headers={"Authorization": f"Bearer {token}"})
+    assert resp_inc.status_code == status.HTTP_403_FORBIDDEN
+    assert resp_inc.json()["error"]["code"] == "DEMO_ALERTS_RESTRICTED"
+
+    # 3. REST GET /alerts/{alert_id} for demo alert -> 403 Forbidden
+    resp_direct = client.get(f"/api/v1/alerts/{demo_alert.id}", headers={"Authorization": f"Bearer {token}"})
+    assert resp_direct.status_code == status.HTTP_403_FORBIDDEN
+    assert resp_direct.json()["error"]["code"] == "DEMO_ALERT_RESTRICTED"
+
+
+def test_authorized_user_id_retains_demo_access(
+    client: TestClient,
+    db_session: Session,
+    test_authority_user: User,
+):
+    """Regression test: User explicitly authorized by User ID retains demo access."""
+    authorized_user = User(
+        id="user_explicitly_authorized_id_01",
+        email="legit_tester@somedomain.com",
+        hashed_password=hash_password("legitpwd"),
+        full_name="Authorized Tester",
+        role=UserRole.CITIZEN,
+        is_active=True,
+    )
+    db_session.add(authorized_user)
+
+    demo_alert = Alert(
+        id="alert_regression_userid_01",
+        area_id="loc_reg_02",
+        title="[DEMO ONLY] Basin Simulation",
+        message="Demo simulation message",
+        status=AlertStatus.DISPATCHED,
+        created_by=test_authority_user.id,
+        approved_by=test_authority_user.id,
+        issued_at=datetime.now(timezone.utc),
+        mode=OperationalMode.HISTORICAL_DEMO,
+        target_channels=["in_app"],
+    )
+    db_session.add(demo_alert)
+    db_session.commit()
+
+    # Explicitly register user ID
+    demo_participant_registry.register_participant(authorized_user.id)
+    assert demo_participant_registry.is_authorized_participant(authorized_user) is True
+    assert demo_participant_registry.is_authorized_user_id(authorized_user.id) is True
+
+    token = create_access_token(subject=authorized_user.id, role="citizen")
+
+    # 1. WebSocket subscription to 'demo_alerts' -> subscribed
+    with client.websocket_connect(f"/ws/v1/events?token={token}") as ws:
+        ws.receive_json()  # connection.established
+        ws.send_json({"action": "subscribe", "channel": "demo_alerts"})
+        sub_resp = ws.receive_json()
+        assert sub_resp["type"] == "subscription.result"
+        assert sub_resp["channel"] == "demo_alerts"
+        assert sub_resp["status"] == "subscribed"
+
+    # 2. REST GET /alerts?include_demo=true -> 200 OK with demo alert present
+    resp_inc = client.get("/api/v1/alerts?include_demo=true", headers={"Authorization": f"Bearer {token}"})
+    assert resp_inc.status_code == status.HTTP_200_OK
+    alert_ids = [a["id"] for a in resp_inc.json()]
+    assert demo_alert.id in alert_ids
+
+    # 3. REST GET /alerts/{alert_id} for demo alert -> 200 OK
+    resp_direct = client.get(f"/api/v1/alerts/{demo_alert.id}", headers={"Authorization": f"Bearer {token}"})
+    assert resp_direct.status_code == status.HTTP_200_OK
+    assert resp_direct.json()["id"] == demo_alert.id
+
+    # Cleanup registry
+    demo_participant_registry.unregister_participant(authorized_user.id)
+
+
+def test_historical_demo_alert_without_title_prefix_is_protected(
+    client: TestClient,
+    db_session: Session,
+    test_citizen_user: User,
+    test_authority_user: User,
+    citizen_token: str,
+    authority_token: str,
+):
+    """Regression test: Alert with mode=OperationalMode.HISTORICAL_DEMO but NO [DEMO] or [TEST]
+    in title is still classified as a demo alert and protected from public exposure."""
+    from app.api.v1.endpoints.alerts import is_demo_alert
+
+    # Create alert with no prefix in title but mode is HISTORICAL_DEMO
+    stealth_demo_alert = Alert(
+        id="alert_no_prefix_hist_demo_01",
+        area_id="loc_koshi_01",
+        title="Historical River Advisory - Koshi Basin",
+        message="Historical retrospective inundation scenario analysis.",
+        status=AlertStatus.DISPATCHED,
+        created_by=test_authority_user.id,
+        approved_by=test_authority_user.id,
+        issued_at=datetime.now(timezone.utc),
+        mode=OperationalMode.HISTORICAL_DEMO,
+        target_channels=["in_app"],
+    )
+    db_session.add(stealth_demo_alert)
+    db_session.commit()
+
+    # 1. Ensure is_demo_alert identifies it via mode
+    assert is_demo_alert(stealth_demo_alert) is True
+
+    # 2. General citizen query to default /alerts excludes it
+    resp_feed = client.get("/api/v1/alerts", headers={"Authorization": f"Bearer {citizen_token}"})
+    assert resp_feed.status_code == status.HTTP_200_OK
+    feed_ids = [a["id"] for a in resp_feed.json()]
+    assert stealth_demo_alert.id not in feed_ids
+
+    # 3. Anonymous direct GET returns 403 Forbidden
+    resp_anon = client.get(f"/api/v1/alerts/{stealth_demo_alert.id}")
+    assert resp_anon.status_code == status.HTTP_403_FORBIDDEN
+    assert resp_anon.json()["error"]["code"] == "DEMO_ALERT_RESTRICTED"
+
+    # 4. Unrelated citizen direct GET returns 403 Forbidden
+    resp_cit = client.get(f"/api/v1/alerts/{stealth_demo_alert.id}", headers={"Authorization": f"Bearer {citizen_token}"})
+    assert resp_cit.status_code == status.HTTP_403_FORBIDDEN
+    assert resp_cit.json()["error"]["code"] == "DEMO_ALERT_RESTRICTED"
+
+    # 5. Authority direct GET succeeds (200 OK)
+    resp_auth = client.get(f"/api/v1/alerts/{stealth_demo_alert.id}", headers={"Authorization": f"Bearer {authority_token}"})
+    assert resp_auth.status_code == status.HTTP_200_OK
+    assert resp_auth.json()["id"] == stealth_demo_alert.id
+
 
 

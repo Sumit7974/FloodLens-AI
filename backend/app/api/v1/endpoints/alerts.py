@@ -22,11 +22,20 @@ router = APIRouter(prefix="/alerts", tags=["Alerts"])
 
 
 def is_demo_alert(alert: Optional[Alert]) -> bool:
-    """Identify if an alert is a demonstration or simulation alert."""
+    """Identify if an alert is a demonstration or simulation alert.
+
+    Checks:
+    1. Title prefix: [DEMO or [TEST
+    2. OperationalMode: HISTORICAL_DEMO or TEST
+    """
     if not alert:
         return False
     title = (alert.title or "").strip().upper()
-    return title.startswith("[DEMO") or title.startswith("[TEST") or alert.mode == OperationalMode.TEST
+    if title.startswith("[DEMO") or title.startswith("[TEST"):
+        return True
+    if alert.mode in (OperationalMode.HISTORICAL_DEMO, OperationalMode.TEST):
+        return True
+    return False
 
 
 @router.post(
@@ -120,7 +129,7 @@ async def list_alerts(
             query = query.filter(
                 ~Alert.title.like("[DEMO%"),
                 ~Alert.title.like("[TEST%"),
-                Alert.mode != OperationalMode.TEST,
+                ~Alert.mode.in_([OperationalMode.HISTORICAL_DEMO, OperationalMode.TEST]),
             )
 
     return query.order_by(Alert.created_at.desc()).all()

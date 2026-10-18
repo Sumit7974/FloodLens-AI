@@ -69,7 +69,6 @@ class ConnectionManager:
         user_info = self.active_connections[websocket]
         user_role = user_info.get("role")
         user_id = user_info.get("user_id")
-        user_email = user_info.get("email")
 
         # 1. Protect authority-only channels (e.g. authority_queue, authority_alerts)
         if channel.startswith("authority") and user_role not in (UserRole.AUTHORITY.value, UserRole.ADMIN.value):
@@ -81,10 +80,10 @@ class ConnectionManager:
             logger.warning("User %s attempted unauthorized subscription to channel %s", user_id, channel)
             return False
 
-        # 3. Protect demo_alerts channel: restricted to authority/admin or explicitly authorized demo participants
-        if channel == "demo_alerts" and not is_authorized_demo_user(user_id=user_id, email=user_email, role=user_role):
+        # 3. Protect demo_alerts channel: restricted to authority/admin or explicitly authorized demo participants by user ID
+        if channel == "demo_alerts" and not is_authorized_demo_user(user_id=user_id, role=user_role):
             logger.warning(
-                "Unauthorized subscription attempt to demo_alerts by user %s (role=%s). Explicit demo participant authorization required.",
+                "Unauthorized subscription attempt to demo_alerts by user %s (role=%s). Explicit user ID demo participant authorization required.",
                 user_id,
                 user_role,
             )

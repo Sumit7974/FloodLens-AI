@@ -35,6 +35,7 @@ from app.database import Base, get_db
 from app.main import create_application
 from app.models.enums import AlertStatus, AssistanceCategory, AssistanceStatus, OperationalMode, UserRole
 from app.models.user import User
+from app.services.demo_participants import demo_participant_registry
 from app.services.push_notifications import mask_device_token
 from app.websocket.connection_manager import connection_manager
 
@@ -91,6 +92,9 @@ def run_demonstration():
     db.refresh(citizen_user)
     db.refresh(participant_user)
     db.refresh(authority_user)
+
+    # Register the test participant using their actual database user ID
+    demo_participant_registry.register_participant(participant_user.id)
 
     citizen_token = create_access_token(subject=citizen_user.id, role=citizen_user.role.value)
     participant_token = create_access_token(subject=participant_user.id, role=participant_user.role.value)
