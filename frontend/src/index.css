@@ -1,0 +1,173 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --canvas-night: #000000;
+    --canvas-night-soft: #0a0a0a;
+    --hairline-on-dark: #3a3a3f;
+    --on-primary: #ffffff;
+    --on-primary-mute: #f0f0fa;
+    --ink-mute: #5a5a5f;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+    background-color: #000000;
+    color: #ffffff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+  }
+
+  /* Aerospace Mission Control scrollbar */
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #000000;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #3a3a3f;
+    border-radius: 0px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #5a5a5f;
+  }
+}
+
+/* Typography Classes per DESIGN-spacex.md */
+.font-display {
+  font-family: 'D-DIN-Bold', 'Arial Narrow', 'Barlow Condensed', Arial, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+  line-height: 1.05;
+}
+
+.font-display-hero {
+  font-family: 'D-DIN-Bold', 'Arial Narrow', 'Barlow Condensed', Arial, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 1.6px;
+  line-height: 0.95;
+}
+
+.font-micro {
+  font-family: 'D-DIN', 'Arial Narrow', 'Barlow Condensed', Arial, sans-serif;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.96px;
+  font-weight: 600;
+}
+
+/* Button & Action Geometry per DESIGN-spacex.md */
+.btn-ghost-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border-radius: 9999px;
+  border: 1px solid #ffffff;
+  background-color: transparent;
+  color: #ffffff;
+  font-family: 'D-DIN-Bold', 'Arial Narrow', 'Barlow Condensed', Arial, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.17px;
+  padding: 8px 20px;
+  transition: all 0.15s ease-in-out;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-ghost-pill:hover {
+  background-color: #ffffff;
+  color: #000000;
+}
+
+.btn-ghost-pill-subtle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border-radius: 9999px;
+  border: 1px solid #3a3a3f;
+  background-color: #000000;
+  color: #f0f0fa;
+  font-family: 'D-DIN-Bold', 'Arial Narrow', 'Barlow Condensed', Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.0px;
+  padding: 6px 14px;
+  transition: all 0.15s ease-in-out;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-ghost-pill-subtle:hover {
+  border-color: #ffffff;
+  color: #ffffff;
+}
+
+.btn-ghost-pill-active {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border-radius: 9999px;
+  border: 1px solid #ffffff;
+  background-color: #ffffff;
+  color: #000000;
+  font-family: 'D-DIN-Bold', 'Arial Narrow', 'Barlow Condensed', Arial, sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.0px;
+  padding: 6px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+/* Aerospace Surface & Card Token */
+.card-spacex {
+  background-color: #0a0a0a;
+  border: 1px solid #3a3a3f;
+  border-radius: 0px;
+}
+
+.badge-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 9999px;
+  border: 1px solid #3a3a3f;
+  background-color: #000000;
+  color: #ffffff;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.96px;
+  padding: 3px 10px;
+  font-family: 'D-DIN', 'Arial Narrow', 'Barlow Condensed', Arial, sans-serif;
+  font-weight: 600;
+}
+
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+@keyframes radar-sweep {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.animate-radar {
+  animation: radar-sweep 8s linear infinite;
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
