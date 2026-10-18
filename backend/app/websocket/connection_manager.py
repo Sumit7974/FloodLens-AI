@@ -29,7 +29,7 @@ class ConnectionManager:
         user_info = {
             "user_id": user_id,
             "role": role,
-            "channels": {"public", "alerts", "risk_updates"},
+            "channels": {"public", "alerts", "risk_updates", f"user:{user_id}"},
         }
 
         # Authority and admin users join the authority queue by default
@@ -75,9 +75,8 @@ class ConnectionManager:
 
         # 2. Protect citizen private direct channels (e.g. user:{user_id})
         if channel.startswith("user:") and channel != f"user:{user_id}":
-            if user_role not in (UserRole.AUTHORITY.value, UserRole.ADMIN.value):
-                logger.warning("Citizen %s attempted unauthorized subscription to channel %s", user_id, channel)
-                return False
+            logger.warning("User %s attempted unauthorized subscription to channel %s", user_id, channel)
+            return False
 
         if channel not in self.channel_subscribers:
             self.channel_subscribers[channel] = set()
@@ -133,6 +132,16 @@ class ConnectionManager:
                     logger.warning("Error sending to role %s: %s", role, str(exc))
                     self.disconnect(ws)
         return count
+
+    def get_user_channels(self, websocket: WebSocket) -> Set[str]:
+        """Return set of subscribed channels for a specific websocket connection."""
+        if websocket in self.active_connections:
+            return set(self.active_connections[websocket].get("channels", set()))
+        return set()
+
+    async def broadcast_to_user(self, user_id: str, event: WebSocketEvent) -> int:
+        """Broadcast an event strictly to a specific user's private channel."""
+        return await self.broadcast_to_channel(f"user:{user_id}", event)
 
 
 # Singleton instance

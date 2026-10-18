@@ -1,5 +1,5 @@
 """Pydantic API schemas for FloodLens AI."""
-from app.schemas.alert import AlertApprovalRequest, AlertCreateRequest, AlertResponse
+from app.schemas.alert import AlertApprovalRequest, AlertCreateRequest, AlertDispatchRequest, AlertResponse
 from app.schemas.assistance import AssistanceCreateRequest, AssistanceResponse, AssistanceUpdateRequest
 from app.schemas.auth import TokenPayload, TokenResponse, UserLoginRequest, UserRegisterRequest, UserResponse
 from app.schemas.common import ErrorDetail, ErrorResponse, GeoJSONFeature, GeoJSONGeometry
@@ -36,6 +36,7 @@ __all__ = [
     "AffectedSettlementsResponse",
     "AlertApprovalRequest",
     "AlertCreateRequest",
+    "AlertDispatchRequest",
     "AlertResponse",
     "AssistanceCreateRequest",
     "AssistanceResponse",

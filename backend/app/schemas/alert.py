@@ -19,6 +19,19 @@ class AlertApprovalRequest(BaseModel):
     notes: Optional[str] = Field(default=None, description="Optional audit approval note")
 
 
+class AlertDispatchRequest(BaseModel):
+    """Authority test alert dispatch request schema."""
+    notes: Optional[str] = Field(default=None, description="Optional dispatch audit note")
+    target_device_tokens: Optional[List[str]] = Field(
+        default=None,
+        description="Explicitly opted-in test device tokens for sandbox push dispatch",
+    )
+    simulated: bool = Field(
+        default=True,
+        description="Must be True to indicate simulation / sandbox test dispatch",
+    )
+
+
 class AlertResponse(BaseModel):
     """Alert response schema."""
     id: str
@@ -34,4 +47,3 @@ class AlertResponse(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
-

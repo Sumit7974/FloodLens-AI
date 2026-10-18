@@ -1,5 +1,6 @@
 """Citizen assistance requests and authority response queue."""
 from datetime import datetime, timezone
+import logging
 from typing import List, Optional
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
@@ -12,6 +13,8 @@ from app.models.user import User
 from app.schemas.assistance import AssistanceCreateRequest, AssistanceResponse, AssistanceUpdateRequest
 from app.schemas.event import WebSocketEvent
 from app.websocket.connection_manager import connection_manager
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/assistance", tags=["Assistance"])
 
@@ -41,7 +44,8 @@ async def create_assistance_request(
     db.commit()
     db.refresh(req)
 
-    # Publish notification to authority responder channel (never broadcast raw coordinates publicly)
+    # Publish notification exclusively to authority responder channel.
+    # PRIVACY SAFEGUARD: Never broadcast raw coordinates, personal details, or citizen IDs publicly.
     event = WebSocketEvent(
         event_id=f"evt_req_{req.id}",
         type=EventType.ASSISTANCE_CREATED.value,
@@ -64,13 +68,43 @@ async def get_my_assistance_requests(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> List[AssistanceRequest]:
-    """Retrieve personal request history."""
+    """Retrieve personal request history. Citizens can strictly view only their own requests."""
     return (
         db.query(AssistanceRequest)
         .filter(AssistanceRequest.citizen_id == current_user.id)
         .order_by(AssistanceRequest.created_at.desc())
         .all()
     )
+
+
+@router.get(
+    "/{request_id}",
+    response_model=AssistanceResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get single assistance request by ID with ownership verification",
+)
+async def get_assistance_request(
+    request_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> AssistanceRequest:
+    """Retrieve specific assistance request.
+
+    Citizens can strictly access only their own requests.
+    Authorities and admins can view any request in the response queue.
+    """
+    req = db.query(AssistanceRequest).filter(AssistanceRequest.id == request_id).first()
+    if not req:
+        raise NotFoundError(message=f"Assistance request '{request_id}' not found", code="REQUEST_NOT_FOUND")
+
+    is_authority = current_user.role in (UserRole.AUTHORITY, UserRole.ADMIN)
+    if not is_authority and req.citizen_id != current_user.id:
+        raise ForbiddenError(
+            message="Citizens may only access their own assistance requests.",
+            code="FORBIDDEN_REQUEST_ACCESS",
+        )
+
+    return req
 
 
 @router.get(
@@ -103,7 +137,11 @@ async def update_assistance_status(
     current_user: User = Depends(require_roles([UserRole.AUTHORITY, UserRole.ADMIN])),
     db: Session = Depends(get_db),
 ) -> AssistanceRequest:
-    """Update status, assign responder, and record resolution notes."""
+    """Update status, assign responder, and record resolution notes.
+
+    Emits authenticated, user-specific WebSocket notification to citizen's private channel
+    and notifies responder queue without exposing personal data publicly.
+    """
     req = db.query(AssistanceRequest).filter(AssistanceRequest.id == request_id).first()
     if not req:
         raise NotFoundError(message=f"Assistance request '{request_id}' not found", code="REQUEST_NOT_FOUND")
@@ -117,14 +155,33 @@ async def update_assistance_status(
     db.commit()
     db.refresh(req)
 
-    # Notify WebSocket subscribers of status update
-    event = WebSocketEvent(
-        event_id=f"evt_update_{req.id}",
+    now = datetime.now(timezone.utc)
+
+    # 1. User-specific private notification to the citizen
+    citizen_event = WebSocketEvent(
+        event_id=f"evt_update_user_{req.id}_{int(now.timestamp())}",
         type=EventType.ASSISTANCE_UPDATED.value,
-        timestamp=datetime.now(timezone.utc),
+        timestamp=now,
         resource_id=req.id,
-        metadata={"new_status": req.status.value},
+        metadata={
+            "status": req.status.value,
+            "status_notes": req.status_notes,
+            "assigned_to": req.assigned_to,
+        },
     )
-    await connection_manager.broadcast_to_channel("authority_queue", event)
+    await connection_manager.broadcast_to_channel(f"user:{req.citizen_id}", citizen_event)
+
+    # 2. Operational notification to authority responder queue
+    auth_event = WebSocketEvent(
+        event_id=f"evt_update_auth_{req.id}_{int(now.timestamp())}",
+        type=EventType.ASSISTANCE_UPDATED.value,
+        timestamp=now,
+        resource_id=req.id,
+        metadata={
+            "new_status": req.status.value,
+            "assigned_to": req.assigned_to,
+        },
+    )
+    await connection_manager.broadcast_to_channel("authority_queue", auth_event)
 
     return req
