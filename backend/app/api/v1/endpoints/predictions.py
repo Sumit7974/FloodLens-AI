@@ -166,24 +166,24 @@ async def get_latest_forecast(
     location_id: str = Query(..., description="Target location / settlement ID"),
     db: Session = Depends(get_db),
 ) -> ForecastResponse:
-    """Retrieve latest forecast run and horizons for a location from database."""
-    latest_pred = (
-        db.query(RiskPrediction)
+    """Retrieve latest forecast run and horizons for a location, selected by newest issued_at timestamp."""
+    latest_run = (
+        db.query(ForecastRun)
+        .join(RiskPrediction, RiskPrediction.forecast_run_id == ForecastRun.id)
         .filter(RiskPrediction.location_id == location_id)
-        .order_by(RiskPrediction.valid_at.desc())
+        .order_by(ForecastRun.issued_at.desc(), ForecastRun.created_at.desc())
         .first()
     )
 
-    if not latest_pred:
+    if not latest_run:
         raise DataUnavailableError(
             message=f"No forecast records currently available for location '{location_id}'",
             code="FORECAST_UNAVAILABLE",
         )
 
-    forecast_run = latest_pred.forecast_run
     all_horizons = (
         db.query(RiskPrediction)
-        .filter(RiskPrediction.forecast_run_id == forecast_run.id, RiskPrediction.location_id == location_id)
+        .filter(RiskPrediction.forecast_run_id == latest_run.id, RiskPrediction.location_id == location_id)
         .order_by(RiskPrediction.horizon_hours.asc())
         .all()
     )
@@ -198,14 +198,14 @@ async def get_latest_forecast(
     ]
 
     return ForecastResponse(
-        forecast_id=forecast_run.id,
+        forecast_id=latest_run.id,
         location_id=location_id,
-        issued_at=forecast_run.issued_at,
-        mode=forecast_run.mode.value if hasattr(forecast_run.mode, "value") else str(forecast_run.mode),
-        model_version=forecast_run.model_version,
+        issued_at=latest_run.issued_at,
+        mode=latest_run.mode.value if hasattr(latest_run.mode, "value") else str(latest_run.mode),
+        model_version=latest_run.model_version,
         data_quality=all_horizons[0].data_quality.value if all_horizons else "partial",
         horizons=horizons_data,
-        limitations=forecast_run.limitations or [],
+        limitations=latest_run.limitations or [],
     )
 
 

@@ -261,22 +261,39 @@ async def get_affected_settlements(
             region_id=event.region_id,
             extent_id=None,
             observed_at=None,
+            total_settlements_evaluated=0,
             total_settlements_affected=0,
             affected_settlements=[],
             status="no_extent_available",
+            notes="No flood extent has been observed or imported for this event.",
         )
 
     # Perform actual PostGIS / spatial intersection
-    affected = get_affected_settlements_spatial(db, extent)
+    affected, total_evaluated = get_affected_settlements_spatial(db, extent)
+
+    if total_evaluated == 0:
+        return AffectedSettlementsResponse(
+            event_id=event_id,
+            region_id=event.region_id,
+            extent_id=extent.id,
+            observed_at=extent.observed_at,
+            total_settlements_evaluated=0,
+            total_settlements_affected=0,
+            affected_settlements=[],
+            status="no_settlement_data",
+            notes="No settlement GIS layers are available for spatial intersection in this region.",
+        )
 
     return AffectedSettlementsResponse(
         event_id=event_id,
         region_id=event.region_id,
         extent_id=extent.id,
         observed_at=extent.observed_at,
+        total_settlements_evaluated=total_evaluated,
         total_settlements_affected=len(affected),
         affected_settlements=affected,
         status="completed",
+        notes=None,
     )
 
 
@@ -351,7 +368,7 @@ async def get_flood_report(event_id: str, db: Session = Depends(get_db)) -> Floo
     if extent:
         extent_observed_at = extent.observed_at
         extent_area_km2 = extent.area_km2
-        affected = get_affected_settlements_spatial(db, extent)
+        affected, _ = get_affected_settlements_spatial(db, extent)
         affected_count = len(affected)
         asset_metrics = get_exposed_assets_spatial(db, extent)
         roads_km = asset_metrics["roads_exposed_km"]
@@ -369,7 +386,7 @@ async def get_flood_report(event_id: str, db: Session = Depends(get_db)) -> Floo
         roads_exposed_km=roads_km,
         structures_exposed_count=structures_count,
         cropland_exposed_ha=cropland_ha,
-        report_generated_at=datetime.now(timezone.utc),
-        status="generated",
-        download_url=f"/api/v1/flood-events/{event_id}/report/download",
+        report_generated_at=None,
+        status="summary_available" if extent else "pending_data",
+        download_url=None,
     )

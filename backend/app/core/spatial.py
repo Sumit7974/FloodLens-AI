@@ -169,18 +169,25 @@ def calculate_area_km2_from_geometry(geom_val: Any) -> float:
 def get_affected_settlements_spatial(
     db: Session,
     flood_extent: FloodExtent,
-) -> List[Dict[str, Any]]:
+) -> Tuple[List[Dict[str, Any]], int]:
     """Execute spatial intersection between a flood extent and mapped settlements (locations).
 
+    Returns a tuple of (affected_settlements_list, total_settlements_evaluated).
     Supports both live PostGIS (PostgreSQL) using ST_Intersects and SQLite fallback using Shapely.
+    Avoids unsupported population claims by distinguishing settlement population from verified exposure.
     """
     if not flood_extent.geometry:
-        return []
+        return [], 0
 
     is_postgres = False
     bind = db.get_bind()
     if bind is not None and getattr(bind.dialect, "name", None) == "postgresql":
         is_postgres = True
+
+    # Count total mapped settlements available for evaluation
+    total_evaluated = db.query(Location).filter(Location.geometry.isnot(None)).count()
+    if total_evaluated == 0:
+        return [], 0
 
     affected: List[Dict[str, Any]] = []
 
@@ -211,16 +218,33 @@ def get_affected_settlements_spatial(
             loc_geojson = json.loads(geojson_str) if geojson_str else None
             status_desc = "inundated"
             if area_km2 is not None and area_km2 > 0:
-                status_desc = "partially_inundated" if area_km2 < 5.0 else "severely_inundated"
+                status_desc = "partially_inundated" if area_km2 < 5.0 else "inundated"
 
             meta_dict = meta if isinstance(meta, dict) else {}
+            # Total administrative census population
+            total_pop = meta_dict.get("population") or meta_dict.get("total_population")
+            if total_pop is not None:
+                try:
+                    total_pop = int(total_pop)
+                except (ValueError, TypeError):
+                    total_pop = None
+
+            # Only report population_exposed if verified evidence or explicit survey backing exists
+            verified_exposed = meta_dict.get("verified_population_exposed") or meta_dict.get("population_exposed")
+            if verified_exposed is not None:
+                try:
+                    verified_exposed = int(verified_exposed)
+                except (ValueError, TypeError):
+                    verified_exposed = None
+
             affected.append({
                 "settlement_id": loc_id,
                 "name": name,
                 "admin_level": admin_level,
                 "exposure_status": status_desc,
                 "intersection_area_km2": float(area_km2) if area_km2 is not None else None,
-                "population_exposed": meta_dict.get("population", meta_dict.get("estimated_population")),
+                "population_exposed": verified_exposed,
+                "settlement_population": total_pop,
                 "crs_source": crs_source,
                 "geometry": loc_geojson,
                 "metadata": meta_dict,
@@ -229,7 +253,7 @@ def get_affected_settlements_spatial(
         # SQLite fallback using Shapely
         extent_shp = geometry_to_shapely(flood_extent.geometry)
         if extent_shp is None or extent_shp.is_empty:
-            return []
+            return [], total_evaluated
 
         locations = db.query(Location).filter(Location.geometry.isnot(None)).all()
         for loc in locations:
@@ -245,24 +269,39 @@ def get_affected_settlements_spatial(
                     try:
                         inter = extent_shp.intersection(loc_shp)
                         area_km2 = calculate_area_km2_from_geometry(inter)
-                        status_desc = "partially_inundated" if area_km2 < 5.0 else "severely_inundated"
+                        status_desc = "partially_inundated" if area_km2 < 5.0 else "inundated"
                     except Exception:
                         pass
 
                 meta_dict = loc.metadata_json if isinstance(loc.metadata_json, dict) else {}
+                total_pop = meta_dict.get("population") or meta_dict.get("total_population")
+                if total_pop is not None:
+                    try:
+                        total_pop = int(total_pop)
+                    except (ValueError, TypeError):
+                        total_pop = None
+
+                verified_exposed = meta_dict.get("verified_population_exposed") or meta_dict.get("population_exposed")
+                if verified_exposed is not None:
+                    try:
+                        verified_exposed = int(verified_exposed)
+                    except (ValueError, TypeError):
+                        verified_exposed = None
+
                 affected.append({
                     "settlement_id": loc.id,
                     "name": loc.name,
                     "admin_level": loc.admin_level,
                     "exposure_status": status_desc,
                     "intersection_area_km2": area_km2,
-                    "population_exposed": meta_dict.get("population", meta_dict.get("estimated_population")),
+                    "population_exposed": verified_exposed,
+                    "settlement_population": total_pop,
                     "crs_source": loc.crs_source,
                     "geometry": loc_geojson,
                     "metadata": meta_dict,
                 })
 
-    return affected
+    return affected, total_evaluated
 
 
 def get_exposed_assets_spatial(

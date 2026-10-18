@@ -136,21 +136,22 @@ async def create_satellite_job(
     summary="Get status of satellite processing job",
 )
 async def get_satellite_job_status(job_id: str) -> Dict[str, Any]:
-    """Poll progress of a background satellite processing job."""
-    if job_id in _SATELLITE_JOBS:
-        job = _SATELLITE_JOBS[job_id]
-        return {
-            "job_id": job_id,
-            "status": job["status"],
-            "progress_percent": job.get("progress_percent", 100),
-            "method": job.get("method"),
-            "event_id": job.get("event_id"),
-            "requested_by": job.get("requested_by"),
-        }
+    """Poll progress of a background satellite processing job. Unknown IDs return 404."""
+    if job_id not in _SATELLITE_JOBS:
+        raise NotFoundError(
+            message=f"Satellite processing job '{job_id}' not found",
+            code="JOB_NOT_FOUND",
+        )
 
+    job = _SATELLITE_JOBS[job_id]
+    created_at_val = job.get("created_at")
     return {
         "job_id": job_id,
-        "status": "completed",
-        "progress_percent": 100,
-        "result_refs": {},
+        "status": job["status"],
+        "progress_percent": job.get("progress_percent", 0),
+        "method": job.get("method"),
+        "event_id": job.get("event_id"),
+        "scene_id": job.get("scene_id"),
+        "requested_by": job.get("requested_by"),
+        "created_at": created_at_val.isoformat() if hasattr(created_at_val, "isoformat") else created_at_val,
     }

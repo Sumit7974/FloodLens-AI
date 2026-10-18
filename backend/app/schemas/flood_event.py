@@ -75,9 +75,16 @@ class AffectedSettlementItem(BaseModel):
     settlement_id: str
     name: str
     admin_level: int
-    exposure_status: str = Field(..., description="inundated, partially_inundated, or exposed")
+    exposure_status: str = Field(..., description="inundated, partially_inundated, or boundary_intersected")
     intersection_area_km2: Optional[float] = None
-    population_exposed: Optional[int] = None
+    population_exposed: Optional[int] = Field(
+        default=None,
+        description="Explicitly verified population exposure count; None if unverified or without building-level survey",
+    )
+    settlement_population: Optional[int] = Field(
+        default=None,
+        description="Total administrative population of the settlement from census metadata, if available",
+    )
     crs_source: Optional[str] = "EPSG:4326"
     geometry: Optional[Dict[str, Any]] = None
     metadata: Optional[Dict[str, Any]] = None
@@ -89,9 +96,23 @@ class AffectedSettlementsResponse(BaseModel):
     region_id: str
     extent_id: Optional[str] = None
     observed_at: Optional[datetime] = None
-    total_settlements_affected: int
-    affected_settlements: List[AffectedSettlementItem]
-    status: str = Field(..., description="completed, no_extent_available, or empty")
+    total_settlements_evaluated: int = Field(
+        default=0,
+        description="Total mapped settlements checked for intersection in the study area",
+    )
+    total_settlements_affected: int = Field(
+        default=0,
+        description="Number of settlements physically intersecting the observed flood extent",
+    )
+    affected_settlements: List[AffectedSettlementItem] = Field(default_factory=list)
+    status: str = Field(
+        ...,
+        description="Evaluation status: completed (evaluated), no_settlement_data (missing GIS layers), or no_extent_available",
+    )
+    notes: Optional[str] = Field(
+        default=None,
+        description="Caveats regarding settlement completeness or absence of ground-verified population surveys",
+    )
 
 
 class ExposedAssetsResponse(BaseModel):
@@ -105,7 +126,7 @@ class ExposedAssetsResponse(BaseModel):
 
 
 class FloodReportResponse(BaseModel):
-    """Downloadable impact assessment report metadata schema."""
+    """Synthesized impact assessment report metadata schema."""
     event_id: str
     event_name: str
     region_id: str
@@ -116,6 +137,15 @@ class FloodReportResponse(BaseModel):
     roads_exposed_km: float
     structures_exposed_count: int
     cropland_exposed_ha: float
-    report_generated_at: datetime
-    status: str
-    download_url: Optional[str] = None
+    report_generated_at: Optional[datetime] = Field(
+        default=None,
+        description="Timestamp when physical report file was generated; null when no physical export artifact exists",
+    )
+    status: str = Field(
+        default="summary_available",
+        description="summary_available, pending_generation, or generated",
+    )
+    download_url: Optional[str] = Field(
+        default=None,
+        description="Download URL to physical report artifact; null when no downloadable artifact is generated",
+    )

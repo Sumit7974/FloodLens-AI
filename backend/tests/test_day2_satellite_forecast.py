@@ -463,7 +463,8 @@ def test_affected_settlements_spatial_intersection(client: TestClient, authority
     # Verify settlement metadata and exposure details
     inside_match = next(s for s in data["affected_settlements"] if s["settlement_id"] == loc_inside_id)
     assert inside_match["name"] == "Barahachhetra Ward 2"
-    assert inside_match["population_exposed"] == 3850
+    assert inside_match["settlement_population"] == 3850
+    assert inside_match["population_exposed"] is None
     assert "inundated" in inside_match["exposure_status"]
 
 
@@ -515,8 +516,9 @@ def test_exposed_assets_and_flood_report(client: TestClient, authority_token: st
     report = report_res.json()
     assert report["event_id"] == evt_id
     assert report["extent_area_km2"] == 45.0
-    assert report["status"] == "generated"
-    assert report["report_generated_at"] is not None
+    assert report["status"] == "summary_available"
+    assert report["report_generated_at"] is None
+    assert report["download_url"] is None
 
 
 # ==============================================================================
@@ -706,3 +708,309 @@ def test_create_and_list_locations(client: TestClient, authority_token: str):
     list_res = client.get("/api/v1/locations?admin_level=3")
     assert list_res.status_code == status.HTTP_200_OK
     assert any(l["id"] == loc_id for l in list_res.json())
+
+
+# ==============================================================================
+# 8. Day 2 Review Regression Tests
+# ==============================================================================
+def test_satellite_job_unknown_id_returns_404(client: TestClient):
+    """Unknown satellite job IDs must truthfully return 404 with JOB_NOT_FOUND error code."""
+    res = client.get("/api/v1/satellite/jobs/sat_job_nonexistent_xyz999")
+    assert res.status_code == status.HTTP_404_NOT_FOUND
+    body = res.json()
+    assert "error" in body
+    assert body["error"]["code"] == "JOB_NOT_FOUND"
+
+
+def test_latest_forecast_selected_by_issued_at_not_valid_at(client: TestClient, authority_token: str):
+    """Latest forecast must be ordered by issued_at descending, not valid_at.
+
+    A forecast issued later with an earlier valid_at horizon (+1h) must take precedence
+    over an older forecast issued earlier with a later valid_at horizon (+6h).
+    """
+    loc_id = f"loc_forecast_order_{uuid.uuid4().hex[:6]}"
+    client.post(
+        "/api/v1/locations",
+        json={
+            "id": loc_id,
+            "name": "Horizon Ordering Settlement",
+            "admin_level": 4,
+            "geometry": {"type": "Point", "coordinates": [87.12, 26.62]},
+        },
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+
+    t0 = datetime.now(timezone.utc) - timedelta(hours=3)
+    t1 = datetime.now(timezone.utc) - timedelta(hours=1)
+
+    # Older forecast run (issued at t0) with +6h horizon (valid at t0 + 6h = now + 3h)
+    client.post(
+        "/api/v1/predictions/ingest",
+        json={
+            "location_id": loc_id,
+            "issued_at": t0.isoformat(),
+            "mode": "historical_demo",
+            "model_version": "v1-older-run",
+            "horizons": [
+                {"hours": 6, "risk_level": "high", "calibrated_probability": 0.88},
+            ],
+        },
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+
+    # Newer forecast run (issued at t1, t1 > t0) with +1h horizon (valid at t1 + 1h = now, which is BEFORE t0+6h)
+    client.post(
+        "/api/v1/predictions/ingest",
+        json={
+            "location_id": loc_id,
+            "issued_at": t1.isoformat(),
+            "mode": "historical_demo",
+            "model_version": "v2-fresher-run",
+            "horizons": [
+                {"hours": 1, "risk_level": "low", "calibrated_probability": 0.20},
+            ],
+        },
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+
+    # Query latest via /predictions/latest
+    latest_res = client.get(f"/api/v1/predictions/latest?location_id={loc_id}")
+    assert latest_res.status_code == status.HTTP_200_OK
+    latest_data = latest_res.json()
+    assert latest_data["model_version"] == "v2-fresher-run"
+    assert latest_data["horizons"][0]["hours"] == 1
+    assert latest_data["horizons"][0]["risk_level"] == "low"
+
+    # Query latest via /predictions/locations/{location_id}
+    loc_res = client.get(f"/api/v1/predictions/locations/{loc_id}")
+    assert loc_res.status_code == status.HTTP_200_OK
+    assert loc_res.json()["model_version"] == "v2-fresher-run"
+
+
+def test_affected_settlements_no_settlement_data_when_no_locations_exist(client: TestClient, authority_token: str):
+    """When an event has an extent but no location geometries exist, status must be 'no_settlement_data'."""
+    evt_id = f"evt_nosettlement_{uuid.uuid4().hex[:6]}"
+    client.post(
+        "/api/v1/flood-events",
+        json={
+            "id": evt_id,
+            "region_id": "nepal_terai",
+            "name": "No Settlement Data Test",
+            "start_at": datetime.now(timezone.utc).isoformat(),
+        },
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+    client.post(
+        f"/api/v1/flood-events/{evt_id}/extent",
+        json={
+            "observed_at": datetime.now(timezone.utc).isoformat(),
+            "method": "MNDWI",
+            "area_km2": 10.0,
+            "confidence": 0.90,
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [[85.0, 27.0], [85.1, 27.0], [85.1, 27.1], [85.0, 27.1], [85.0, 27.0]]
+                ],
+            },
+        },
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+    res = client.get(f"/api/v1/flood-events/{evt_id}/settlements")
+    assert res.status_code == status.HTTP_200_OK
+    data = res.json()
+    assert data["status"] == "no_settlement_data"
+    assert data["total_settlements_evaluated"] == 0
+    assert data["total_settlements_affected"] == 0
+    assert data["affected_settlements"] == []
+    assert data["notes"] is not None
+
+
+def test_affected_settlements_distinguishes_zero_affected_when_locations_exist(client: TestClient, authority_token: str):
+    """When locations exist in database but are outside the extent, status is 'completed' with 0 affected."""
+    evt_id = f"evt_zero_affected_{uuid.uuid4().hex[:6]}"
+    client.post(
+        "/api/v1/flood-events",
+        json={
+            "id": evt_id,
+            "region_id": "nepal_terai",
+            "name": "Zero Affected Settlements Test",
+            "start_at": datetime.now(timezone.utc).isoformat(),
+        },
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+    client.post(
+        f"/api/v1/flood-events/{evt_id}/extent",
+        json={
+            "observed_at": datetime.now(timezone.utc).isoformat(),
+            "method": "MNDWI",
+            "area_km2": 12.0,
+            "confidence": 0.90,
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [[86.0, 26.0], [86.1, 26.0], [86.1, 26.1], [86.0, 26.1], [86.0, 26.0]]
+                ],
+            },
+        },
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+
+    outside_loc_id = f"loc_safe_{uuid.uuid4().hex[:6]}"
+    client.post(
+        "/api/v1/locations",
+        json={
+            "id": outside_loc_id,
+            "name": "Distant Non-Affected Town",
+            "admin_level": 4,
+            "geometry": {"type": "Point", "coordinates": [80.00, 20.00]},
+        },
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+
+    res = client.get(f"/api/v1/flood-events/{evt_id}/settlements")
+    assert res.status_code == status.HTTP_200_OK
+    data = res.json()
+    assert data["status"] == "completed"
+    assert data["total_settlements_evaluated"] >= 1
+    assert data["total_settlements_affected"] == 0
+    assert len(data["affected_settlements"]) == 0
+
+
+def test_affected_settlements_avoids_unsupported_population_claim(client: TestClient, authority_token: str):
+    """Avoids unsupported population exposure claims: census population is reported as settlement_population,
+    while population_exposed is only populated if explicit verified survey data exists.
+    """
+    evt_id = f"evt_pop_{uuid.uuid4().hex[:6]}"
+    client.post(
+        "/api/v1/flood-events",
+        json={
+            "id": evt_id,
+            "region_id": "nepal_terai",
+            "name": "Population Exposure Truthfulness Test",
+            "start_at": datetime.now(timezone.utc).isoformat(),
+        },
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+
+    client.post(
+        f"/api/v1/flood-events/{evt_id}/extent",
+        json={
+            "observed_at": datetime.now(timezone.utc).isoformat(),
+            "method": "MNDWI",
+            "area_km2": 15.0,
+            "confidence": 0.95,
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [86.00, 26.00],
+                        [86.20, 26.00],
+                        [86.20, 26.20],
+                        [86.00, 26.20],
+                        [86.00, 26.00],
+                    ]
+                ],
+            },
+        },
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+
+    # Settlement 1: Only administrative census population, no ground survey
+    loc_unverified = f"loc_unverified_{uuid.uuid4().hex[:6]}"
+    client.post(
+        "/api/v1/locations",
+        json={
+            "id": loc_unverified,
+            "name": "Census Only Village",
+            "admin_level": 4,
+            "geometry": {"type": "Point", "coordinates": [86.10, 26.10]},
+            "metadata_json": {"population": 8500},
+        },
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+
+    # Settlement 2: Has verified field survey exposure count
+    loc_verified = f"loc_verified_{uuid.uuid4().hex[:6]}"
+    client.post(
+        "/api/v1/locations",
+        json={
+            "id": loc_verified,
+            "name": "Survey Verified Village",
+            "admin_level": 4,
+            "geometry": {"type": "Point", "coordinates": [86.15, 26.15]},
+            "metadata_json": {"population": 12000, "verified_population_exposed": 1450},
+        },
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+
+    res = client.get(f"/api/v1/flood-events/{evt_id}/settlements")
+    assert res.status_code == status.HTTP_200_OK
+    data = res.json()
+    assert data["status"] == "completed"
+
+    item_unverified = next((s for s in data["affected_settlements"] if s["settlement_id"] == loc_unverified), None)
+    assert item_unverified is not None
+    assert item_unverified["settlement_population"] == 8500
+    assert item_unverified["population_exposed"] is None, "Must not extrapolate total population to population_exposed"
+
+    item_verified = next((s for s in data["affected_settlements"] if s["settlement_id"] == loc_verified), None)
+    assert item_verified is not None
+    assert item_verified["settlement_population"] == 12000
+    assert item_verified["population_exposed"] == 1450
+
+
+def test_flood_report_truthful_summary_status_and_no_fake_download(client: TestClient, authority_token: str):
+    """Impact summary report returns truthful status 'summary_available' and null download_url when no physical file exists."""
+    evt_id = f"evt_report_truth_{uuid.uuid4().hex[:6]}"
+    client.post(
+        "/api/v1/flood-events",
+        json={
+            "id": evt_id,
+            "region_id": "nepal_terai",
+            "name": "Report Truthfulness Test",
+            "start_at": datetime.now(timezone.utc).isoformat(),
+        },
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+
+    # Before extent is imported
+    rep_before = client.get(f"/api/v1/flood-events/{evt_id}/report")
+    assert rep_before.status_code == status.HTTP_200_OK
+    body_before = rep_before.json()
+    assert body_before["status"] == "pending_data"
+    assert body_before["download_url"] is None
+    assert body_before["report_generated_at"] is None
+
+    # After extent is imported
+    client.post(
+        f"/api/v1/flood-events/{evt_id}/extent",
+        json={
+            "observed_at": datetime.now(timezone.utc).isoformat(),
+            "method": "MNDWI",
+            "area_km2": 32.0,
+            "confidence": 0.90,
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [86.50, 26.50],
+                        [86.70, 26.50],
+                        [86.70, 26.70],
+                        [86.50, 26.70],
+                        [86.50, 26.50],
+                    ]
+                ],
+            },
+        },
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+
+    rep_after = client.get(f"/api/v1/flood-events/{evt_id}/report")
+    assert rep_after.status_code == status.HTTP_200_OK
+    body_after = rep_after.json()
+    assert body_after["status"] == "summary_available"
+    assert body_after["download_url"] is None
+    assert body_after["report_generated_at"] is None
+    assert body_after["extent_area_km2"] == 32.0
+

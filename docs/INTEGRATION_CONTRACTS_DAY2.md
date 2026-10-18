@@ -91,7 +91,15 @@ Content-Type: application/json
 
 ---
 
-### 1.2 Georeferenced Flood Extent Ingestion
+### 1.2 Satellite Processing Jobs
+**Endpoints**:
+- `POST /api/v1/satellite/jobs` (Authority/Admin): Trigger automated index calculation (e.g. `NDWI`, `MNDWI`, `SAR_CHANGE`). Returns `202 Accepted` with `job_id` and initial `status: "queued"`.
+- `GET /api/v1/satellite/jobs/{job_id}` (Public/Authority): Poll asynchronous job state (`queued`, `processing`, `completed`, `failed`).
+  *Truthful Status Guarantee*: Unknown or non-existent job IDs return HTTP `404 Not Found` with `code: "JOB_NOT_FOUND"`.
+
+---
+
+### 1.3 Georeferenced Flood Extent Ingestion
 **Endpoint**: `POST /api/v1/flood-events/{event_id}/extent`  
 **Access**: Authority or Admin Bearer Token  
 **Summary**: Stores satellite-derived flood extent polygons in PostGIS and broadcasts `flood_extent.updated`.
@@ -139,7 +147,7 @@ Returns `FloodExtentResponse` including the parsed `geometry` as an RFC 7946 Geo
 
 ---
 
-### 1.3 Settlement Boundary & Point Ingestion
+### 1.4 Settlement Boundary & Point Ingestion
 **Endpoint**: `POST /api/v1/locations`  
 **Access**: Authority or Admin Bearer Token  
 **Summary**: Ingests mapped settlement points or polygon boundaries for administrative spatial intersection.
@@ -173,16 +181,43 @@ Returns `FloodExtentResponse` including the parsed `geometry` as an RFC 7946 Geo
 
 ---
 
-### 1.4 Geospatial Query Endpoints Produced for Clients
+### 1.5 Geospatial Query Endpoints Produced for Clients
 Member 2's outputs are instantly queryable through these backend endpoints:
 
-| Method | Path | Output |
-|---|---|---|
-| `GET` | `/api/v1/flood-events/{event_id}/extent` | Full extent metadata with actual GeoJSON MultiPolygon |
-| `GET` | `/api/v1/flood-events/{event_id}/extent/geojson` | Direct RFC 7946 GeoJSON Feature for web maps |
-| `GET` | `/api/v1/flood-events/{event_id}/settlements` | Live spatial intersection returning exposed settlements, area, and population |
-| `GET` | `/api/v1/flood-events/{event_id}/assets` | Critical asset intersection (exposed roads km, structures count, cropland ha) |
-| `GET` | `/api/v1/flood-events/{event_id}/report` | Synthesized flood impact assessment report |
+| Method | Path | Output | Status & Data Integrity Guarantees |
+|---|---|---|---|
+| `GET` | `/api/v1/flood-events/{event_id}/extent` | Full extent metadata with actual GeoJSON MultiPolygon | Returns 404 `EXTENT_NOT_FOUND` if not yet observed. |
+| `GET` | `/api/v1/flood-events/{event_id}/extent/geojson` | Direct RFC 7946 GeoJSON Feature for web maps | GeoJSON Feature with properties and coordinates. |
+| `GET` | `/api/v1/flood-events/{event_id}/settlements` | Live spatial intersection returning exposed settlements | Distinguishes `no_settlement_data` (0 evaluated) from `completed` (N evaluated, 0 affected). Population exposure reported only when verified; census reported separately as `settlement_population`. |
+| `GET` | `/api/v1/flood-events/{event_id}/assets` | Critical asset intersection (roads km, structures count, cropland ha) | Real spatial length and polygon counts. |
+| `GET` | `/api/v1/flood-events/{event_id}/report` | Synthesized flood impact assessment summary | Truthful status `summary_available` (or `pending_data`), `download_url: null` (no fake download links). |
+
+#### Settlement Exposure Truthfulness Spec (`GET /flood-events/{event_id}/settlements`)
+```json
+{
+  "event_id": "evt_nepal_terai_koshi",
+  "region_id": "nepal_terai",
+  "extent_id": "ext_koshi_001",
+  "observed_at": "2024-08-15T04:45:30Z",
+  "total_settlements_evaluated": 14,
+  "total_settlements_affected": 2,
+  "status": "completed",
+  "notes": null,
+  "affected_settlements": [
+    {
+      "settlement_id": "loc_barahachhetra_w2",
+      "name": "Barahachhetra Ward 2",
+      "admin_level": 4,
+      "exposure_status": "partially_inundated",
+      "intersection_area_km2": 4.12,
+      "settlement_population": 3850,
+      "population_exposed": null,
+      "crs_source": "EPSG:4326"
+    }
+  ]
+}
+```
+*Note: `status` evaluates to `no_settlement_data` when `total_settlements_evaluated == 0` (indicating missing settlement GIS layers rather than 0 risk). `population_exposed` is populated only when ground-verified field surveys exist; total census figures are strictly preserved in `settlement_population` to avoid unsupported exposure claims.*
 
 ---
 
@@ -319,6 +354,16 @@ Conforms to the exact schema defined in `DATABASE_API_EVENT_CONTRACTS.md`:
 }
 ```
 *Note: If no forecasts have been ingested, this returns `status: "no_data"` and `features: []` rather than a misleading placeholder.*
+
+---
+
+### 2.3 Location Forecast Freshness & Selection Order
+**Endpoints**:
+- `GET /api/v1/predictions/latest?location_id={location_id}`
+- `GET /api/v1/predictions/locations/{location_id}`
+
+*Freshness Order Spec*:
+The latest forecast run is selected strictly by `ForecastRun.issued_at.desc(), ForecastRun.created_at.desc()` for the specified location. Multi-horizon forecasts (+1h, +3h, +6h) have differing `valid_at` target times; sorting by `valid_at` would cause an older forecast run with a long horizon (+6h) to inappropriately shadow a newer forecast run with a shorter horizon (+1h). Sorting by `issued_at` guarantees clients always receive the freshest model run.
 
 ---
 
