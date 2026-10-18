@@ -21,7 +21,7 @@ from app.models.assistance import AssistanceRequest
 from app.models.enums import AlertStatus, AssistanceCategory, AssistanceStatus, EventType, OperationalMode, UserRole
 from app.models.user import User
 from app.schemas.alert import AlertDispatchRequest
-from app.schemas.event import WebSocketEvent
+from app.services.demo_participants import demo_participant_registry
 from app.services.push_notifications import DeliveryStatus, SandboxPushNotificationAdapter, mask_device_token, push_adapter
 from app.websocket.connection_manager import ConnectionManager, connection_manager
 
@@ -666,12 +666,25 @@ def test_demo_alerts_isolated_from_general_websocket_channel(
     authority_token: str,
 ):
     """Verify demo alerts are strictly broadcast to 'demo_alerts' and NOT 'alerts' channel."""
+    # Register an explicit demonstration participant
+    participant = User(
+        id="user_demo_part_ws",
+        email="field_tester_01@floodlens.internal",
+        hashed_password=hash_password("participantpwd"),
+        full_name="Field Test Participant",
+        role=UserRole.CITIZEN,
+        is_active=True,
+    )
+    db_session.add(participant)
+    db_session.commit()
+    participant_token = create_access_token(subject=participant.id, role="citizen")
+
     # 1. Citizen connects to default channels (public, alerts, risk_updates)
     with client.websocket_connect(f"/ws/v1/events?token={citizen_token}") as general_ws:
         general_ws.receive_json()  # connection.established
 
-        # 2. Test-client connects and explicitly subscribes to 'demo_alerts'
-        with client.websocket_connect(f"/ws/v1/events?token={citizen_token}") as demo_ws:
+        # 2. Authorized participant connects and explicitly subscribes to 'demo_alerts'
+        with client.websocket_connect(f"/ws/v1/events?token={participant_token}") as demo_ws:
             demo_ws.receive_json()  # connection.established
             demo_ws.send_json({"action": "subscribe", "channel": "demo_alerts"})
             sub_ack = demo_ws.receive_json()
@@ -720,7 +733,20 @@ def test_demo_alerts_isolated_from_public_rest_feed(
     citizen_token: str,
     authority_token: str,
 ):
-    """Verify simulation demo alerts are isolated from public REST feed unless include_demo=true."""
+    """Verify simulation demo alerts are isolated from public REST feed unless authorized participant requests include_demo=true."""
+    # Register an explicit demonstration participant
+    participant = User(
+        id="user_demo_part_rest",
+        email="demo_participant@floodlens.internal",
+        hashed_password=hash_password("participantpwd"),
+        full_name="Demo Participant User",
+        role=UserRole.CITIZEN,
+        is_active=True,
+    )
+    db_session.add(participant)
+    db_session.commit()
+    participant_token = create_access_token(subject=participant.id, role="citizen")
+
     # 1. Create and dispatch a demo alert
     demo_alert = Alert(
         id="alert_iso_rest_01",
@@ -749,15 +775,99 @@ def test_demo_alerts_isolated_from_public_rest_feed(
     feed_ids = [a["id"] for a in resp_feed.json()]
     assert demo_alert.id not in feed_ids
 
-    # 3. Citizen queries with include_demo=true — demo alert IS present
-    resp_demo_feed = client.get("/api/v1/alerts?include_demo=true", headers={"Authorization": f"Bearer {citizen_token}"})
+    # 3. Unrelated citizen attempts ?include_demo=true — strictly rejected with 403 Forbidden
+    resp_unrelated_demo = client.get("/api/v1/alerts?include_demo=true", headers={"Authorization": f"Bearer {citizen_token}"})
+    assert resp_unrelated_demo.status_code == status.HTTP_403_FORBIDDEN
+    assert resp_unrelated_demo.json()["error"]["code"] == "DEMO_ALERTS_RESTRICTED"
+
+    # 4. Authorized demo participant queries with include_demo=true — demo alert IS present
+    resp_demo_feed = client.get("/api/v1/alerts?include_demo=true", headers={"Authorization": f"Bearer {participant_token}"})
     assert resp_demo_feed.status_code == status.HTTP_200_OK
     demo_feed_ids = [a["id"] for a in resp_demo_feed.json()]
     assert demo_alert.id in demo_feed_ids
 
-    # 4. Authority queries default feed — authorities see all alerts (DRAFT, APPROVED, DISPATCHED, DEMO)
+    # 5. Authority queries default feed — authorities see all alerts (DRAFT, APPROVED, DISPATCHED, DEMO)
     resp_auth_feed = client.get("/api/v1/alerts", headers={"Authorization": f"Bearer {authority_token}"})
     assert resp_auth_feed.status_code == status.HTTP_200_OK
     auth_feed_ids = [a["id"] for a in resp_auth_feed.json()]
     assert demo_alert.id in auth_feed_ids
+
+
+def test_unrelated_citizen_and_anonymous_denied_demo_alerts(
+    client: TestClient,
+    db_session: Session,
+    test_citizen_user: User,
+    test_authority_user: User,
+    citizen_token: str,
+    authority_token: str,
+):
+    """Verify unrelated citizen and anonymous callers cannot access demo alerts or subscribe to demo_alerts."""
+    # Provision authorized demo participant
+    participant = User(
+        id="user_part_neg_test",
+        email="mobile_tester_01@floodlens.internal",
+        hashed_password=hash_password("testerpwd"),
+        full_name="Mobile Tester",
+        role=UserRole.CITIZEN,
+        is_active=True,
+    )
+    db_session.add(participant)
+
+    # Provision demo alert
+    demo_alert = Alert(
+        id="alert_demo_security_01",
+        area_id="loc_sec_test",
+        title="[DEMO ONLY] Fluvial Surge Model",
+        message="Simulation exercise warning",
+        status=AlertStatus.DISPATCHED,
+        created_by=test_authority_user.id,
+        approved_by=test_authority_user.id,
+        issued_at=datetime.now(timezone.utc),
+        mode=OperationalMode.HISTORICAL_DEMO,
+        target_channels=["in_app"],
+    )
+    db_session.add(demo_alert)
+    db_session.commit()
+
+    participant_token = create_access_token(subject=participant.id, role="citizen")
+
+    # 1. Unrelated citizen WebSocket subscription to demo_alerts is FORBIDDEN
+    with client.websocket_connect(f"/ws/v1/events?token={citizen_token}") as ws:
+        ws.receive_json()  # connection.established
+        ws.send_json({"action": "subscribe", "channel": "demo_alerts"})
+        sub_resp = ws.receive_json()
+        assert sub_resp["type"] == "subscription.result"
+        assert sub_resp["channel"] == "demo_alerts"
+        assert sub_resp["status"] == "forbidden"
+
+    # 2. Anonymous caller GET /alerts?include_demo=true -> 403 Forbidden
+    resp_anon_include = client.get("/api/v1/alerts?include_demo=true")
+    assert resp_anon_include.status_code == status.HTTP_403_FORBIDDEN
+    assert resp_anon_include.json()["error"]["code"] == "DEMO_ALERTS_RESTRICTED"
+
+    # 3. Unrelated citizen GET /alerts?include_demo=true -> 403 Forbidden
+    resp_cit_include = client.get("/api/v1/alerts?include_demo=true", headers={"Authorization": f"Bearer {citizen_token}"})
+    assert resp_cit_include.status_code == status.HTTP_403_FORBIDDEN
+    assert resp_cit_include.json()["error"]["code"] == "DEMO_ALERTS_RESTRICTED"
+
+    # 4. Anonymous caller GET /alerts/{alert_id} for demo alert -> 403 Forbidden
+    resp_anon_get = client.get(f"/api/v1/alerts/{demo_alert.id}")
+    assert resp_anon_get.status_code == status.HTTP_403_FORBIDDEN
+    assert resp_anon_get.json()["error"]["code"] == "DEMO_ALERT_RESTRICTED"
+
+    # 5. Unrelated citizen GET /alerts/{alert_id} for demo alert -> 403 Forbidden
+    resp_cit_get = client.get(f"/api/v1/alerts/{demo_alert.id}", headers={"Authorization": f"Bearer {citizen_token}"})
+    assert resp_cit_get.status_code == status.HTTP_403_FORBIDDEN
+    assert resp_cit_get.json()["error"]["code"] == "DEMO_ALERT_RESTRICTED"
+
+    # 6. Authorized demonstration participant CAN retrieve GET /alerts/{alert_id} -> 200 OK
+    resp_part_get = client.get(f"/api/v1/alerts/{demo_alert.id}", headers={"Authorization": f"Bearer {participant_token}"})
+    assert resp_part_get.status_code == status.HTTP_200_OK
+    assert resp_part_get.json()["id"] == demo_alert.id
+
+    # 7. Authority CAN retrieve GET /alerts/{alert_id} -> 200 OK
+    resp_auth_get = client.get(f"/api/v1/alerts/{demo_alert.id}", headers={"Authorization": f"Bearer {authority_token}"})
+    assert resp_auth_get.status_code == status.HTTP_200_OK
+    assert resp_auth_get.json()["id"] == demo_alert.id
+
 

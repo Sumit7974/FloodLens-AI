@@ -12,12 +12,21 @@ from app.models.enums import AlertStatus, EventType, OperationalMode, UserRole
 from app.models.user import User
 from app.schemas.alert import AlertApprovalRequest, AlertCreateRequest, AlertDispatchRequest, AlertResponse
 from app.schemas.event import WebSocketEvent
+from app.services.demo_participants import is_authorized_for_demo_alerts
 from app.services.push_notifications import push_adapter
 from app.websocket.connection_manager import connection_manager
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/alerts", tags=["Alerts"])
+
+
+def is_demo_alert(alert: Optional[Alert]) -> bool:
+    """Identify if an alert is a demonstration or simulation alert."""
+    if not alert:
+        return False
+    title = (alert.title or "").strip().upper()
+    return title.startswith("[DEMO") or title.startswith("[TEST") or alert.mode == OperationalMode.TEST
 
 
 @router.post(
@@ -87,6 +96,15 @@ async def list_alerts(
             code="UNPUBLISHED_ALERTS_RESTRICTED",
         )
 
+    # ACCESS CONTROL SAFEGUARD:
+    # include_demo=True is strictly restricted to authorities and explicitly authorized demonstration participants.
+    # An arbitrary citizen query or anonymous caller requesting include_demo=True MUST be rejected.
+    if include_demo and not is_authorized_for_demo_alerts(current_user):
+        raise ForbiddenError(
+            message="Access to demonstration alerts (?include_demo=true) is restricted to authorities and authorized demonstration participants.",
+            code="DEMO_ALERTS_RESTRICTED",
+        )
+
     query = db.query(Alert)
     if area_id:
         query = query.filter(Alert.area_id == area_id)
@@ -97,11 +115,12 @@ async def list_alerts(
     else:
         # Non-authority users are strictly limited to DISPATCHED alerts
         query = query.filter(Alert.status == AlertStatus.DISPATCHED)
-        # Isolate demo simulation alerts from public REST feed unless explicitly requested
+        # Isolate demo simulation alerts from public REST feed unless authorized participant explicitly requested
         if not include_demo:
             query = query.filter(
                 ~Alert.title.like("[DEMO%"),
                 ~Alert.title.like("[TEST%"),
+                Alert.mode != OperationalMode.TEST,
             )
 
     return query.order_by(Alert.created_at.desc()).all()
@@ -118,7 +137,12 @@ async def get_alert(
     current_user: Optional[User] = Depends(get_optional_current_user),
     db: Session = Depends(get_db),
 ) -> Alert:
-    """Retrieve specific alert. Unpublished alerts require authority authorization."""
+    """Retrieve specific alert.
+
+    Authorization checks:
+    - Unpublished alerts (DRAFT, APPROVED) require authority authorization.
+    - Demonstration simulation alerts require authority authorization or authorized demonstration participant status.
+    """
     alert = db.query(Alert).filter(Alert.id == alert_id).first()
     if not alert:
         raise NotFoundError(message=f"Alert '{alert_id}' not found", code="ALERT_NOT_FOUND")
@@ -128,6 +152,15 @@ async def get_alert(
         raise ForbiddenError(
             message="Unpublished alerts (draft/approved) are restricted to authorized authorities.",
             code="UNPUBLISHED_ALERTS_RESTRICTED",
+        )
+
+    # ACCESS CONTROL SAFEGUARD:
+    # Demonstration simulation alerts are restricted to authorities and authorized demonstration participants.
+    # Unrelated citizens and anonymous callers are forbidden from retrieving demo alerts.
+    if is_demo_alert(alert) and not is_authorized_for_demo_alerts(current_user):
+        raise ForbiddenError(
+            message="Demonstration simulation alerts are restricted to authorities and authorized demonstration participants.",
+            code="DEMO_ALERT_RESTRICTED",
         )
 
     return alert

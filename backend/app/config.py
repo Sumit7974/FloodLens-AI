@@ -56,9 +56,23 @@ class Settings(BaseSettings):
     # Logging
     log_level: str = "INFO"
 
-    @field_validator("cors_origins", mode="before")
+    # Demo Participant Allowlist (for simulation alert access control)
+    demo_participant_ids: Union[List[str], str] = Field(
+        default_factory=list,
+        description="Allowlist of user IDs authorized for demo simulation alerts",
+    )
+    demo_participant_emails: Union[List[str], str] = Field(
+        default_factory=lambda: [
+            "demo_participant@floodlens.internal",
+            "field_tester_01@floodlens.internal",
+            "mobile_tester_01@floodlens.internal",
+        ],
+        description="Allowlist of user emails authorized for demo simulation alerts",
+    )
+
+    @field_validator("cors_origins", "demo_participant_ids", "demo_participant_emails", mode="before")
     @classmethod
-    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:
+    def assemble_string_or_list(cls, v: Union[str, List[str]]) -> List[str]:
         if isinstance(v, str):
             return [i.strip() for i in v.split(",") if i.strip()]
         return v

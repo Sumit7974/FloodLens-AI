@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional, Set
 from fastapi import WebSocket
 from app.models.enums import UserRole
 from app.schemas.event import WebSocketEvent
+from app.services.demo_participants import is_authorized_demo_user
 
 logger = logging.getLogger(__name__)
 
@@ -23,11 +24,12 @@ class ConnectionManager:
             "authority_queue": set(),
         }
 
-    async def connect(self, websocket: WebSocket, user_id: str, role: str) -> None:
+    async def connect(self, websocket: WebSocket, user_id: str, role: str, email: Optional[str] = None) -> None:
         """Accept connection, store authenticated user identity, and join default channels."""
         await websocket.accept()
         user_info = {
             "user_id": user_id,
+            "email": email,
             "role": role,
             "channels": {"public", "alerts", "risk_updates", f"user:{user_id}"},
         }
@@ -67,6 +69,7 @@ class ConnectionManager:
         user_info = self.active_connections[websocket]
         user_role = user_info.get("role")
         user_id = user_info.get("user_id")
+        user_email = user_info.get("email")
 
         # 1. Protect authority-only channels (e.g. authority_queue, authority_alerts)
         if channel.startswith("authority") and user_role not in (UserRole.AUTHORITY.value, UserRole.ADMIN.value):
@@ -76,6 +79,15 @@ class ConnectionManager:
         # 2. Protect citizen private direct channels (e.g. user:{user_id})
         if channel.startswith("user:") and channel != f"user:{user_id}":
             logger.warning("User %s attempted unauthorized subscription to channel %s", user_id, channel)
+            return False
+
+        # 3. Protect demo_alerts channel: restricted to authority/admin or explicitly authorized demo participants
+        if channel == "demo_alerts" and not is_authorized_demo_user(user_id=user_id, email=user_email, role=user_role):
+            logger.warning(
+                "Unauthorized subscription attempt to demo_alerts by user %s (role=%s). Explicit demo participant authorization required.",
+                user_id,
+                user_role,
+            )
             return False
 
         if channel not in self.channel_subscribers:

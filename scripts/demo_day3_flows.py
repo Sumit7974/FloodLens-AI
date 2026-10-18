@@ -72,6 +72,13 @@ def run_demonstration():
         role=UserRole.CITIZEN,
         is_active=True,
     )
+    participant_user = User(
+        email="demo_participant@floodlens.internal",
+        hashed_password=hash_password("participantpassword"),
+        full_name="Authorized Demonstration Participant",
+        role=UserRole.CITIZEN,
+        is_active=True,
+    )
     authority_user = User(
         email="commander.demo@floodlens.org",
         hashed_password=hash_password("authoritypassword"),
@@ -79,17 +86,20 @@ def run_demonstration():
         role=UserRole.AUTHORITY,
         is_active=True,
     )
-    db.add_all([citizen_user, authority_user])
+    db.add_all([citizen_user, participant_user, authority_user])
     db.commit()
     db.refresh(citizen_user)
+    db.refresh(participant_user)
     db.refresh(authority_user)
 
     citizen_token = create_access_token(subject=citizen_user.id, role=citizen_user.role.value)
+    participant_token = create_access_token(subject=participant_user.id, role=participant_user.role.value)
     authority_token = create_access_token(subject=authority_user.id, role=authority_user.role.value)
 
     logger.info("Test Accounts Created:")
-    logger.info("  Citizen:   id=%s, role=%s", citizen_user.id, citizen_user.role.value)
-    logger.info("  Authority: id=%s, role=%s", authority_user.id, authority_user.role.value)
+    logger.info("  Citizen:     id=%s, role=%s", citizen_user.id, citizen_user.role.value)
+    logger.info("  Participant: id=%s, email=%s, role=%s", participant_user.id, participant_user.email, participant_user.role.value)
+    logger.info("  Authority:   id=%s, role=%s", authority_user.id, authority_user.role.value)
 
     # ==============================================================================
     # DEMONSTRATION FLOW 1: Citizen Assistance Lifecycle & Private WebSocket Update
@@ -171,14 +181,31 @@ def run_demonstration():
     logger.info("DEMO FLOW 2: Authority Demo Alert -> Authorized Approval -> Test-Only Dispatch")
     logger.info("--------------------------------------------------------------------------------")
 
-    with client.websocket_connect(f"/ws/v1/events?token={citizen_token}") as test_client_ws:
+    # Negative Access Control Verification: Unrelated citizen cannot subscribe to demo_alerts
+    with client.websocket_connect(f"/ws/v1/events?token={citizen_token}") as unauth_ws:
+        unauth_ws.receive_json()  # connection.established
+        unauth_ws.send_json({"action": "subscribe", "channel": "demo_alerts"})
+        sub_rej = unauth_ws.receive_json()
+        assert sub_rej["type"] == "subscription.result"
+        assert sub_rej["channel"] == "demo_alerts"
+        assert sub_rej["status"] == "forbidden"
+        logger.info("[Access Control] Unrelated citizen subscription to 'demo_alerts' rejected: status=%s", sub_rej["status"])
+
+    # Negative Access Control Verification: Unrelated citizen cannot query include_demo=true
+    resp_unauth_inc = client.get("/api/v1/alerts?include_demo=true", headers={"Authorization": f"Bearer {citizen_token}"})
+    assert resp_unauth_inc.status_code == 403
+    logger.info("[Access Control] Unrelated citizen ?include_demo=true query rejected: 403 Forbidden (%s)",
+                resp_unauth_inc.json()["error"]["code"])
+
+    # Authorized Demonstration Participant Flow
+    with client.websocket_connect(f"/ws/v1/events?token={participant_token}") as test_client_ws:
         test_client_ws.receive_json()  # connection.established
-        # Subscribe test client explicitly to isolated demo_alerts channel
+        # Subscribe authorized test participant explicitly to isolated demo_alerts channel
         test_client_ws.send_json({"action": "subscribe", "channel": "demo_alerts"})
         sub_ack = test_client_ws.receive_json()
         assert sub_ack["type"] == "subscription.result"
         assert sub_ack["status"] == "subscribed"
-        logger.info("[Test Client WS] Explicitly subscribed to isolated 'demo_alerts' channel.")
+        logger.info("[Test Participant WS] Authorized participant explicitly subscribed to 'demo_alerts'.")
 
         with client.websocket_connect(f"/ws/v1/events?token={authority_token}") as auth_ws:
             auth_ws.receive_json()  # connection.established
@@ -244,27 +271,40 @@ def run_demonstration():
                         alert_id, dispatched_data["status"], dispatched_data["issued_at"])
             assert dispatched_data["status"] == "dispatched"
 
-            # Step 5: Test client receives alert.published event over isolated 'demo_alerts' WebSocket channel
+            # Step 5: Authorized participant receives alert.published event over isolated 'demo_alerts' WebSocket channel
             client_evt = json.loads(test_client_ws.receive_text())
-            logger.info("[Test Client WS] Received Demo Alert Event on isolated channel: type=%s, resource_id=%s, metadata=%s",
+            logger.info("[Test Participant WS] Received Demo Alert Event on isolated channel: type=%s, resource_id=%s, metadata=%s",
                         client_evt["type"], client_evt["resource_id"], client_evt.get("metadata"))
             assert client_evt["type"] == "alert.published"
             assert client_evt["resource_id"] == alert_id
             assert client_evt["metadata"]["is_test"] is True
             assert client_evt["metadata"]["simulation"] is True
             assert client_evt["metadata"]["simulated_only"] is True
-            logger.info("[Test Client WS] Verified SIMULATED_ONLY alert event received. No operational warnings issued.")
+            logger.info("[Test Participant WS] Verified SIMULATED_ONLY alert event received. No operational warnings issued.")
 
-            # Step 6: Verify isolation in REST feed
-            # Default public feed excludes simulation demo alerts:
+            # Step 6: Verify isolation and access control in REST feed
+            # 6a: Default public feed excludes simulation demo alerts:
             resp_cit_normal = client.get("/api/v1/alerts", headers={"Authorization": f"Bearer {citizen_token}"})
             assert all(a["id"] != alert_id for a in resp_cit_normal.json())
             logger.info("[Isolation Check] Dispatched demo alert is excluded from standard public feed.")
 
-            # With include_demo=true:
-            resp_cit_demo = client.get("/api/v1/alerts?include_demo=true", headers={"Authorization": f"Bearer {citizen_token}"})
-            assert any(a["id"] == alert_id for a in resp_cit_demo.json())
-            logger.info("[REST Query] Dispatched demo alert is accessible with include_demo=true and clear test labelling.")
+            # 6b: Unrelated citizen direct GET of demo alert is rejected 403 Forbidden
+            resp_cit_direct = client.get(f"/api/v1/alerts/{alert_id}", headers={"Authorization": f"Bearer {citizen_token}"})
+            assert resp_cit_direct.status_code == 403
+            logger.info("[Access Control] Unrelated citizen direct GET of demo alert rejected: 403 Forbidden (%s)",
+                        resp_cit_direct.json()["error"]["code"])
+
+            # 6c: Authorized demo participant queries with include_demo=true
+            resp_part_demo = client.get("/api/v1/alerts?include_demo=true", headers={"Authorization": f"Bearer {participant_token}"})
+            assert resp_part_demo.status_code == 200
+            assert any(a["id"] == alert_id for a in resp_part_demo.json())
+            logger.info("[REST Query] Authorized participant queried demo alert via ?include_demo=true successfully.")
+
+            # 6d: Authorized demo participant retrieves demo alert by ID directly
+            resp_part_direct = client.get(f"/api/v1/alerts/{alert_id}", headers={"Authorization": f"Bearer {participant_token}"})
+            assert resp_part_direct.status_code == 200
+            assert resp_part_direct.json()["id"] == alert_id
+            logger.info("[REST Query] Authorized participant retrieved demo alert by ID directly.")
 
     logger.info("\n================================================================================")
     logger.info("ALL DAY 3 DEMONSTRATION FLOWS COMPLETED SUCCESSFULLY AND VERIFIED!")

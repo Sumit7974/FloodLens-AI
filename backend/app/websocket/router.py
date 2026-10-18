@@ -59,7 +59,7 @@ async def websocket_events_endpoint(
     role = user.role.value
 
     # 3. Accept and Register Connection
-    await connection_manager.connect(websocket, user_id=user.id, role=role)
+    await connection_manager.connect(websocket, user_id=user.id, role=role, email=user.email)
 
     # Send initial welcome confirmation with subscribed channels and resync endpoints
     try:

@@ -52,7 +52,7 @@ Upon successful connection, the server sends a `connection.established` greeting
 | :--- | :--- | :--- |
 | `public` | `citizen`, `authority`, `admin` | Public broadcast channel |
 | `alerts` | `citizen`, `authority`, `admin` | Dispatched operational alerts only; draft/approved alerts excluded |
-| `demo_alerts` | `citizen`, `authority`, `admin` | Isolated simulation channel for historical-demo and test alerts (requires explicit opt-in subscription) |
+| `demo_alerts` | `authority`, `admin`, authorized demo participants | Isolated simulation channel for historical-demo and test alerts (restricted to authorities and explicitly authorized demo participants; arbitrary subscriptions rejected as forbidden) |
 | `risk_updates` | `citizen`, `authority`, `admin` | Regional forecast and risk changes |
 | `locations:{location_id}` | `citizen`, `authority`, `admin` | Location-specific forecasts and sensor updates |
 | `user:{user_id}` | Matching `user_id` ONLY | Strictly isolated to the specific user. No other user or authority may subscribe |
@@ -142,7 +142,7 @@ When a mobile or web client reconnects after network drop, send:
 
 - **Simulation Enforcement:** `simulated=True` is strictly mandatory for all test dispatches. Attempting to submit `simulated=False` is rejected (`HTTP 400 OPERATIONAL_DISPATCH_PROHIBITED`). Operational emergency warnings cannot be issued.
 - **Operational Mode Restriction:** All dispatches are strictly restricted to `historical_demo` or `test` mode. Attempting to dispatch alerts in `live_observation` or `model_estimate` mode is rejected (`HTTP 400 DISPATCH_RESTRICTED_TO_TEST`).
-- **Feed and Channel Isolation:** Demo and test alerts (`mode in ('historical_demo', 'test')`) are strictly isolated from general-user channels. WebSocket broadcasts are routed to `demo_alerts` instead of `alerts` / `public`. On the REST feed (`GET /api/v1/alerts`), demo simulation alerts are filtered out for citizens unless `include_demo=true` is explicitly requested.
+- **Feed, Channel, and Endpoint Access Control:** Demo simulation alerts (`mode in ('historical_demo', 'test')` or `[DEMO` / `[TEST` prefix) are accessible **ONLY** to Authority/Admin users and explicitly authorized demonstration participants. Arbitrary citizen subscriptions to WebSocket channel `demo_alerts` are rejected (`status: forbidden`). Requests by unrelated citizens or anonymous callers to `GET /api/v1/alerts?include_demo=true` or direct lookup `GET /api/v1/alerts/{alert_id}` for demo alerts are strictly denied with `HTTP 403 Forbidden` (`DEMO_ALERTS_RESTRICTED`, `DEMO_ALERT_RESTRICTED`).
 - **Visible Labelling:** Dispatched alerts are visibly labelled with `[DEMO ONLY]` or `[DEMO / TEST ONLY]` prefix in titles and `[HISTORICAL DEMO / TEST SIMULATION]` in body messages.
 - **Test Metadata:** Dispatched event payloads include `"is_test": true, "simulation": true, "simulated_only": true`.
 
