@@ -591,3 +591,173 @@ def test_alert_dispatch_with_push_tokens(
     )
     assert resp.status_code == status.HTTP_200_OK
     assert resp.json()["status"] == "dispatched"
+
+
+# ==============================================================================
+# 9. Day 3 PR Review Safeguards Regressions
+# ==============================================================================
+def test_push_adapter_never_infers_consent_from_token_text():
+    """Verify that consent is NEVER inferred from token text (e.g. 'test' or 'demo' substrings).
+
+    Only explicitly configured dummy tokens or genuinely registered test devices are accepted.
+    """
+    adapter = SandboxPushNotificationAdapter()
+
+    # 1. Token with 'test' or 'demo' in substring MUST be rejected if unregistered
+    unregistered_with_test_in_name = "ExponentPushToken[unregistered_external_test_device_9999]"
+    receipts = adapter.send_test_alert(
+        tokens=[unregistered_with_test_in_name],
+        title="[DEMO] Flash Flood Warning",
+        message="Simulated alert message",
+        is_opted_in=True,
+    )
+    assert len(receipts) == 1
+    assert receipts[0].status == DeliveryStatus.UNREGISTERED_DEVICE
+    assert "Consent is never inferred from token text" in receipts[0].error
+    assert receipts[0].token_masked == "ExponentPushToken[***9999]"
+
+    unregistered_with_demo_in_name = "ExponentPushToken[some_random_demo_token_8888]"
+    receipts_demo = adapter.send_test_alert(
+        tokens=[unregistered_with_demo_in_name],
+        title="[DEMO] Test Alert",
+        message="Simulated alert message",
+        is_opted_in=True,
+    )
+    assert len(receipts_demo) == 1
+    assert receipts_demo[0].status == DeliveryStatus.UNREGISTERED_DEVICE
+    assert "Consent is never inferred from token text" in receipts_demo[0].error
+
+    # 2. Explicitly registering device via register_test_device allows safe sandbox simulation
+    opted_in_token = "ExponentPushToken[genuinely_opted_in_device_55555]"
+    registered = adapter.register_test_device(opted_in_token)
+    assert registered is True
+    assert adapter.is_verified_test_token(opted_in_token) is True
+
+    receipts_opted_in = adapter.send_test_alert(
+        tokens=[opted_in_token],
+        title="[DEMO] Verified Test Device Alert",
+        message="Simulated test dispatch",
+        is_opted_in=True,
+    )
+    assert len(receipts_opted_in) == 1
+    assert receipts_opted_in[0].status == DeliveryStatus.SIMULATED_ONLY
+    assert receipts_opted_in[0].simulated_only is True
+    assert receipts_opted_in[0].token_masked == "ExponentPushToken[***5555]"
+
+    # 3. Explicitly configured prototype dummy tokens are accepted
+    configured_dummy = "ExponentPushToken[demo_test_device_sandbox_01]"
+    assert adapter.is_verified_test_token(configured_dummy) is True
+    receipts_dummy = adapter.send_test_alert(
+        tokens=[configured_dummy],
+        title="[DEMO] Sandbox Simulation",
+        message="Simulated dummy dispatch",
+        is_opted_in=True,
+    )
+    assert len(receipts_dummy) == 1
+    assert receipts_dummy[0].status == DeliveryStatus.SIMULATED_ONLY
+
+
+def test_demo_alerts_isolated_from_general_websocket_channel(
+    client: TestClient,
+    db_session: Session,
+    test_citizen_user: User,
+    test_authority_user: User,
+    citizen_token: str,
+    authority_token: str,
+):
+    """Verify demo alerts are strictly broadcast to 'demo_alerts' and NOT 'alerts' channel."""
+    # 1. Citizen connects to default channels (public, alerts, risk_updates)
+    with client.websocket_connect(f"/ws/v1/events?token={citizen_token}") as general_ws:
+        general_ws.receive_json()  # connection.established
+
+        # 2. Test-client connects and explicitly subscribes to 'demo_alerts'
+        with client.websocket_connect(f"/ws/v1/events?token={citizen_token}") as demo_ws:
+            demo_ws.receive_json()  # connection.established
+            demo_ws.send_json({"action": "subscribe", "channel": "demo_alerts"})
+            sub_ack = demo_ws.receive_json()
+            assert sub_ack["status"] == "subscribed"
+
+            # 3. Authority creates, approves, and dispatches a demo alert
+            alert = Alert(
+                id="alert_iso_ws_01",
+                area_id="loc_iso_ws",
+                title="[DEMO ONLY] Inundation Test",
+                message="Historical simulation event",
+                status=AlertStatus.APPROVED,
+                created_by=test_authority_user.id,
+                approved_by=test_authority_user.id,
+                mode=OperationalMode.HISTORICAL_DEMO,
+                target_channels=["in_app"],
+            )
+            db_session.add(alert)
+            db_session.commit()
+
+            resp = client.post(
+                f"/api/v1/alerts/{alert.id}/dispatch",
+                json={"notes": "Dispatching demo alert", "simulated": True},
+                headers={"Authorization": f"Bearer {authority_token}"},
+            )
+            assert resp.status_code == status.HTTP_200_OK
+
+            # 4. Opted-in demo_ws receives the event on 'demo_alerts'
+            evt = demo_ws.receive_json()
+            assert evt["type"] == EventType.ALERT_PUBLISHED.value
+            assert evt["resource_id"] == alert.id
+            assert evt["metadata"]["simulated_only"] is True
+
+            # 5. General WebSocket client did NOT receive any message on 'alerts'
+            # Check by sending a ping action to verify queue only has the ping response
+            general_ws.send_json({"action": "ping"})
+            resp_ping = general_ws.receive_json()
+            assert resp_ping["type"] == "pong"
+
+
+def test_demo_alerts_isolated_from_public_rest_feed(
+    client: TestClient,
+    db_session: Session,
+    test_citizen_user: User,
+    test_authority_user: User,
+    citizen_token: str,
+    authority_token: str,
+):
+    """Verify simulation demo alerts are isolated from public REST feed unless include_demo=true."""
+    # 1. Create and dispatch a demo alert
+    demo_alert = Alert(
+        id="alert_iso_rest_01",
+        area_id="loc_iso_rest",
+        title="[DEMO ONLY] Simulated Flash Flood",
+        message="Simulated run for exercise",
+        status=AlertStatus.APPROVED,
+        created_by=test_authority_user.id,
+        approved_by=test_authority_user.id,
+        mode=OperationalMode.HISTORICAL_DEMO,
+        target_channels=["in_app"],
+    )
+    db_session.add(demo_alert)
+    db_session.commit()
+
+    resp_disp = client.post(
+        f"/api/v1/alerts/{demo_alert.id}/dispatch",
+        json={"notes": "Demo dispatch", "simulated": True},
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+    assert resp_disp.status_code == status.HTTP_200_OK
+
+    # 2. General citizen queries default feed — demo alert MUST NOT be present
+    resp_feed = client.get("/api/v1/alerts", headers={"Authorization": f"Bearer {citizen_token}"})
+    assert resp_feed.status_code == status.HTTP_200_OK
+    feed_ids = [a["id"] for a in resp_feed.json()]
+    assert demo_alert.id not in feed_ids
+
+    # 3. Citizen queries with include_demo=true — demo alert IS present
+    resp_demo_feed = client.get("/api/v1/alerts?include_demo=true", headers={"Authorization": f"Bearer {citizen_token}"})
+    assert resp_demo_feed.status_code == status.HTTP_200_OK
+    demo_feed_ids = [a["id"] for a in resp_demo_feed.json()]
+    assert demo_alert.id in demo_feed_ids
+
+    # 4. Authority queries default feed — authorities see all alerts (DRAFT, APPROVED, DISPATCHED, DEMO)
+    resp_auth_feed = client.get("/api/v1/alerts", headers={"Authorization": f"Bearer {authority_token}"})
+    assert resp_auth_feed.status_code == status.HTTP_200_OK
+    auth_feed_ids = [a["id"] for a in resp_auth_feed.json()]
+    assert demo_alert.id in auth_feed_ids
+

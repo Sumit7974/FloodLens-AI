@@ -35,6 +35,7 @@ from app.database import Base, get_db
 from app.main import create_application
 from app.models.enums import AlertStatus, AssistanceCategory, AssistanceStatus, OperationalMode, UserRole
 from app.models.user import User
+from app.services.push_notifications import mask_device_token
 from app.websocket.connection_manager import connection_manager
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -172,6 +173,12 @@ def run_demonstration():
 
     with client.websocket_connect(f"/ws/v1/events?token={citizen_token}") as test_client_ws:
         test_client_ws.receive_json()  # connection.established
+        # Subscribe test client explicitly to isolated demo_alerts channel
+        test_client_ws.send_json({"action": "subscribe", "channel": "demo_alerts"})
+        sub_ack = test_client_ws.receive_json()
+        assert sub_ack["type"] == "subscription.result"
+        assert sub_ack["status"] == "subscribed"
+        logger.info("[Test Client WS] Explicitly subscribed to isolated 'demo_alerts' channel.")
 
         with client.websocket_connect(f"/ws/v1/events?token={authority_token}") as auth_ws:
             auth_ws.receive_json()  # connection.established
@@ -225,7 +232,7 @@ def run_demonstration():
                 "target_device_tokens": [test_push_token],
                 "simulated": True,
             }
-            logger.info("[Authority] Dispatching alert with opted-in test push token: '%s'", test_push_token)
+            logger.info("[Authority] Dispatching alert with opted-in test push token: '%s'", mask_device_token(test_push_token))
             resp_dispatch = client.post(
                 f"/api/v1/alerts/{alert_id}/dispatch",
                 json=dispatch_body,
@@ -237,9 +244,9 @@ def run_demonstration():
                         alert_id, dispatched_data["status"], dispatched_data["issued_at"])
             assert dispatched_data["status"] == "dispatched"
 
-            # Step 5: Test client receives alert.published event over WebSocket
+            # Step 5: Test client receives alert.published event over isolated 'demo_alerts' WebSocket channel
             client_evt = json.loads(test_client_ws.receive_text())
-            logger.info("[Test Client WS] Received Public Alert Event: type=%s, resource_id=%s, metadata=%s",
+            logger.info("[Test Client WS] Received Demo Alert Event on isolated channel: type=%s, resource_id=%s, metadata=%s",
                         client_evt["type"], client_evt["resource_id"], client_evt.get("metadata"))
             assert client_evt["type"] == "alert.published"
             assert client_evt["resource_id"] == alert_id
@@ -248,10 +255,16 @@ def run_demonstration():
             assert client_evt["metadata"]["simulated_only"] is True
             logger.info("[Test Client WS] Verified SIMULATED_ONLY alert event received. No operational warnings issued.")
 
-            # Step 6: Citizen can now query dispatched demo alert via REST
-            resp_cit_published = client.get("/api/v1/alerts", headers={"Authorization": f"Bearer {citizen_token}"})
-            assert any(a["id"] == alert_id for a in resp_cit_published.json())
-            logger.info("[REST Query] Dispatched demo alert is now visible on public feed with clear test labelling.")
+            # Step 6: Verify isolation in REST feed
+            # Default public feed excludes simulation demo alerts:
+            resp_cit_normal = client.get("/api/v1/alerts", headers={"Authorization": f"Bearer {citizen_token}"})
+            assert all(a["id"] != alert_id for a in resp_cit_normal.json())
+            logger.info("[Isolation Check] Dispatched demo alert is excluded from standard public feed.")
+
+            # With include_demo=true:
+            resp_cit_demo = client.get("/api/v1/alerts?include_demo=true", headers={"Authorization": f"Bearer {citizen_token}"})
+            assert any(a["id"] == alert_id for a in resp_cit_demo.json())
+            logger.info("[REST Query] Dispatched demo alert is accessible with include_demo=true and clear test labelling.")
 
     logger.info("\n================================================================================")
     logger.info("ALL DAY 3 DEMONSTRATION FLOWS COMPLETED SUCCESSFULLY AND VERIFIED!")

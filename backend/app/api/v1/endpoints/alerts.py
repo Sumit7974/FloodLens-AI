@@ -64,6 +64,7 @@ async def create_alert_draft(
 async def list_alerts(
     area_id: Optional[str] = None,
     status_filter: Optional[AlertStatus] = None,
+    include_demo: bool = False,
     current_user: Optional[User] = Depends(get_optional_current_user),
     db: Session = Depends(get_db),
 ) -> List[Alert]:
@@ -72,6 +73,10 @@ async def list_alerts(
     Unpublished alerts (DRAFT, APPROVED) are strictly restricted to authorized
     authorities. Citizens and unauthenticated clients can only query and view
     DISPATCHED alerts.
+
+    ISOLATION SAFEGUARD: Demo simulation alerts (visibly labelled with [DEMO] or [TEST])
+    are isolated from the public general REST feed by default. General users must
+    explicitly specify include_demo=True to inspect simulation demo alerts.
     """
     is_authorized = current_user is not None and current_user.role in (UserRole.AUTHORITY, UserRole.ADMIN)
 
@@ -92,6 +97,12 @@ async def list_alerts(
     else:
         # Non-authority users are strictly limited to DISPATCHED alerts
         query = query.filter(Alert.status == AlertStatus.DISPATCHED)
+        # Isolate demo simulation alerts from public REST feed unless explicitly requested
+        if not include_demo:
+            query = query.filter(
+                ~Alert.title.like("[DEMO%"),
+                ~Alert.title.like("[TEST%"),
+            )
 
     return query.order_by(Alert.created_at.desc()).all()
 
@@ -274,7 +285,9 @@ async def dispatch_alert(
     db.commit()
     db.refresh(alert)
 
-    # Broadcast WebSocket notification: alert.published to public alerts channel AFTER DB commit
+    # Broadcast WebSocket notification:
+    # ISOLATION SAFEGUARD: Demo simulation alerts are strictly broadcast to 'demo_alerts'
+    # and 'authority_queue', keeping them isolated from general-user channels ('alerts' and 'public').
     event = WebSocketEvent(
         event_id=f"evt_dispatch_{alert.id}",
         type=EventType.ALERT_PUBLISHED.value,
@@ -289,6 +302,8 @@ async def dispatch_alert(
             "simulated_only": True,
         },
     )
-    await connection_manager.broadcast_to_channel("alerts", event)
+    target_channel = "demo_alerts" if alert.mode in (OperationalMode.HISTORICAL_DEMO, OperationalMode.TEST) else "alerts"
+    await connection_manager.broadcast_to_channel(target_channel, event)
+    await connection_manager.broadcast_to_channel("authority_queue", event)
 
     return alert

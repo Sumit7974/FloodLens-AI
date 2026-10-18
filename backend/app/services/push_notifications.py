@@ -69,22 +69,30 @@ class PushDeliveryReceipt(BaseModel):
     sent_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
+# Configured dummy tokens for prototype sandbox testing
+DEFAULT_CONFIGURED_DUMMY_TOKENS: Set[str] = {
+    "ExponentPushToken[demo_test_device_sandbox_01]",
+    "ExponentPushToken[mobile_test_device_token_01]",
+    "ExponentPushToken[valid_token_test_12345]",
+}
+
+
 class SandboxPushNotificationAdapter:
     """Safe push notification adapter for Expo and FCM sandbox simulation."""
 
     def __init__(self, default_provider: str = "expo") -> None:
         self.default_provider = default_provider
-        # Explicit registry of verified test/dummy device tokens permitted in prototype
-        self.verified_test_tokens: Set[str] = {
-            "ExponentPushToken[demo_test_device_sandbox_01]",
-            "ExponentPushToken[mobile_test_device_token_01]",
-            "ExponentPushToken[valid_token_test_12345]",
-        }
+        # Explicitly configured dummy tokens for prototype sandbox testing
+        self.configured_dummy_tokens: Set[str] = set(DEFAULT_CONFIGURED_DUMMY_TOKENS)
+        # Genuinely registered opted-in test devices
+        self.registered_test_devices: Set[str] = set()
 
-    def register_test_device(self, token: str) -> None:
-        """Register an explicitly verified test device token."""
+    def register_test_device(self, token: str) -> bool:
+        """Explicitly register a genuinely opted-in test device token."""
         if token and self.validate_token_syntax(token):
-            self.verified_test_tokens.add(token.strip())
+            self.registered_test_devices.add(token.strip())
+            return True
+        return False
 
     def validate_token_syntax(self, token: str) -> bool:
         """Validate format of Expo or FCM device push token."""
@@ -94,20 +102,14 @@ class SandboxPushNotificationAdapter:
         return bool(EXPO_TOKEN_PATTERN.match(clean) or FCM_TOKEN_PATTERN.match(clean))
 
     def is_verified_test_token(self, token: str) -> bool:
-        """Check if token belongs to an explicitly verified test device registration.
+        """Verify device token is an explicitly configured dummy token or genuinely registered test device.
 
-        Prevents sending to arbitrary or unverified device tokens.
+        SAFETY ENFORCEMENT: Never infer consent from token text.
         """
         if not token:
             return False
         clean = token.strip()
-        if clean in self.verified_test_tokens:
-            return True
-        # Allow designated prototype test/demo/sandbox token prefixes
-        clean_lower = clean.lower()
-        if ("test" in clean_lower or "demo" in clean_lower or "sandbox" in clean_lower) and self.validate_token_syntax(clean):
-            return True
-        return False
+        return clean in self.configured_dummy_tokens or clean in self.registered_test_devices
 
     def detect_provider(self, token: str) -> str:
         """Identify push provider from token structure."""
@@ -183,7 +185,7 @@ class SandboxPushNotificationAdapter:
                         provider=provider,
                         is_sandbox=True,
                         simulated_only=True,
-                        error="Device token is not a verified registered test device. Arbitrary dispatch prohibited.",
+                        error="Device token is not a verified registered test device: neither an explicitly configured dummy token nor a genuinely registered test device. Consent is never inferred from token text.",
                     )
                 )
                 continue

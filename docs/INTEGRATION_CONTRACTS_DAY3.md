@@ -51,7 +51,8 @@ Upon successful connection, the server sends a `connection.established` greeting
 | Channel Pattern | Accessible Roles | Privacy & Safeguards |
 | :--- | :--- | :--- |
 | `public` | `citizen`, `authority`, `admin` | Public broadcast channel |
-| `alerts` | `citizen`, `authority`, `admin` | Dispatched alerts only; draft/approved alerts excluded |
+| `alerts` | `citizen`, `authority`, `admin` | Dispatched operational alerts only; draft/approved alerts excluded |
+| `demo_alerts` | `citizen`, `authority`, `admin` | Isolated simulation channel for historical-demo and test alerts (requires explicit opt-in subscription) |
 | `risk_updates` | `citizen`, `authority`, `admin` | Regional forecast and risk changes |
 | `locations:{location_id}` | `citizen`, `authority`, `admin` | Location-specific forecasts and sensor updates |
 | `user:{user_id}` | Matching `user_id` ONLY | Strictly isolated to the specific user. No other user or authority may subscribe |
@@ -130,7 +131,7 @@ When a mobile or web client reconnects after network drop, send:
    - Unpublished drafts are completely hidden from non-authorities in REST and WebSockets.
 2. `APPROVED -> DISPATCHED`:
    - Allowed only for `authority` or `admin`.
-   - Emits `alert.published` to channel `alerts` AFTER database commit.
+   - Emits `alert.published` to channel `demo_alerts` for simulation alerts (`historical_demo` or `test`) or `alerts` for operational alerts, plus `authority_queue` AFTER database commit.
 3. Invalid Transitions (strictly rejected with HTTP 400):
    - `DRAFT -> DISPATCHED` directly (`code: NOT_APPROVED`).
    - `APPROVED -> APPROVED` duplicate approval (`code: INVALID_STATE`).
@@ -141,6 +142,7 @@ When a mobile or web client reconnects after network drop, send:
 
 - **Simulation Enforcement:** `simulated=True` is strictly mandatory for all test dispatches. Attempting to submit `simulated=False` is rejected (`HTTP 400 OPERATIONAL_DISPATCH_PROHIBITED`). Operational emergency warnings cannot be issued.
 - **Operational Mode Restriction:** All dispatches are strictly restricted to `historical_demo` or `test` mode. Attempting to dispatch alerts in `live_observation` or `model_estimate` mode is rejected (`HTTP 400 DISPATCH_RESTRICTED_TO_TEST`).
+- **Feed and Channel Isolation:** Demo and test alerts (`mode in ('historical_demo', 'test')`) are strictly isolated from general-user channels. WebSocket broadcasts are routed to `demo_alerts` instead of `alerts` / `public`. On the REST feed (`GET /api/v1/alerts`), demo simulation alerts are filtered out for citizens unless `include_demo=true` is explicitly requested.
 - **Visible Labelling:** Dispatched alerts are visibly labelled with `[DEMO ONLY]` or `[DEMO / TEST ONLY]` prefix in titles and `[HISTORICAL DEMO / TEST SIMULATION]` in body messages.
 - **Test Metadata:** Dispatched event payloads include `"is_test": true, "simulation": true, "simulated_only": true`.
 
@@ -217,13 +219,14 @@ Located at `backend/app/services/push_notifications.py`.
 
 - **Expo Token Format:** `ExponentPushToken[...]` or alphanumeric string length >= 20.
 - **FCM Token Format:** Alphanumeric / colon string length >= 30.
-- **Credential Masking:** Tokens are masked in all logs and receipts: `ExponentPushToken[***7890]`. Full device secrets are never logged.
+- **Credential Masking:** Tokens are masked in all logs, demonstration scripts, and delivery receipts: `ExponentPushToken[***7890]`. Full device secrets and raw tokens are never logged.
 
 ### 4.2 Simulated Delivery States & Test-Device Verification
 
 - **Unambiguous Simulation:** Receipts strictly output `status="simulated_only"` with `simulated_only: true` and an explicit delivery note confirming that no external network call was made to Expo or FCM.
-- **Verified Test-Device Registrations:** The prototype only accepts explicitly verified test device tokens (e.g. matching test registry or containing `test`, `demo`, or `sandbox` markers). Arbitrary or unverified device tokens are rejected (`unregistered_device`).
-- **Opt-in Rule:** Opt-in is **not** assumed simply because an authority submitted a token; device opt-in is actively verified.
+- **Verified Test-Device Registrations & Explicit Dummy Tokens:** The prototype strictly accepts only explicitly configured dummy tokens (e.g. `DEFAULT_CONFIGURED_DUMMY_TOKENS`) or genuinely registered opted-in test devices via `adapter.register_test_device(token)`.
+- **Zero Consent Inference:** Consent is **NEVER** inferred from token text (e.g. presence of `test`, `demo`, or `sandbox` substrings). Any token not explicitly configured or genuinely registered is rejected (`unregistered_device`).
+- **Opt-in Rule:** Opt-in is **not** assumed simply because an authority submitted a token; device opt-in is actively verified. Arbitrary device dispatch is prohibited.
 
 | Status | Code | Description |
 | :--- | :--- | :--- |
