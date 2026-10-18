@@ -19,32 +19,45 @@ This file complements the detailed architecture. Team members should freeze fiel
 - **Evaluation**: id, event_id, target_type, baseline_version, candidate_version, metrics, reference_id.
 
 ## REST routes — `/api/v1`
-| Verb | Path | Purpose |
-|---|---|---|
-| GET | `/health` | Service status |
-| GET | `/predictions/latest?location_id=...` | Latest available forecast |
-| GET | `/predictions/map` | Published map-layer descriptor |
-| GET | `/monitoring/weather` | Weather observations/forecasts |
-| GET | `/monitoring/rivers` | Available river observations |
-| GET | `/monitoring/dams` | Verified dam notices if any |
-| POST | `/satellite/jobs` | Start authorized processing job |
-| GET | `/satellite/jobs/{job_id}` | Job status |
-| GET | `/flood-events/{event_id}/extent` | Observed flood extent |
-| GET | `/flood-events/{event_id}/settlements` | Affected settlements |
-| GET | `/flood-events/{event_id}/assets` | Asset exposure |
-| GET | `/flood-events/{event_id}/report` | Report download |
-| GET | `/facilities/shelters` | Verified shelter records |
-| GET | `/facilities/hospitals` | Known hospital records |
-| POST | `/routes/assess` | Route-hazard assessment |
-| POST | `/alerts` | Create authority draft |
-| POST | `/alerts/{alert_id}/approve` | Approve test alert |
-| POST | `/alerts/{alert_id}/dispatch` | Dispatch to authorized test targets |
-| POST | `/assistance` | Citizen request |
-| GET | `/assistance/mine` | Citizen's own requests |
-| GET | `/assistance` | Authority queue |
-| PATCH | `/assistance/{request_id}` | Authorized status update |
-| GET | `/analytics/events/{event_id}` | Event evaluation |
-| POST | `/models/training-jobs` | Controlled candidate-training job |
+| Verb | Path | Purpose | Access |
+|---|---|---|---|
+| GET | `/health` | Service status | Public |
+| GET | `/ready` | Database & PostGIS readiness | Public |
+| POST | `/flood-events` | Create / import flood event | Authority / Admin |
+| GET | `/flood-events` | List flood events | Public |
+| GET | `/flood-events/{event_id}` | Flood event details | Public |
+| POST | `/flood-events/{event_id}/extent` | Ingest georeferenced flood extent | Authority / Admin |
+| GET | `/flood-events/{event_id}/extent` | Observed flood extent with GeoJSON | Public |
+| GET | `/flood-events/{event_id}/extent/geojson` | Flood extent as RFC 7946 Feature | Public |
+| GET | `/flood-events/{event_id}/settlements` | Affected settlement spatial intersections | Public |
+| GET | `/flood-events/{event_id}/assets` | Asset exposure spatial intersections | Public |
+| GET | `/flood-events/{event_id}/report` | Synthesized impact assessment report | Public |
+| POST | `/satellite/scenes` | Register optical / SAR scene metadata | Authority / Admin |
+| GET | `/satellite/scenes` | List stored satellite scenes | Public |
+| GET | `/satellite/scenes/{scene_id}` | Satellite scene details | Public |
+| POST | `/satellite/jobs` | Start authorized processing job | Authority / Admin |
+| GET | `/satellite/jobs/{job_id}` | Job status | Public |
+| POST | `/locations` | Register settlement / boundary | Authority / Admin |
+| GET | `/locations` | List locations and settlements | Public |
+| POST | `/predictions/ingest` | Ingest +1h, +3h, +6h risk forecast | Authority / Admin |
+| GET | `/predictions/latest?location_id=...` | Latest available forecast | Public |
+| GET | `/predictions/locations/{id}` | Forecast for one location | Public |
+| GET | `/predictions/map` | Database-backed risk-zone vector layer | Public |
+| GET | `/monitoring/weather` | Weather observations/forecasts | Public |
+| GET | `/monitoring/rivers` | Available river observations | Public |
+| GET | `/monitoring/dams` | Verified dam notices if any | Public |
+| GET | `/facilities/shelters` | Verified shelter records | Public |
+| GET | `/facilities/hospitals` | Known hospital records | Public |
+| POST | `/routes/assess` | Route-hazard assessment | Public |
+| POST | `/alerts` | Create authority draft | Authority / Admin |
+| POST | `/alerts/{alert_id}/approve` | Approve test alert | Authority / Admin |
+| POST | `/alerts/{alert_id}/dispatch` | Dispatch to authorized test targets | Authority / Admin |
+| POST | `/assistance` | Citizen request | Authenticated Citizen |
+| GET | `/assistance/mine` | Citizen's own requests | Authenticated Citizen |
+| GET | `/assistance` | Authority queue | Authority / Admin |
+| PATCH | `/assistance/{request_id}` | Authorized status update | Authority / Admin |
+| GET | `/analytics/events/{event_id}` | Event evaluation | Public |
+| POST | `/models/training-jobs` | Controlled candidate-training job | Authority / Admin |
 
 ## Example forecast JSON
 ```json
