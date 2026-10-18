@@ -31,7 +31,7 @@ class DeliveryStatus(str, Enum):
     FAILED = "failed"
 
 
-def mask_device_token(token: str) -> str:
+def mask_device_token(token: Optional[str]) -> str:
     """Mask push token to prevent leaking credentials in logs or responses."""
     if not token or not isinstance(token, str):
         return "***"

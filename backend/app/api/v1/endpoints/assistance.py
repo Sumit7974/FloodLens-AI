@@ -146,11 +146,11 @@ async def update_assistance_status(
     if not req:
         raise NotFoundError(message=f"Assistance request '{request_id}' not found", code="REQUEST_NOT_FOUND")
 
-    req.status = update.status
+    setattr(req, "status", update.status)
     if update.assigned_to is not None:
-        req.assigned_to = update.assigned_to
+        setattr(req, "assigned_to", update.assigned_to)
     if update.status_notes is not None:
-        req.status_notes = update.status_notes
+        setattr(req, "status_notes", update.status_notes)
 
     db.commit()
     db.refresh(req)
