@@ -1,0 +1,31 @@
+# ML module — gitignore
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# Pytest cache
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# Generated/processed datasets (generated from synthetic source, not committed)
+data/processed/
+
+# Raw real-world datasets (never commit raw gauge data or licensed feeds)
+data/raw/
+
+# Serialized ML model binaries (large; tracked via model registry or DVC in production)
+# Committed for Day 1 demo portability; add *.joblib here to exclude in future
+# models/*.joblib
+
+# OS artifacts
+.DS_Store
+Thumbs.db

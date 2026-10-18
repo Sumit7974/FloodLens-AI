@@ -1,0 +1,27 @@
+{
+  "input_file": "ml\\data\\synthetic\\synthetic_koshi_event.csv",
+  "output_file": "ml\\data\\processed\\koshi_event_cleaned.csv",
+  "input_rows": 240,
+  "output_rows": 240,
+  "duplicate_rows_removed": 0,
+  "duplicate_keys_removed": 0,
+  "missing_values_by_column": {
+    "risk_label_1h": 1,
+    "target_1h": 1,
+    "risk_label_3h": 3,
+    "target_3h": 3,
+    "risk_label_6h": 6,
+    "target_6h": 6
+  },
+  "imputed_values_by_column": {
+    "target_1h": 1,
+    "target_3h": 2,
+    "target_6h": 2
+  },
+  "rejected_rows_count": 0,
+  "rejection_reasons": [],
+  "outliers_flagged": {},
+  "geo_bounds_violations": 0,
+  "cleaned_timestamp": "2026-10-18T08:50:39Z",
+  "data_quality_grade": "PARTIAL"
+}
