@@ -196,28 +196,29 @@ async def approve_alert(
     if not alert:
         raise NotFoundError(message=f"Alert '{alert_id}' not found", code="ALERT_NOT_FOUND")
 
-    if alert.status == AlertStatus.APPROVED:
+    current_status = alert.status
+    if current_status == AlertStatus.APPROVED:
         raise FloodLensAPIException(
             code="INVALID_STATE",
             message="Alert is already approved",
             status_code=status.HTTP_400_BAD_REQUEST,
         )
-    if alert.status == AlertStatus.DISPATCHED:
+    if current_status == AlertStatus.DISPATCHED:
         raise FloodLensAPIException(
             code="INVALID_STATE",
             message="Dispatched alert cannot be re-approved",
             status_code=status.HTTP_400_BAD_REQUEST,
         )
-    if alert.status == AlertStatus.CANCELLED:
+    if current_status == AlertStatus.CANCELLED:
         raise FloodLensAPIException(
             code="INVALID_STATE",
             message="Cancelled alert cannot be approved",
             status_code=status.HTTP_400_BAD_REQUEST,
         )
-    if alert.status != AlertStatus.DRAFT:
+    if current_status != AlertStatus.DRAFT:
         raise FloodLensAPIException(
             code="INVALID_STATE",
-            message=f"Only DRAFT alerts can be approved. Current status: {alert.status.value}",
+            message=f"Only DRAFT alerts can be approved. Current status: {current_status.value}",
             status_code=status.HTTP_400_BAD_REQUEST,
         )
 
@@ -264,25 +265,26 @@ async def dispatch_alert(
     if not alert:
         raise NotFoundError(message=f"Alert '{alert_id}' not found", code="ALERT_NOT_FOUND")
 
-    if alert.status == AlertStatus.DRAFT:
+    current_status = alert.status
+    if current_status == AlertStatus.DRAFT:
         raise FloodLensAPIException(
             code="NOT_APPROVED",
             message="Alert must be in APPROVED state prior to dispatch",
             status_code=status.HTTP_400_BAD_REQUEST,
         )
-    if alert.status == AlertStatus.DISPATCHED:
+    if current_status == AlertStatus.DISPATCHED:
         raise FloodLensAPIException(
             code="INVALID_STATE",
             message="Alert has already been dispatched",
             status_code=status.HTTP_400_BAD_REQUEST,
         )
-    if alert.status == AlertStatus.CANCELLED:
+    if current_status == AlertStatus.CANCELLED:
         raise FloodLensAPIException(
             code="INVALID_STATE",
             message="Cancelled alert cannot be dispatched",
             status_code=status.HTTP_400_BAD_REQUEST,
         )
-    if alert.status != AlertStatus.APPROVED:
+    if current_status != AlertStatus.APPROVED:
         raise FloodLensAPIException(
             code="NOT_APPROVED",
             message="Alert must be in APPROVED state prior to dispatch",
@@ -298,7 +300,8 @@ async def dispatch_alert(
         )
 
     # Safeguard 1: Restrict all dispatch to historical-demo simulations or test mode
-    if alert.mode not in (OperationalMode.HISTORICAL_DEMO, OperationalMode.TEST):
+    current_mode = alert.mode
+    if current_mode not in (OperationalMode.HISTORICAL_DEMO, OperationalMode.TEST):
         raise FloodLensAPIException(
             code="DISPATCH_RESTRICTED_TO_TEST",
             message="All dispatch is strictly restricted to historical-demo simulations or test mode. Operational disaster warnings are prohibited.",

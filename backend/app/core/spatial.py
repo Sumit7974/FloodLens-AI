@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 from typing import Any, Dict, List, Optional, Tuple, Union
+# Type stubs provided by types-shapely
 import shapely
 from shapely.geometry import MultiPolygon, Point, Polygon, mapping, shape
 from geoalchemy2.elements import WKBElement, WKTElement
@@ -63,7 +64,7 @@ def to_wkt_element(
         shp = shapely.make_valid(shp)
 
     # Normalize Polygon to MultiPolygon if expected
-    if expected_type == "MULTIPOLYGON" and shp.geom_type == "Polygon":
+    if expected_type == "MULTIPOLYGON" and isinstance(shp, Polygon):
         shp = MultiPolygon([shp])
 
     return WKTElement(shp.wkt, srid=srid)
@@ -83,7 +84,10 @@ def geometry_to_geojson(geom_val: Any) -> Optional[Dict[str, Any]]:
     if isinstance(geom_val, (WKBElement, WKTElement)):
         try:
             shp = to_shape(geom_val)
-            return json.loads(shapely.to_geojson(shp))
+            if shp is not None:
+                geojson_str = shapely.to_geojson(shp)
+                if geojson_str is not None:
+                    return json.loads(geojson_str)
         except Exception:
             pass
 
@@ -102,13 +106,20 @@ def geometry_to_geojson(geom_val: Any) -> Optional[Dict[str, Any]]:
             s = s.split(";", 1)[1]
         try:
             shp = shapely.from_wkt(s)
-            return json.loads(shapely.to_geojson(shp))
+            if shp is not None:
+                geojson_str = shapely.to_geojson(shp)
+                if geojson_str is not None:
+                    return json.loads(geojson_str)
+            return None
         except Exception:
             return None
 
     # Shapely geometry instance
     if hasattr(geom_val, "geom_type"):
-        return json.loads(shapely.to_geojson(geom_val))
+        geojson_str = shapely.to_geojson(geom_val)
+        if geojson_str is not None:
+            return json.loads(geojson_str)
+        return None
 
     return None
 
@@ -232,8 +243,8 @@ def get_affected_settlements_spatial(
 
     if region_id is None and flood_extent.event_id:
         evt = db.query(FloodEvent).filter(FloodEvent.id == flood_extent.event_id).first()
-        if evt:
-            region_id = evt.region_id
+        if evt and evt.region_id:
+            region_id = str(evt.region_id)
 
     # Resolve study area boundary if available
     study_area_loc = None
