@@ -1,7 +1,7 @@
 """WebSocket connection manager supporting authenticated sessions and topic channels."""
 import json
 import logging
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Protocol, Set, runtime_checkable
 from fastapi import WebSocket
 from app.models.enums import UserRole
 from app.schemas.event import WebSocketEvent
@@ -10,21 +10,29 @@ from app.services.demo_participants import is_authorized_demo_user
 logger = logging.getLogger(__name__)
 
 
+@runtime_checkable
+class WebSocketLike(Protocol):
+    """Protocol representing the WebSocket interface required by ConnectionManager."""
+
+    async def accept(self) -> None: ...
+    async def send_text(self, data: str, /) -> None: ...
+
+
 class ConnectionManager:
     """Manages active WebSocket connections, token authentication, and topic subscriptions."""
 
     def __init__(self) -> None:
         # Map websocket -> user_info dict: {"user_id": str, "role": str, "channels": Set[str]}
-        self.active_connections: Dict[WebSocket, Dict[str, Any]] = {}
+        self.active_connections: Dict[WebSocketLike, Dict[str, Any]] = {}
         # Map channel -> Set of WebSockets
-        self.channel_subscribers: Dict[str, Set[WebSocket]] = {
+        self.channel_subscribers: Dict[str, Set[WebSocketLike]] = {
             "public": set(),
             "alerts": set(),
             "risk_updates": set(),
             "authority_queue": set(),
         }
 
-    async def connect(self, websocket: WebSocket, user_id: str, role: str, email: Optional[str] = None) -> None:
+    async def connect(self, websocket: WebSocketLike, user_id: str, role: str, email: Optional[str] = None) -> None:
         """Accept connection, store authenticated user identity, and join default channels."""
         await websocket.accept()
         user_info = {
@@ -52,7 +60,7 @@ class ConnectionManager:
             len(self.active_connections),
         )
 
-    def disconnect(self, websocket: WebSocket) -> None:
+    def disconnect(self, websocket: WebSocketLike) -> None:
         """Remove connection and cleanup all topic subscriptions."""
         user_info = self.active_connections.pop(websocket, None)
         if user_info:
@@ -61,7 +69,7 @@ class ConnectionManager:
                     self.channel_subscribers[ch].discard(websocket)
             logger.info("WebSocket disconnected: user_id=%s", user_info.get("user_id"))
 
-    def subscribe(self, websocket: WebSocket, channel: str) -> bool:
+    def subscribe(self, websocket: WebSocketLike, channel: str) -> bool:
         """Subscribe an active connection to a specific channel (e.g. locations:village_01)."""
         if websocket not in self.active_connections:
             return False
@@ -97,14 +105,14 @@ class ConnectionManager:
         return True
 
 
-    def unsubscribe(self, websocket: WebSocket, channel: str) -> None:
+    def unsubscribe(self, websocket: WebSocketLike, channel: str) -> None:
         """Unsubscribe an active connection from a channel."""
         if websocket in self.active_connections:
             self.active_connections[websocket]["channels"].discard(channel)
         if channel in self.channel_subscribers:
             self.channel_subscribers[channel].discard(websocket)
 
-    async def send_personal_event(self, websocket: WebSocket, event: WebSocketEvent) -> None:
+    async def send_personal_event(self, websocket: WebSocketLike, event: WebSocketEvent) -> None:
         """Send an event directly to a specific socket connection."""
         try:
             await websocket.send_text(event.model_dump_json())
@@ -144,7 +152,7 @@ class ConnectionManager:
                     self.disconnect(ws)
         return count
 
-    def get_user_channels(self, websocket: WebSocket) -> Set[str]:
+    def get_user_channels(self, websocket: WebSocketLike) -> Set[str]:
         """Return set of subscribed channels for a specific websocket connection."""
         if websocket in self.active_connections:
             return set(self.active_connections[websocket].get("channels", set()))
