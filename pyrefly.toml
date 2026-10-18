@@ -2,3 +2,6 @@ search-path = [
     ".",
     "backend",
 ]
+project-excludes = [
+    "ml/**",
+]
