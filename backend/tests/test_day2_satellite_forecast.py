@@ -232,7 +232,7 @@ def test_list_and_get_satellite_scenes(client: TestClient, authority_token: str)
 
 
 def test_satellite_job_workflow(client: TestClient, authority_token: str):
-    """Authority can trigger NDWI processing job and track its state."""
+    """Authority POST /satellite/jobs explicitly reports that processing is not implemented/connected."""
     job_payload = {
         "method": "MNDWI",
         "scene_id": "scene_s2_001",
@@ -244,14 +244,15 @@ def test_satellite_job_workflow(client: TestClient, authority_token: str):
         json=job_payload,
         headers={"Authorization": f"Bearer {authority_token}"},
     )
-    assert create_res.status_code == status.HTTP_202_ACCEPTED
-    job_id = create_res.json()["job_id"]
-    assert job_id.startswith("sat_job_")
+    assert create_res.status_code == status.HTTP_501_NOT_IMPLEMENTED
+    err = create_res.json()["error"]
+    assert err["code"] == "PROCESSING_NOT_IMPLEMENTED"
+    assert "not connected" in err["message"] or "not implemented" in err["message"]
 
-    # Poll status
-    status_res = client.get(f"/api/v1/satellite/jobs/{job_id}")
-    assert status_res.status_code == status.HTTP_200_OK
-    assert status_res.json()["job_id"] == job_id
+    # Unknown job IDs must continue to return 404
+    status_res = client.get("/api/v1/satellite/jobs/sat_job_nonexistent_999")
+    assert status_res.status_code == status.HTTP_404_NOT_FOUND
+    assert status_res.json()["error"]["code"] == "JOB_NOT_FOUND"
 
 
 # ==============================================================================
@@ -381,7 +382,7 @@ def test_affected_settlements_spatial_intersection(client: TestClient, authority
         headers={"Authorization": f"Bearer {authority_token}"},
     )
 
-    # 1. Register settlement 1 (INSIDE extent: Barahachhetra, 87.10, 26.70)
+    # 1. Register settlement 1 (INSIDE extent, in Sunsari region: Barahachhetra, 87.10, 26.70)
     loc_inside_id = f"loc_in_{uuid.uuid4().hex[:6]}"
     client.post(
         "/api/v1/locations",
@@ -390,7 +391,7 @@ def test_affected_settlements_spatial_intersection(client: TestClient, authority
             "name": "Barahachhetra Ward 2",
             "admin_level": 4,
             "crs_source": "EPSG:4326",
-            "metadata_json": {"population": 3850, "vulnerability": "high"},
+            "metadata_json": {"population": 3850, "vulnerability": "high", "region_id": "nepal_terai_sunsari"},
             "geometry": {
                 "type": "Polygon",
                 "coordinates": [
@@ -407,7 +408,25 @@ def test_affected_settlements_spatial_intersection(client: TestClient, authority
         headers={"Authorization": f"Bearer {authority_token}"},
     )
 
-    # 2. Register settlement 2 (OUTSIDE extent: Pokhara, 83.98, 28.20)
+    # 2. Register settlement 2 in Sunsari region but OUTSIDE flood extent (Dharan, 87.28, 26.85)
+    loc_safe_sunsari_id = f"loc_safe_sunsari_{uuid.uuid4().hex[:6]}"
+    client.post(
+        "/api/v1/locations",
+        json={
+            "id": loc_safe_sunsari_id,
+            "name": "Dharan Safe Ward",
+            "admin_level": 4,
+            "crs_source": "EPSG:4326",
+            "metadata_json": {"population": 5200, "region_id": "nepal_terai_sunsari"},
+            "geometry": {
+                "type": "Point",
+                "coordinates": [87.28, 26.85],
+            },
+        },
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+
+    # 3. Register settlement 3 in an UNRELATED region (Pokhara, Gandaki Province: 83.98, 28.20)
     loc_outside_id = f"loc_out_{uuid.uuid4().hex[:6]}"
     client.post(
         "/api/v1/locations",
@@ -416,7 +435,7 @@ def test_affected_settlements_spatial_intersection(client: TestClient, authority
             "name": "Pokhara Hill Ward",
             "admin_level": 4,
             "crs_source": "EPSG:4326",
-            "metadata_json": {"population": 12000, "vulnerability": "low"},
+            "metadata_json": {"population": 12000, "vulnerability": "low", "region_id": "gandaki_kaski"},
             "geometry": {
                 "type": "Point",
                 "coordinates": [83.98, 28.20],
@@ -425,7 +444,7 @@ def test_affected_settlements_spatial_intersection(client: TestClient, authority
         headers={"Authorization": f"Bearer {authority_token}"},
     )
 
-    # 3. Ingest flood extent covering [87.00, 26.60] to [87.20, 26.80]
+    # 4. Ingest flood extent covering [87.00, 26.60] to [87.20, 26.80]
     client.post(
         f"/api/v1/flood-events/{evt_id}/extent",
         json={
@@ -449,15 +468,17 @@ def test_affected_settlements_spatial_intersection(client: TestClient, authority
         headers={"Authorization": f"Bearer {authority_token}"},
     )
 
-    # 4. Query affected settlements
+    # 5. Query affected settlements (scoped to nepal_terai_sunsari)
     res = client.get(f"/api/v1/flood-events/{evt_id}/settlements")
     assert res.status_code == status.HTTP_200_OK
     data = res.json()
     assert data["status"] == "completed"
-    assert data["total_settlements_affected"] >= 1
+    assert data["total_settlements_evaluated"] == 2  # Only Sunsari settlements, excluding Pokhara
+    assert data["total_settlements_affected"] == 1
 
     settlement_ids = [s["settlement_id"] for s in data["affected_settlements"]]
     assert loc_inside_id in settlement_ids
+    assert loc_safe_sunsari_id not in settlement_ids
     assert loc_outside_id not in settlement_ids
 
     # Verify settlement metadata and exposure details
@@ -863,6 +884,7 @@ def test_affected_settlements_distinguishes_zero_affected_when_locations_exist(c
             "id": outside_loc_id,
             "name": "Distant Non-Affected Town",
             "admin_level": 4,
+            "metadata_json": {"region_id": "nepal_terai"},
             "geometry": {"type": "Point", "coordinates": [80.00, 20.00]},
         },
         headers={"Authorization": f"Bearer {authority_token}"},
@@ -925,7 +947,7 @@ def test_affected_settlements_avoids_unsupported_population_claim(client: TestCl
             "name": "Census Only Village",
             "admin_level": 4,
             "geometry": {"type": "Point", "coordinates": [86.10, 26.10]},
-            "metadata_json": {"population": 8500},
+            "metadata_json": {"population": 8500, "region_id": "nepal_terai"},
         },
         headers={"Authorization": f"Bearer {authority_token}"},
     )
@@ -939,7 +961,7 @@ def test_affected_settlements_avoids_unsupported_population_claim(client: TestCl
             "name": "Survey Verified Village",
             "admin_level": 4,
             "geometry": {"type": "Point", "coordinates": [86.15, 26.15]},
-            "metadata_json": {"population": 12000, "verified_population_exposed": 1450},
+            "metadata_json": {"population": 12000, "verified_population_exposed": 1450, "region_id": "nepal_terai"},
         },
         headers={"Authorization": f"Bearer {authority_token}"},
     )
@@ -1013,4 +1035,252 @@ def test_flood_report_truthful_summary_status_and_no_fake_download(client: TestC
     assert body_after["download_url"] is None
     assert body_after["report_generated_at"] is None
     assert body_after["extent_area_km2"] == 32.0
+
+
+def test_region_scoped_settlement_analysis_across_multiple_regions(client: TestClient, authority_token: str):
+    """Scope settlement analysis to the flood event's study area.
+
+    Verifies:
+    1. Settlements in unrelated administrative regions are excluded from evaluation.
+    2. Missing local settlement data in an event region results in 'no_settlement_data',
+       rather than treating missing data as a verified zero-exposure assessment.
+    3. Verified study-area boundary polygon scopes settlements accurately.
+    """
+    region_koshi = f"reg_koshi_{uuid.uuid4().hex[:6]}"
+    region_bagmati = f"reg_bagmati_{uuid.uuid4().hex[:6]}"
+    region_karnali = f"reg_karnali_remote_{uuid.uuid4().hex[:6]}"
+
+    # Event 1 in Koshi
+    evt_koshi_id = f"evt_koshi_{uuid.uuid4().hex[:6]}"
+    client.post(
+        "/api/v1/flood-events",
+        json={
+            "id": evt_koshi_id,
+            "region_id": region_koshi,
+            "name": "Koshi Monsoon Inundation",
+            "start_at": datetime.now(timezone.utc).isoformat(),
+        },
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+
+    # Event 2 in Remote Karnali (region with NO mapped settlement data)
+    evt_karnali_id = f"evt_karnali_{uuid.uuid4().hex[:6]}"
+    client.post(
+        "/api/v1/flood-events",
+        json={
+            "id": evt_karnali_id,
+            "region_id": region_karnali,
+            "name": "Karnali Remote Gorge Flood",
+            "start_at": datetime.now(timezone.utc).isoformat(),
+        },
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+
+    # Register 2 settlements in Koshi: 1 inside extent, 1 outside extent
+    loc_koshi_inside = f"loc_koshi_in_{uuid.uuid4().hex[:6]}"
+    client.post(
+        "/api/v1/locations",
+        json={
+            "id": loc_koshi_inside,
+            "name": "Koshi Riverbank Settlement",
+            "admin_level": 4,
+            "metadata_json": {"population": 4500, "region_id": region_koshi},
+            "geometry": {"type": "Point", "coordinates": [87.10, 26.65]},
+        },
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+    loc_koshi_safe = f"loc_koshi_safe_{uuid.uuid4().hex[:6]}"
+    client.post(
+        "/api/v1/locations",
+        json={
+            "id": loc_koshi_safe,
+            "name": "Koshi High Ground Settlement",
+            "admin_level": 4,
+            "metadata_json": {"population": 2200, "region_id": region_koshi},
+            "geometry": {"type": "Point", "coordinates": [87.50, 26.90]},
+        },
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+
+    # Register 2 settlements in Bagmati (unrelated region)
+    loc_bagmati_1 = f"loc_bagmati_1_{uuid.uuid4().hex[:6]}"
+    client.post(
+        "/api/v1/locations",
+        json={
+            "id": loc_bagmati_1,
+            "name": "Kathmandu Valley Ward",
+            "admin_level": 4,
+            "metadata_json": {"population": 65000, "region_id": region_bagmati},
+            "geometry": {"type": "Point", "coordinates": [85.32, 27.70]},
+        },
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+    loc_bagmati_2 = f"loc_bagmati_2_{uuid.uuid4().hex[:6]}"
+    client.post(
+        "/api/v1/locations",
+        json={
+            "id": loc_bagmati_2,
+            "name": "Patan Historic Ward",
+            "admin_level": 4,
+            "metadata_json": {"population": 42000, "region_id": region_bagmati},
+            "geometry": {"type": "Point", "coordinates": [85.31, 27.67]},
+        },
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+
+    # Ingest extent for Koshi event (covers [87.00, 26.60] to [87.20, 26.70])
+    client.post(
+        f"/api/v1/flood-events/{evt_koshi_id}/extent",
+        json={
+            "observed_at": datetime.now(timezone.utc).isoformat(),
+            "method": "MNDWI",
+            "area_km2": 20.0,
+            "confidence": 0.95,
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [87.00, 26.60],
+                        [87.20, 26.60],
+                        [87.20, 26.70],
+                        [87.00, 26.70],
+                        [87.00, 26.60],
+                    ]
+                ],
+            },
+        },
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+
+    # Ingest extent for Karnali event (remote gorge, [81.50, 29.00] to [81.70, 29.20])
+    client.post(
+        f"/api/v1/flood-events/{evt_karnali_id}/extent",
+        json={
+            "observed_at": datetime.now(timezone.utc).isoformat(),
+            "method": "SAR_CHANGE",
+            "area_km2": 15.0,
+            "confidence": 0.88,
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [81.50, 29.00],
+                        [81.70, 29.00],
+                        [81.70, 29.20],
+                        [81.50, 29.20],
+                        [81.50, 29.00],
+                    ]
+                ],
+            },
+        },
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+
+    # 1. Query Koshi event settlements:
+    # Must ONLY evaluate the 2 settlements in Koshi. Bagmati settlements must NOT be counted!
+    koshi_res = client.get(f"/api/v1/flood-events/{evt_koshi_id}/settlements")
+    assert koshi_res.status_code == status.HTTP_200_OK
+    koshi_data = koshi_res.json()
+    assert koshi_data["status"] == "completed"
+    assert koshi_data["total_settlements_evaluated"] == 2
+    assert koshi_data["total_settlements_affected"] == 1
+    affected_ids = [s["settlement_id"] for s in koshi_data["affected_settlements"]]
+    assert loc_koshi_inside in affected_ids
+    assert loc_koshi_safe not in affected_ids
+    assert loc_bagmati_1 not in affected_ids
+    assert loc_bagmati_2 not in affected_ids
+
+    # 2. Query Karnali event settlements:
+    # There are 4 total settlements in the DB, but ZERO in Karnali.
+    # Must return no_settlement_data and total_settlements_evaluated=0, NOT false zero exposure!
+    karnali_res = client.get(f"/api/v1/flood-events/{evt_karnali_id}/settlements")
+    assert karnali_res.status_code == status.HTTP_200_OK
+    karnali_data = karnali_res.json()
+    assert karnali_data["status"] == "no_settlement_data"
+    assert karnali_data["total_settlements_evaluated"] == 0
+    assert karnali_data["total_settlements_affected"] == 0
+    assert len(karnali_data["affected_settlements"]) == 0
+    assert "No mapped settlement GIS layers" in karnali_data["notes"]
+    assert region_karnali in karnali_data["notes"]
+
+    # 3. Test verified study-area boundary containment scoping
+    study_area_id = f"study_area_{uuid.uuid4().hex[:6]}"
+    client.post(
+        "/api/v1/locations",
+        json={
+            "id": study_area_id,
+            "name": "Gandaki Basin Study Area",
+            "admin_level": 2,
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [83.80, 28.10],
+                        [84.20, 28.10],
+                        [84.20, 28.50],
+                        [83.80, 28.50],
+                        [83.80, 28.10],
+                    ]
+                ],
+            },
+        },
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+
+    evt_gandaki_id = f"evt_gandaki_{uuid.uuid4().hex[:6]}"
+    client.post(
+        "/api/v1/flood-events",
+        json={
+            "id": evt_gandaki_id,
+            "region_id": study_area_id,
+            "name": "Gandaki Basin Event",
+            "start_at": datetime.now(timezone.utc).isoformat(),
+        },
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+
+    # Settlement inside boundary polygon (no explicit metadata region_id)
+    loc_gandaki_inside = f"loc_gandaki_in_{uuid.uuid4().hex[:6]}"
+    client.post(
+        "/api/v1/locations",
+        json={
+            "id": loc_gandaki_inside,
+            "name": "Pokhara Basin In-Boundary Town",
+            "admin_level": 4,
+            "geometry": {"type": "Point", "coordinates": [84.00, 28.25]},
+        },
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+
+    # Ingest extent within Gandaki boundary
+    client.post(
+        f"/api/v1/flood-events/{evt_gandaki_id}/extent",
+        json={
+            "observed_at": datetime.now(timezone.utc).isoformat(),
+            "method": "MNDWI",
+            "area_km2": 8.0,
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [83.95, 28.20],
+                        [84.05, 28.20],
+                        [84.05, 28.30],
+                        [83.95, 28.30],
+                        [83.95, 28.20],
+                    ]
+                ],
+            },
+        },
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+
+    gandaki_res = client.get(f"/api/v1/flood-events/{evt_gandaki_id}/settlements")
+    assert gandaki_res.status_code == status.HTTP_200_OK
+    gandaki_data = gandaki_res.json()
+    assert gandaki_data["status"] == "completed"
+    assert gandaki_data["total_settlements_evaluated"] == 1
+    assert gandaki_data["total_settlements_affected"] == 1
+    assert gandaki_data["affected_settlements"][0]["settlement_id"] == loc_gandaki_inside
+
 

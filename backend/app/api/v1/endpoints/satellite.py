@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import require_roles
-from app.core.exceptions import ConflictError, NotFoundError
+from app.core.exceptions import ConflictError, FloodLensAPIException, NotFoundError
 from app.database import get_db
 from app.models.enums import UserRole
 from app.models.satellite import SatelliteScene
@@ -100,33 +100,24 @@ async def get_satellite_scene(scene_id: str, db: Session = Depends(get_db)) -> S
 @router.post(
     "/jobs",
     response_model=SatelliteJobResponse,
-    status_code=status.HTTP_202_ACCEPTED,
+    status_code=status.HTTP_501_NOT_IMPLEMENTED,
     summary="Start authorized satellite processing job",
-    description="Enqueues satellite NDWI/MNDWI water extraction or SAR change detection task.",
+    description="Explicitly reports that the satellite processing pipeline is not implemented until Member 2 processing worker is connected.",
 )
 async def create_satellite_job(
     job_spec: SatelliteJobCreate,
     current_user: User = Depends(require_roles([UserRole.AUTHORITY, UserRole.ADMIN])),
 ) -> SatelliteJobResponse:
-    """Enqueue satellite NDWI/MNDWI or SAR processing task."""
-    job_id = f"sat_job_{uuid.uuid4().hex[:8]}"
-    now = datetime.now(timezone.utc)
-    _SATELLITE_JOBS[job_id] = {
-        "job_id": job_id,
-        "status": "processing",
-        "method": job_spec.method,
-        "event_id": job_spec.event_id,
-        "scene_id": job_spec.scene_id,
-        "requested_by": current_user.id,
-        "created_at": now,
-        "progress_percent": 10,
-    }
-    return SatelliteJobResponse(
-        job_id=job_id,
-        status="processing",
-        message=f"Satellite {job_spec.method} processing pipeline scheduled",
-        requested_by=current_user.id,
-        created_at=now,
+    """Satellite processing worker is not connected. Explicitly reports not implemented."""
+    raise FloodLensAPIException(
+        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        code="PROCESSING_NOT_IMPLEMENTED",
+        message="Satellite processing pipeline is not implemented: processing worker is not connected. Durable queue and execution worker pending Member 2 integration.",
+        details={
+            "method": job_spec.method,
+            "scene_id": job_spec.scene_id,
+            "worker_status": "disconnected",
+        },
     )
 
 

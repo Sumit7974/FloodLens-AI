@@ -93,8 +93,9 @@ Content-Type: application/json
 
 ### 1.2 Satellite Processing Jobs
 **Endpoints**:
-- `POST /api/v1/satellite/jobs` (Authority/Admin): Trigger automated index calculation (e.g. `NDWI`, `MNDWI`, `SAR_CHANGE`). Returns `202 Accepted` with `job_id` and initial `status: "queued"`.
-- `GET /api/v1/satellite/jobs/{job_id}` (Public/Authority): Poll asynchronous job state (`queued`, `processing`, `completed`, `failed`).
+- `POST /api/v1/satellite/jobs` (Authority/Admin): Trigger automated index calculation (e.g. `NDWI`, `MNDWI`, `SAR_CHANGE`).
+  *Truthful Implementation Status*: Returns `501 Not Implemented` with `code: "PROCESSING_NOT_IMPLEMENTED"` until Member 2's background execution worker and durable queue are connected. The backend does not claim jobs are queued, started, or completed without an active worker.
+- `GET /api/v1/satellite/jobs/{job_id}` (Public/Authority): Poll asynchronous job state.
   *Truthful Status Guarantee*: Unknown or non-existent job IDs return HTTP `404 Not Found` with `code: "JOB_NOT_FOUND"`.
 
 ---
@@ -217,7 +218,7 @@ Member 2's outputs are instantly queryable through these backend endpoints:
   ]
 }
 ```
-*Note: `status` evaluates to `no_settlement_data` when `total_settlements_evaluated == 0` (indicating missing settlement GIS layers rather than 0 risk). `population_exposed` is populated only when ground-verified field surveys exist; total census figures are strictly preserved in `settlement_population` to avoid unsupported exposure claims.*
+*Note: Settlement analysis is strictly scoped to the flood event's study area using documented region relationships (`region_id` in metadata or `parent_id`) or verified study-area boundary polygons. Unrelated administrative regions are never evaluated. When an event's study area has no mapped settlement dataset (`total_settlements_evaluated == 0`), `status` returns `no_settlement_data` to prevent falsely treating missing local data as zero exposure. `population_exposed` is populated only when ground-verified field surveys exist; total census figures are strictly preserved in `settlement_population` to avoid unsupported exposure claims.*
 
 ---
 

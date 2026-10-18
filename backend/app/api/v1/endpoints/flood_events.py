@@ -268,8 +268,8 @@ async def get_affected_settlements(
             notes="No flood extent has been observed or imported for this event.",
         )
 
-    # Perform actual PostGIS / spatial intersection
-    affected, total_evaluated = get_affected_settlements_spatial(db, extent)
+    # Perform actual PostGIS / spatial intersection scoped to event study area / region
+    affected, total_evaluated = get_affected_settlements_spatial(db, extent, region_id=event.region_id)
 
     if total_evaluated == 0:
         return AffectedSettlementsResponse(
@@ -281,7 +281,7 @@ async def get_affected_settlements(
             total_settlements_affected=0,
             affected_settlements=[],
             status="no_settlement_data",
-            notes="No settlement GIS layers are available for spatial intersection in this region.",
+            notes=f"No mapped settlement GIS layers are available for spatial intersection in region '{event.region_id}'.",
         )
 
     return AffectedSettlementsResponse(
@@ -368,7 +368,7 @@ async def get_flood_report(event_id: str, db: Session = Depends(get_db)) -> Floo
     if extent:
         extent_observed_at = extent.observed_at
         extent_area_km2 = extent.area_km2
-        affected, _ = get_affected_settlements_spatial(db, extent)
+        affected, _ = get_affected_settlements_spatial(db, extent, region_id=event.region_id)
         affected_count = len(affected)
         asset_metrics = get_exposed_assets_spatial(db, extent)
         roads_km = asset_metrics["roads_exposed_km"]

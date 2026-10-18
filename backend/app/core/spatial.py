@@ -15,6 +15,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.models.asset import Asset
+from app.models.flood_event import FloodEvent
 from app.models.location import Location
 from app.models.satellite import FloodExtent
 
@@ -166,11 +167,61 @@ def calculate_area_km2_from_geometry(geom_val: Any) -> float:
     return round(float(shp.area * scale_factor), 3)
 
 
+def location_matches_study_area(
+    loc: Location,
+    region_id: Optional[str],
+    study_area_shp: Optional[Any] = None,
+) -> bool:
+    """Check if a location record belongs to the specified study area / region.
+
+    Evaluates documented region relationships:
+    - Direct location ID matches region_id
+    - Direct parent_id matches region_id
+    - metadata_json explicitly tags region_id, region, district, or study_area_id
+    - OR location geometry falls within / intersects verified study-area boundary polygon.
+    """
+    if not region_id:
+        return True
+
+    # The region study area boundary container itself is not a settlement within the study area
+    if loc.id == region_id:
+        return False
+
+    if loc.parent_id == region_id:
+        return True
+
+    meta = loc.metadata_json if isinstance(loc.metadata_json, dict) else {}
+    if (
+        meta.get("region_id") == region_id
+        or meta.get("region") == region_id
+        or meta.get("study_area_id") == region_id
+        or meta.get("district") == region_id
+    ):
+        return True
+
+    # Check verified study-area boundary containment if available
+    if study_area_shp is not None and not study_area_shp.is_empty and loc.geometry is not None:
+        loc_shp = geometry_to_shapely(loc.geometry)
+        if loc_shp and not loc_shp.is_empty:
+            try:
+                if study_area_shp.intersects(loc_shp):
+                    return True
+            except Exception:
+                pass
+
+    return False
+
+
 def get_affected_settlements_spatial(
     db: Session,
     flood_extent: FloodExtent,
+    region_id: Optional[str] = None,
 ) -> Tuple[List[Dict[str, Any]], int]:
     """Execute spatial intersection between a flood extent and mapped settlements (locations).
+
+    Scopes settlement evaluation to the event's study area using documented region
+    relationships or verified study-area boundaries. Unrelated administrative regions
+    are not counted, preventing false zero-exposure claims when local datasets are missing.
 
     Returns a tuple of (affected_settlements_list, total_settlements_evaluated).
     Supports both live PostGIS (PostgreSQL) using ST_Intersects and SQLite fallback using Shapely.
@@ -179,20 +230,77 @@ def get_affected_settlements_spatial(
     if not flood_extent.geometry:
         return [], 0
 
+    if region_id is None and flood_extent.event_id:
+        evt = db.query(FloodEvent).filter(FloodEvent.id == flood_extent.event_id).first()
+        if evt:
+            region_id = evt.region_id
+
+    # Resolve study area boundary if available
+    study_area_loc = None
+    study_area_shp = None
+    has_boundary = False
+    if region_id:
+        study_area_loc = (
+            db.query(Location)
+            .filter(Location.id == region_id, Location.geometry.isnot(None))
+            .first()
+        )
+        if not study_area_loc:
+            candidates = db.query(Location).filter(Location.geometry.isnot(None)).all()
+            for cand in candidates:
+                cand_meta = cand.metadata_json if isinstance(cand.metadata_json, dict) else {}
+                if (
+                    cand_meta.get("region_id") == region_id
+                    or cand_meta.get("study_area_id") == region_id
+                ) and (
+                    cand_meta.get("is_study_area") is True
+                    or cand.admin_level <= 3
+                ):
+                    study_area_loc = cand
+                    break
+
+        if study_area_loc and study_area_loc.geometry is not None:
+            study_area_shp = geometry_to_shapely(study_area_loc.geometry)
+            if study_area_shp is not None and not study_area_shp.is_empty:
+                has_boundary = True
+
     is_postgres = False
     bind = db.get_bind()
     if bind is not None and getattr(bind.dialect, "name", None) == "postgresql":
         is_postgres = True
 
-    # Count total mapped settlements available for evaluation
-    total_evaluated = db.query(Location).filter(Location.geometry.isnot(None)).count()
-    if total_evaluated == 0:
-        return [], 0
-
-    affected: List[Dict[str, Any]] = []
-
     if is_postgres:
-        # Native PostGIS spatial query using GIST index on flood_extents and locations
+        boundary_loc_id = study_area_loc.id if (study_area_loc and has_boundary) else ""
+        # Native PostGIS spatial query scoped to the event's study area / region
+        count_query = text("""
+            SELECT COUNT(*)
+            FROM locations l
+            WHERE l.geometry IS NOT NULL
+              AND (:region_id IS NULL OR l.id != :region_id)
+              AND (
+                  :region_id IS NULL
+                  OR l.parent_id = :region_id
+                  OR l.metadata_json->>'region_id' = :region_id
+                  OR l.metadata_json->>'region' = :region_id
+                  OR l.metadata_json->>'district' = :region_id
+                  OR l.metadata_json->>'study_area_id' = :region_id
+                  OR (:has_boundary = TRUE AND EXISTS (
+                      SELECT 1 FROM locations sa
+                      WHERE sa.id = :boundary_loc_id
+                        AND sa.geometry IS NOT NULL
+                        AND ST_Intersects(l.geometry, sa.geometry)
+                  ))
+              );
+        """)
+        total_evaluated = db.execute(count_query, {
+            "region_id": region_id,
+            "has_boundary": has_boundary,
+            "boundary_loc_id": boundary_loc_id,
+        }).scalar() or 0
+
+        if total_evaluated == 0:
+            return [], 0
+
         query = text("""
             SELECT
                 l.id,
@@ -210,9 +318,30 @@ def get_affected_settlements_spatial(
             FROM locations l
             JOIN flood_extents fe ON fe.id = :extent_id
             WHERE ST_Intersects(l.geometry, fe.geometry)
+              AND (:region_id IS NULL OR l.id != :region_id)
+              AND (
+                  :region_id IS NULL
+                  OR l.parent_id = :region_id
+                  OR l.metadata_json->>'region_id' = :region_id
+                  OR l.metadata_json->>'region' = :region_id
+                  OR l.metadata_json->>'district' = :region_id
+                  OR l.metadata_json->>'study_area_id' = :region_id
+                  OR (:has_boundary = TRUE AND EXISTS (
+                      SELECT 1 FROM locations sa
+                      WHERE sa.id = :boundary_loc_id
+                        AND sa.geometry IS NOT NULL
+                        AND ST_Intersects(l.geometry, sa.geometry)
+                  ))
+              )
             ORDER BY l.admin_level DESC, l.name ASC;
         """)
-        rows = db.execute(query, {"extent_id": flood_extent.id}).fetchall()
+        rows = db.execute(query, {
+            "extent_id": flood_extent.id,
+            "region_id": region_id,
+            "has_boundary": has_boundary,
+            "boundary_loc_id": boundary_loc_id,
+        }).fetchall()
+        affected: List[Dict[str, Any]] = []
         for row in rows:
             loc_id, name, admin_level, crs_source, meta, geojson_str, geom_type, area_km2 = row
             loc_geojson = json.loads(geojson_str) if geojson_str else None
@@ -221,7 +350,6 @@ def get_affected_settlements_spatial(
                 status_desc = "partially_inundated" if area_km2 < 5.0 else "inundated"
 
             meta_dict = meta if isinstance(meta, dict) else {}
-            # Total administrative census population
             total_pop = meta_dict.get("population") or meta_dict.get("total_population")
             if total_pop is not None:
                 try:
@@ -229,7 +357,6 @@ def get_affected_settlements_spatial(
                 except (ValueError, TypeError):
                     total_pop = None
 
-            # Only report population_exposed if verified evidence or explicit survey backing exists
             verified_exposed = meta_dict.get("verified_population_exposed") or meta_dict.get("population_exposed")
             if verified_exposed is not None:
                 try:
@@ -249,14 +376,24 @@ def get_affected_settlements_spatial(
                 "geometry": loc_geojson,
                 "metadata": meta_dict,
             })
+        return affected, total_evaluated
     else:
-        # SQLite fallback using Shapely
+        # SQLite fallback using Shapely with region study area filtering
+        all_locations = db.query(Location).filter(Location.geometry.isnot(None)).all()
+        candidate_locations = [
+            loc for loc in all_locations
+            if location_matches_study_area(loc, region_id, study_area_shp)
+        ]
+        total_evaluated = len(candidate_locations)
+        if total_evaluated == 0:
+            return [], 0
+
         extent_shp = geometry_to_shapely(flood_extent.geometry)
         if extent_shp is None or extent_shp.is_empty:
             return [], total_evaluated
 
-        locations = db.query(Location).filter(Location.geometry.isnot(None)).all()
-        for loc in locations:
+        affected: List[Dict[str, Any]] = []
+        for loc in candidate_locations:
             loc_shp = geometry_to_shapely(loc.geometry)
             if loc_shp is None or loc_shp.is_empty:
                 continue
@@ -301,7 +438,7 @@ def get_affected_settlements_spatial(
                     "metadata": meta_dict,
                 })
 
-    return affected, total_evaluated
+        return affected, total_evaluated
 
 
 def get_exposed_assets_spatial(
