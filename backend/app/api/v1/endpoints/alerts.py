@@ -236,6 +236,14 @@ async def dispatch_alert(
             status_code=status.HTTP_400_BAD_REQUEST,
         )
 
+    # Safeguard 0: Enforce simulation and prohibit operational dispatch requests
+    if dispatch_request and dispatch_request.simulated is False:
+        raise FloodLensAPIException(
+            code="OPERATIONAL_DISPATCH_PROHIBITED",
+            message="Operational dispatch is strictly prohibited. 'simulated' must be True for all test dispatches.",
+            status_code=status.HTTP_400_BAD_REQUEST,
+        )
+
     # Safeguard 1: Restrict all dispatch to historical-demo simulations or test mode
     if alert.mode not in (OperationalMode.HISTORICAL_DEMO, OperationalMode.TEST):
         raise FloodLensAPIException(
@@ -278,6 +286,7 @@ async def dispatch_alert(
             "mode": alert.mode.value,
             "is_test": True,
             "simulation": True,
+            "simulated_only": True,
         },
     )
     await connection_manager.broadcast_to_channel("alerts", event)

@@ -16,6 +16,11 @@ The FloodLens AI real-time event bus operates over WebSocket with JWT authentica
 - **URL:** `ws://<host>:<port>/ws/v1/events?token=<JWT_ACCESS_TOKEN>`
 - **Authentication:** Decodes JWT token and actively verifies user status (`is_active == True`) and current role in the database.
 - **Rejection:** Inactive users, deleted users, or invalid/expired tokens are immediately closed with WebSocket code `1008 Policy Violation`.
+- **Credential Security & Logging Rule:**
+  - Passing JWTs in query parameters is permitted **strictly for prototype / demo testing**.
+  - Web servers, proxies, and ingress routers must be configured **never to log query strings containing credentials**.
+  - For non-demo / production deployments, query-string authentication must be replaced with ticket-based authentication (initial handshake frame) or secure HttpOnly cookie session headers.
+  - Raw JWT tokens are strictly scrubbed from application logs.
 
 Upon successful connection, the server sends a `connection.established` greeting:
 
@@ -134,9 +139,10 @@ When a mobile or web client reconnects after network drop, send:
 
 ### 2.2 Safety & Test-Only Safeguards
 
-- **Operational Mode Enforcement:** All dispatches are strictly restricted to `historical_demo` or `test` mode. Attempting to dispatch alerts in `live_observation` or `model_estimate` mode is rejected (`HTTP 400`, `code: DISPATCH_RESTRICTED_TO_TEST`). Operational disaster warnings are prohibited.
+- **Simulation Enforcement:** `simulated=True` is strictly mandatory for all test dispatches. Attempting to submit `simulated=False` is rejected (`HTTP 400 OPERATIONAL_DISPATCH_PROHIBITED`). Operational emergency warnings cannot be issued.
+- **Operational Mode Restriction:** All dispatches are strictly restricted to `historical_demo` or `test` mode. Attempting to dispatch alerts in `live_observation` or `model_estimate` mode is rejected (`HTTP 400 DISPATCH_RESTRICTED_TO_TEST`).
 - **Visible Labelling:** Dispatched alerts are visibly labelled with `[DEMO ONLY]` or `[DEMO / TEST ONLY]` prefix in titles and `[HISTORICAL DEMO / TEST SIMULATION]` in body messages.
-- **Test Metadata:** Dispatched event payloads include `"is_test": true, "simulation": true`.
+- **Test Metadata:** Dispatched event payloads include `"is_test": true, "simulation": true, "simulated_only": true`.
 
 ### 2.3 Dispatch Event Payload (`alert.published`)
 ```json
@@ -213,14 +219,19 @@ Located at `backend/app/services/push_notifications.py`.
 - **FCM Token Format:** Alphanumeric / colon string length >= 30.
 - **Credential Masking:** Tokens are masked in all logs and receipts: `ExponentPushToken[***7890]`. Full device secrets are never logged.
 
-### 4.2 Sandbox Delivery States
+### 4.2 Simulated Delivery States & Test-Device Verification
+
+- **Unambiguous Simulation:** Receipts strictly output `status="simulated_only"` with `simulated_only: true` and an explicit delivery note confirming that no external network call was made to Expo or FCM.
+- **Verified Test-Device Registrations:** The prototype only accepts explicitly verified test device tokens (e.g. matching test registry or containing `test`, `demo`, or `sandbox` markers). Arbitrary or unverified device tokens are rejected (`unregistered_device`).
+- **Opt-in Rule:** Opt-in is **not** assumed simply because an authority submitted a token; device opt-in is actively verified.
 
 | Status | Code | Description |
 | :--- | :--- | :--- |
-| `DELIVERED_SANDBOX` | `delivered_sandbox` | Successfully recorded in test sandbox with receipt ID |
+| `SIMULATED_ONLY` | `simulated_only` | Recorded in test sandbox simulation; no real external delivery occurred |
+| `UNREGISTERED_DEVICE` | `unregistered_device` | Token is not in the verified test device registry; arbitrary dispatch prohibited |
 | `INVALID_TOKEN` | `invalid_token` | Token failed syntactic validation pattern |
-| `OPT_OUT_SKIPPED` | `opt_out_skipped` | Target device has not explicitly opted into test alerts |
-| `FAILED` | `failed` | Downstream network or provider failure |
+| `OPT_OUT_SKIPPED` | `opt_out_skipped` | Device recipient has not explicitly opted into test alerts |
+| `FAILED` | `failed` | Downstream simulation handler error |
 
 ### 4.3 Mobile Integration Guide for Member 4
 
@@ -229,16 +240,16 @@ When testing on physical devices or Expo Go / FCM emulators:
    ```typescript
    const token = (await Notifications.getExpoPushTokenAsync()).data;
    ```
-2. During test dispatch, include token in dispatch request:
+2. During test dispatch, include verified token in dispatch request:
    ```json
    POST /api/v1/alerts/{alert_id}/dispatch
    {
      "notes": "Testing on field device",
-     "target_device_tokens": ["ExponentPushToken[xxxxxxxxxxxx]"],
+     "target_device_tokens": ["ExponentPushToken[demo_test_device_sandbox_01]"],
      "simulated": true
    }
    ```
-3. Backend validates token and delivers via sandbox adapter, returning delivery receipt.
+3. Backend validates that token is a verified test registration and returns a `SIMULATED_ONLY` delivery receipt. Real emergency warnings are never issued.
 
 ---
 

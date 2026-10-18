@@ -245,6 +245,8 @@ def run_demonstration():
             assert client_evt["resource_id"] == alert_id
             assert client_evt["metadata"]["is_test"] is True
             assert client_evt["metadata"]["simulation"] is True
+            assert client_evt["metadata"]["simulated_only"] is True
+            logger.info("[Test Client WS] Verified SIMULATED_ONLY alert event received. No operational warnings issued.")
 
             # Step 6: Citizen can now query dispatched demo alert via REST
             resp_cit_published = client.get("/api/v1/alerts", headers={"Authorization": f"Bearer {citizen_token}"})

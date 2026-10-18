@@ -465,7 +465,7 @@ def test_websocket_reconnection_and_resync(client: TestClient, citizen_token: st
 # 9. Push Adapter Success and Failure Handling
 # ==============================================================================
 def test_push_notification_adapter():
-    """Verify push notification token masking, validation, and sandbox delivery."""
+    """Verify push notification token masking, validation, and SIMULATED_ONLY delivery."""
     adapter = SandboxPushNotificationAdapter()
 
     # 1. Token masking protects privacy
@@ -473,7 +473,7 @@ def test_push_notification_adapter():
     assert mask_device_token("fcm_token_1234567890abcdef") == "fcm_***cdef"
     assert mask_device_token(None) == "***"
 
-    # 2. Valid Expo token delivered in sandbox
+    # 2. Valid verified test Expo token delivered as SIMULATED_ONLY
     valid_expo = ["ExponentPushToken[valid_token_test_12345]"]
     receipts = adapter.send_test_alert(
         tokens=valid_expo,
@@ -482,11 +482,25 @@ def test_push_notification_adapter():
         is_opted_in=True,
     )
     assert len(receipts) == 1
-    assert receipts[0].status == DeliveryStatus.DELIVERED_SANDBOX
+    assert receipts[0].status == DeliveryStatus.SIMULATED_ONLY
     assert receipts[0].is_sandbox is True
+    assert receipts[0].simulated_only is True
+    assert "SIMULATED_ONLY" in receipts[0].delivery_note
     assert receipts[0].token_masked.startswith("ExponentPushToken[")
 
-    # 3. Malformed token rejected with INVALID_TOKEN
+    # 3. Arbitrary, unverified device tokens rejected in prototype
+    arbitrary_token = ["ExponentPushToken[arbitrary_external_device_999]"]
+    receipts_unverified = adapter.send_test_alert(
+        tokens=arbitrary_token,
+        title="[DEMO] Test Alert",
+        message="Simulated alert message",
+        is_opted_in=True,
+    )
+    assert len(receipts_unverified) == 1
+    assert receipts_unverified[0].status == DeliveryStatus.UNREGISTERED_DEVICE
+    assert "not a verified registered test device" in receipts_unverified[0].error
+
+    # 4. Malformed token rejected with INVALID_TOKEN
     invalid_tokens = ["not_a_valid_token"]
     receipts_inv = adapter.send_test_alert(
         tokens=invalid_tokens,
@@ -498,7 +512,7 @@ def test_push_notification_adapter():
     assert receipts_inv[0].status == DeliveryStatus.INVALID_TOKEN
     assert receipts_inv[0].error is not None
 
-    # 4. Opted-out device skipped
+    # 5. Opted-out device skipped
     receipts_opt_out = adapter.send_test_alert(
         tokens=valid_expo,
         title="[DEMO] Test Alert",
@@ -507,6 +521,41 @@ def test_push_notification_adapter():
     )
     assert len(receipts_opt_out) == 1
     assert receipts_opt_out[0].status == DeliveryStatus.OPT_OUT_SKIPPED
+
+
+def test_alert_dispatch_enforces_simulated_true(
+    client: TestClient,
+    db_session: Session,
+    test_authority_user: User,
+    authority_token: str,
+):
+    """Verify attempting operational dispatch (simulated=False) is strictly rejected."""
+    alert = Alert(
+        id="alert_simulated_enforce",
+        area_id="loc_sim",
+        title="[DEMO ONLY] Simulation Enforce Test",
+        message="Test alert",
+        status=AlertStatus.APPROVED,
+        created_by=test_authority_user.id,
+        approved_by=test_authority_user.id,
+        mode=OperationalMode.HISTORICAL_DEMO,
+        target_channels=["in_app"],
+    )
+    db_session.add(alert)
+    db_session.commit()
+
+    # Request with simulated=False MUST be rejected
+    dispatch_body = {
+        "notes": "Attempting real operational dispatch",
+        "simulated": False,
+    }
+    resp = client.post(
+        f"/api/v1/alerts/{alert.id}/dispatch",
+        json=dispatch_body,
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+    assert resp.status_code == status.HTTP_400_BAD_REQUEST
+    assert resp.json()["error"]["code"] == "OPERATIONAL_DISPATCH_PROHIBITED"
 
 
 def test_alert_dispatch_with_push_tokens(

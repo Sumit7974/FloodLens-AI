@@ -1,4 +1,14 @@
-"""WebSocket router for real-time notifications endpoint /ws/v1/events."""
+"""WebSocket router for real-time notifications endpoint /ws/v1/events.
+
+SECURITY NOTICE:
+- Query-string JWT authentication (?token=...) is supported strictly for prototype / demo testing.
+- Production and non-demo deployments must NOT pass credentials via URL query parameters, as URLs
+  can be captured in proxy access logs, browser history, or server access logs.
+- Reverse proxies and ingress controllers must be configured NOT to log query strings containing credentials.
+- For operational deployments, replace query-string tokens with an initial WebSocket handshake message
+  (ticket-based authentication) or secure HttpOnly cookie session headers.
+- Raw tokens and sensitive credentials must never be written to application logs.
+"""
 from datetime import datetime, timezone
 import json
 import logging
@@ -18,13 +28,14 @@ ws_router = APIRouter(tags=["WebSocket"])
 @ws_router.websocket("/events")
 async def websocket_events_endpoint(
     websocket: WebSocket,
-    token: str = Query(..., description="JWT Bearer token for authentication"),
+    token: str = Query(..., description="JWT Bearer token for authentication (prototype only)"),
     db: Session = Depends(get_db),
 ) -> None:
     """Authenticated real-time WebSocket channel.
 
-    Accepts token as query param, verifies user identity and active database status,
+    Accepts token as query param (prototype only), verifies user identity and active database status,
     and enables secure event streaming, topic subscriptions, and REST resync.
+    Raw tokens are never logged.
     """
     # 1. Validate JWT Token
     try:
