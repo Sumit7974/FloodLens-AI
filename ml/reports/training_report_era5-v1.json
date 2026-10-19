@@ -1,0 +1,277 @@
+{
+  "run_id": "run_20261019_161752",
+  "timestamp": "2026-10-19T16:17:52Z",
+  "data_source": "ml\\data\\processed\\era5_glofas_labeled.csv",
+  "is_synthetic_data": false,
+  "disclaimer": "RESEARCH PROTOTYPE: Model trained on open-access ERA5 reanalysis precipitation and GloFAS discharge proxy data (Open-Meteo). Not validated against in-situ Nepal DHM gauge observations (river stage data unavailable). Do NOT use for real-world operational flood warnings.",
+  "model_version": "era5-v1",
+  "model_type": "RandomForestClassifier",
+  "feature_list_numeric": [
+    "rainfall_mm",
+    "rainfall_rolling_3h_mm",
+    "rainfall_rolling_6h_mm",
+    "rainfall_rolling_24h_mm",
+    "river_stage_m",
+    "river_stage_rate_of_rise_m_per_h",
+    "upstream_discharge_m3s",
+    "forecast_precip_next_3h_mm",
+    "temperature_c",
+    "relative_humidity_pct"
+  ],
+  "feature_list_categorical": [
+    "season",
+    "catchment_saturation_class"
+  ],
+  "train_ratio": 0.75,
+  "train_time_range": {
+    "start": "2017-06-01 00:00:00+00:00",
+    "end": "2024-07-31 23:00:00+00:00"
+  },
+  "test_time_range": {
+    "start": "2024-08-01 00:00:00+00:00",
+    "end": "2024-09-30 23:00:00+00:00"
+  },
+  "is_reanalysis_data": true,
+  "horizons": [
+    {
+      "horizon_hours": 1,
+      "target_name": "risk_label_+1h",
+      "dummy_macro_f1": 0.2379,
+      "dummy_balanced_accuracy": 0.25,
+      "model_macro_f1": 0.9095,
+      "model_balanced_accuracy": 0.8947,
+      "per_class_metrics": {
+        "low": {
+          "precision": 0.9917106254709872,
+          "recall": 0.9909638554216867,
+          "f1-score": 0.9913370998116761,
+          "support": 1328
+        },
+        "moderate": {
+          "precision": 0.8260869565217391,
+          "recall": 0.8735632183908046,
+          "f1-score": 0.8491620111731844,
+          "support": 87
+        },
+        "high": {
+          "precision": 0.9375,
+          "recall": 0.75,
+          "f1-score": 0.8333333333333334,
+          "support": 20
+        },
+        "critical": {
+          "precision": 0.9642857142857143,
+          "recall": 0.9642857142857143,
+          "f1-score": 0.9642857142857143,
+          "support": 28
+        }
+      },
+      "confusion_matrix": [
+        [
+          1316,
+          12,
+          0,
+          0
+        ],
+        [
+          11,
+          76,
+          0,
+          0
+        ],
+        [
+          0,
+          4,
+          15,
+          1
+        ],
+        [
+          0,
+          0,
+          1,
+          27
+        ]
+      ],
+      "classes_present_in_test": [
+        "low",
+        "moderate",
+        "high",
+        "critical"
+      ],
+      "train_samples_count": 4392,
+      "test_samples_count": 1463,
+      "class_distribution_train": {
+        "low": 3603,
+        "moderate": 520,
+        "high": 218,
+        "critical": 51
+      },
+      "class_distribution_test": {
+        "low": 1328,
+        "moderate": 87,
+        "critical": 28,
+        "high": 20
+      }
+    },
+    {
+      "horizon_hours": 3,
+      "target_name": "risk_label_+3h",
+      "dummy_macro_f1": 0.2379,
+      "dummy_balanced_accuracy": 0.25,
+      "model_macro_f1": 0.8637,
+      "model_balanced_accuracy": 0.8883,
+      "per_class_metrics": {
+        "low": {
+          "precision": 0.9930875576036866,
+          "recall": 0.9751131221719457,
+          "f1-score": 0.9840182648401826,
+          "support": 1326
+        },
+        "moderate": {
+          "precision": 0.6936936936936937,
+          "recall": 0.8850574712643678,
+          "f1-score": 0.7777777777777778,
+          "support": 87
+        },
+        "high": {
+          "precision": 0.8,
+          "recall": 0.8,
+          "f1-score": 0.8,
+          "support": 20
+        },
+        "critical": {
+          "precision": 0.8928571428571429,
+          "recall": 0.8928571428571429,
+          "f1-score": 0.8928571428571429,
+          "support": 28
+        }
+      },
+      "confusion_matrix": [
+        [
+          1293,
+          33,
+          0,
+          0
+        ],
+        [
+          9,
+          77,
+          1,
+          0
+        ],
+        [
+          0,
+          1,
+          16,
+          3
+        ],
+        [
+          0,
+          0,
+          3,
+          25
+        ]
+      ],
+      "classes_present_in_test": [
+        "low",
+        "moderate",
+        "high",
+        "critical"
+      ],
+      "train_samples_count": 4392,
+      "test_samples_count": 1461,
+      "class_distribution_train": {
+        "low": 3603,
+        "moderate": 520,
+        "high": 218,
+        "critical": 51
+      },
+      "class_distribution_test": {
+        "low": 1326,
+        "moderate": 87,
+        "critical": 28,
+        "high": 20
+      }
+    },
+    {
+      "horizon_hours": 6,
+      "target_name": "risk_label_+6h",
+      "dummy_macro_f1": 0.2379,
+      "dummy_balanced_accuracy": 0.25,
+      "model_macro_f1": 0.8096,
+      "model_balanced_accuracy": 0.8735,
+      "per_class_metrics": {
+        "low": {
+          "precision": 0.9937254901960785,
+          "recall": 0.9576719576719577,
+          "f1-score": 0.9753656658968437,
+          "support": 1323
+        },
+        "moderate": {
+          "precision": 0.5692307692307692,
+          "recall": 0.8505747126436781,
+          "f1-score": 0.6820276497695853,
+          "support": 87
+        },
+        "high": {
+          "precision": 0.6206896551724138,
+          "recall": 0.9,
+          "f1-score": 0.7346938775510204,
+          "support": 20
+        },
+        "critical": {
+          "precision": 0.9166666666666666,
+          "recall": 0.7857142857142857,
+          "f1-score": 0.8461538461538461,
+          "support": 28
+        }
+      },
+      "confusion_matrix": [
+        [
+          1267,
+          56,
+          0,
+          0
+        ],
+        [
+          8,
+          74,
+          5,
+          0
+        ],
+        [
+          0,
+          0,
+          18,
+          2
+        ],
+        [
+          0,
+          0,
+          6,
+          22
+        ]
+      ],
+      "classes_present_in_test": [
+        "low",
+        "moderate",
+        "high",
+        "critical"
+      ],
+      "train_samples_count": 4392,
+      "test_samples_count": 1458,
+      "class_distribution_train": {
+        "low": 3603,
+        "moderate": 520,
+        "high": 218,
+        "critical": 51
+      },
+      "class_distribution_test": {
+        "low": 1323,
+        "moderate": 87,
+        "critical": 28,
+        "high": 20
+      }
+    }
+  ]
+}

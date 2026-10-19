@@ -90,6 +90,7 @@ class TrainingRunReport:
     train_ratio: float
     train_time_range: Dict[str, str]
     test_time_range: Dict[str, str]
+    is_reanalysis_data: bool = False
     horizons: List[HorizonEvaluationMetrics] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -103,7 +104,7 @@ def build_preprocessor(
     """Construct a scikit-learn preprocessing pipeline."""
     numeric_transformer = Pipeline(
         steps=[
-            ("imputer", SimpleImputer(strategy="median")),
+            ("imputer", SimpleImputer(strategy="median", keep_empty_features=True)),
             ("scaler", StandardScaler()),
         ]
     )
@@ -250,15 +251,23 @@ def train_baseline_pipeline(
     n_estimators = cfg.get("training", {}).get("n_estimators", 100)
     max_depth = cfg.get("training", {}).get("max_depth", 6)
 
-    # Check if dataset is synthetic
+    # Check data provenance flags
     is_synthetic = bool(df.get("is_synthetic", pd.Series([False])).iloc[0])
-    disclaimer = (
-        "PIPELINE TEST ONLY: Model trained on synthetic demonstration data. "
-        "Metrics reflect software pipeline functionality and code correctness, "
-        "NOT real-world operational flood prediction accuracy. Do NOT use for real-world alerts."
-        if is_synthetic
-        else "Trained on verified historical observations."
-    )
+    is_reanalysis = bool(df.get("is_reanalysis", pd.Series([False])).iloc[0])
+    if is_synthetic:
+        disclaimer = (
+            "PIPELINE TEST ONLY: Model trained on synthetic demonstration data. "
+            "Metrics reflect software pipeline functionality and code correctness, "
+            "NOT real-world operational flood prediction accuracy. Do NOT use for real-world alerts."
+        )
+    elif is_reanalysis:
+        disclaimer = (
+            "RESEARCH PROTOTYPE: Model trained on open-access ERA5 reanalysis precipitation "
+            "and GloFAS discharge proxy data (Open-Meteo). Not validated against in-situ Nepal DHM gauge "
+            "observations (river stage data unavailable). Do NOT use for real-world operational flood warnings."
+        )
+    else:
+        disclaimer = "Trained on verified historical observations."
 
     # Chronological sort
     timestamp_col = "timestamp" if "timestamp" in df.columns else df.columns[0]
@@ -295,6 +304,7 @@ def train_baseline_pipeline(
         timestamp=now_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
         data_source=str(data_p),
         is_synthetic_data=is_synthetic,
+        is_reanalysis_data=is_reanalysis,
         disclaimer=disclaimer,
         model_version=model_version,
         model_type="RandomForestClassifier",
@@ -360,6 +370,7 @@ def train_baseline_pipeline(
         "model_version": model_version,
         "created_at": report.timestamp,
         "is_synthetic_data": is_synthetic,
+        "is_reanalysis_data": is_reanalysis,
         "disclaimer": disclaimer,
         "features": {
             "numeric": numeric_cols,
