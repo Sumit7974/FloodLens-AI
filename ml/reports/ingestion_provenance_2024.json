@@ -1,0 +1,37 @@
+{
+  "source_era5_url": "https://archive-api.open-meteo.com/v1/archive",
+  "source_glofas_url": "https://flood-api.open-meteo.com/v1/flood",
+  "era5_api_params": {
+    "latitude": 26.87,
+    "longitude": 87.16,
+    "start_date": "2024-06-01",
+    "end_date": "2024-09-30",
+    "hourly": "precipitation,temperature_2m,relative_humidity_2m,et0_fao_evapotranspiration",
+    "timezone": "UTC"
+  },
+  "glofas_api_params": {
+    "latitude": 26.87,
+    "longitude": 87.16,
+    "start_date": "2024-06-01",
+    "end_date": "2024-09-30",
+    "daily": "river_discharge"
+  },
+  "fetch_timestamp_utc": "2026-10-19T12:18:27Z",
+  "era5_rows_fetched": 2928,
+  "glofas_rows_fetched": 122,
+  "merged_rows": 2928,
+  "missing_values_by_column": {
+    "river_stage_m": 2928,
+    "river_stage_rate_of_rise_m_per_h": 2928,
+    "forecast_precip_next_3h_mm": 3
+  },
+  "validation_warnings": [
+    "Column 'river_stage_m' has 2928 missing values (100.0%). Consider imputation or exclusion.",
+    "Column 'river_stage_rate_of_rise_m_per_h' has 2928 missing values (100.0%). Consider imputation or exclusion.",
+    "river_stage_m is entirely NaN (not available from ERA5/GloFAS). DHM in-situ gauge data is required for river stage labeling. This dataset can train rainfall and discharge features only."
+  ],
+  "data_quality_grade": "PARTIAL",
+  "is_reanalysis": true,
+  "license": "CC BY 4.0 \u2014 Attribution required. Non-commercial use only.",
+  "citation": "Zippenfenig, P. (2023). Open-Meteo.com Weather API [Computer software]. Zenodo. https://doi.org/10.5281/zenodo.7970649"
+}

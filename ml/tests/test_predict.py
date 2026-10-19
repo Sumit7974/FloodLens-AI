@@ -99,3 +99,60 @@ def test_synthetic_mode_labeling(trained_predictor: FloodRiskPredictor):
     result = trained_predictor.predict(features=features)
     assert result["mode"] == "historical_demo"
     assert any("Experimental pipeline test mode" in lim for lim in result["limitations"])
+
+
+def test_era5_v1_prediction_and_reanalysis_disclaimer():
+    """Verify era5-v1 artifact loads and produces contract-compliant predictions with reanalysis disclaimer."""
+    models_path = Path("ml/models")
+    if not (models_path / "model_metadata_era5-v1.json").exists():
+        pytest.skip("era5-v1 artifacts not present")
+
+    predictor = FloodRiskPredictor(models_dir=models_path, model_version="era5-v1")
+    features = {
+        "rainfall_mm": 20.0,
+        "rainfall_rolling_3h_mm": 45.0,
+        "rainfall_rolling_6h_mm": 70.0,
+        "rainfall_rolling_24h_mm": 120.0,
+        "river_stage_m": 5.0,
+        "upstream_discharge_m3s": 5000.0,
+        "forecast_precip_next_3h_mm": 25.0,
+        "temperature_c": 26.0,
+        "relative_humidity_pct": 88.0,
+        "season": "monsoon",
+        "catchment_saturation_class": "saturated",
+    }
+    result = predictor.predict(features)
+    assert result["mode"] == "historical_demo"
+    assert result["model_version"] == "era5-v1"
+    assert any("RESEARCH PROTOTYPE" in lim for lim in result["limitations"])
+    assert len(result["horizons"]) == 3
+    for h_item in result["horizons"]:
+        assert h_item["risk_level"] in ["low", "moderate", "high", "critical"]
+        assert 0.0 <= h_item["calibrated_probability"] <= 1.0
+
+
+def test_prediction_backend_schema_validation(trained_predictor: FloodRiskPredictor):
+    """Verify predictor payload conforms to backend ForecastIngestRequest schema."""
+    features = {
+        "rainfall_mm": 10.0,
+        "rainfall_rolling_3h_mm": 20.0,
+        "rainfall_rolling_6h_mm": 35.0,
+        "rainfall_rolling_24h_mm": 50.0,
+        "river_stage_m": 5.5,
+        "upstream_discharge_m3s": 3000.0,
+        "forecast_precip_next_3h_mm": 15.0,
+        "temperature_c": 25.0,
+        "relative_humidity_pct": 85.0,
+        "season": "monsoon",
+        "catchment_saturation_class": "wet",
+    }
+    result = trained_predictor.predict(features)
+    import sys
+    sys.path.insert(0, "backend")
+    from app.schemas.forecast import ForecastIngestRequest
+
+    req = ForecastIngestRequest.model_validate(result)
+    assert req.location_id == "loc_barahachhetra_w2"
+    assert len(req.horizons) == 3
+    assert req.mode.value == "historical_demo"
+

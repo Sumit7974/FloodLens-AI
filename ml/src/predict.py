@@ -88,9 +88,16 @@ class FloodRiskPredictor:
         """
         limitations: List[str] = []
 
-        # Check metadata synthetic flag
-        if self.metadata.get("is_synthetic_data", True):
+        # Check metadata synthetic or reanalysis flags
+        if self.metadata.get("is_synthetic_data", False):
             limitations.append("Experimental pipeline test mode: Model trained on synthetic demonstration data.")
+        elif self.metadata.get("is_reanalysis_data", False) or "reanalysis" in (
+            self.metadata.get("disclaimer", "") + self.metadata.get("model_version", "")
+        ).lower():
+            limitations.append(
+                "RESEARCH PROTOTYPE: Model trained on ERA5/GloFAS reanalysis proxy data. "
+                "Not validated against in-situ DHM stage records."
+            )
 
         # Check presence of critical features
         missing_critical: List[str] = []
@@ -123,7 +130,13 @@ class FloodRiskPredictor:
         issued_ts = issued_at or now_iso
         cutoff_ts = input_data_cutoff_at or now_iso
 
-        operational_mode = mode or ("historical_demo" if self.metadata.get("is_synthetic_data", True) else "model_estimate")
+        is_demo = (
+            self.metadata.get("is_synthetic_data", False)
+            or self.metadata.get("is_reanalysis_data", False)
+            or "baseline" in self.model_version.lower()
+            or "era5" in self.model_version.lower()
+        )
+        operational_mode = mode or ("historical_demo" if is_demo else "model_estimate")
         is_valid, limitations, data_quality = self.validate_features(features)
 
         # Safety rule: If critical inputs are missing, NEVER emit a false low-risk result!
