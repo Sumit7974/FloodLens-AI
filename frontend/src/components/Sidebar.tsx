@@ -54,7 +54,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   ];
 
   return (
-    <aside className="w-full md:w-60 lg:w-64 flex-shrink-0 border-r border-[#27272a] bg-[#000000] flex flex-col justify-between">
+    <aside className="w-full md:w-60 lg:w-64 flex-shrink-0 border-r border-[#27272a]/80 bg-[#000000]/80 backdrop-blur-md flex flex-col justify-between">
       {/* Top Nav Section */}
       <div className="p-3 space-y-3">
         {/* Navigation Category Label */}
@@ -99,7 +99,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Sidebar Footer: Clean Telemetry Line */}
-      <div className="p-4 border-t border-[#27272a] bg-[#000000]">
+      <div className="p-4 border-t border-[#27272a]/80 bg-[#000000]/50">
         <div className="flex items-center justify-between text-[10px] font-mono text-[#5a5a5f] uppercase tracking-wider">
           <span className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>

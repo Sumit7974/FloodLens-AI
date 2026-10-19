@@ -7,6 +7,7 @@ import { PredictionCentre } from './components/PredictionCentre';
 import { ResponseOperations } from './components/ResponseOperations';
 import { SatelliteIntelligence } from './components/SatelliteIntelligence';
 import { Sidebar } from './components/Sidebar';
+import { ParticlesComponent } from './components/ui/particles-bg';
 import {
   BENCHMARK_SCENES,
   MOCK_ACTIVE_ALERTS,
@@ -223,7 +224,10 @@ export function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#000000] text-white flex flex-col font-sans selection:bg-white selection:text-black">
+    <div className="relative min-h-screen bg-transparent text-white flex flex-col font-sans selection:bg-white selection:text-black">
+      {/* Global Animated Particles Background */}
+      <ParticlesComponent />
+
       {/* Top Navigation Header */}
       <Header
         benchmarkScenes={BENCHMARK_SCENES}
@@ -255,7 +259,7 @@ export function App() {
         />
 
         {/* Primary Operational Content Area */}
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6 bg-[#000000]">
+        <main className="flex-1 overflow-y-auto p-4 lg:p-6 bg-transparent">
           <div className="max-w-7xl mx-auto space-y-4">
             {/* View Switcher: All 6 Sidebar Views Fully Functional */}
             {activeTab === 'command-overview' && (

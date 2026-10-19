@@ -29,7 +29,7 @@ export const Header: React.FC<HeaderProps> = ({
   const regionName = currentScene.region?.toUpperCase() || 'KOSHI BASIN';
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-[#27272a] bg-[#000000] px-4 lg:px-6 py-2.5">
+    <header className="sticky top-0 z-40 w-full border-b border-[#27272a]/80 bg-[#000000]/80 backdrop-blur-md px-4 lg:px-6 py-2.5">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         {/* Left Section: Branding & Subtle Eyebrow Benchmark Selector */}
         <div className="flex flex-wrap items-center gap-4 lg:gap-6">
