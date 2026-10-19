@@ -124,6 +124,7 @@ class FloodRiskPredictor:
         issued_at: Optional[str] = None,
         input_data_cutoff_at: Optional[str] = None,
         mode: Optional[str] = None,
+        include_explanations: bool = False,
     ) -> Dict[str, Any]:
         """Generate multi-horizon risk forecast matching backend API schema."""
         now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -181,9 +182,6 @@ class FloodRiskPredictor:
                 prob = None
                 if hasattr(model, "predict_proba"):
                     proba_vec = model.predict_proba(df_row)[0]
-                    # Probability of critical or high risk
-                    # Note: We do not present uncalibrated model probability as ground truth
-                    # We report the model's confidence for the predicted class
                     classes = getattr(model, "classes_", [0, 1, 2, 3])
                     if pred_class_id in classes:
                         class_idx = list(classes).index(pred_class_id)
@@ -203,7 +201,7 @@ class FloodRiskPredictor:
                     "calibrated_probability": None,
                 })
 
-        return {
+        forecast_payload: Dict[str, Any] = {
             "forecast_id": f"fc_{uuid.uuid4().hex[:12]}",
             "event_id": event_id,
             "location_id": location_id,
@@ -215,6 +213,28 @@ class FloodRiskPredictor:
             "horizons": horizon_predictions,
             "limitations": limitations,
         }
+
+        if include_explanations:
+            try:
+                from ml.src.explainability import FloodRiskExplainer
+                explainer = FloodRiskExplainer(models_dir=self.models_dir, model_version=self.model_version)
+                explanations = {}
+                for h_item in horizon_predictions:
+                    h = h_item["hours"]
+                    exp = explainer.explain_prediction(
+                        features=features,
+                        predicted_risk_level=h_item["risk_level"],
+                        calibrated_probability=h_item["calibrated_probability"],
+                        location_id=location_id,
+                        horizon_hours=h,
+                        forecast_id=forecast_payload["forecast_id"],
+                    )
+                    explanations[f"+{h}h"] = exp.to_dict()
+                forecast_payload["explanations"] = explanations
+            except Exception as exp_err:
+                logger.warning(f"Could not compute local explanation: {exp_err}")
+
+        return forecast_payload
 
 
 def main() -> None:

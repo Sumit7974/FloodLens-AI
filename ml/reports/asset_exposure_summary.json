@@ -1,0 +1,260 @@
+{
+  "summary": {
+    "horizon_hours": 3,
+    "evaluation_timestamp": "2026-10-19T16:40:33Z",
+    "total_assets_evaluated": 6,
+    "total_assets_exposed": 5,
+    "by_risk_category": {
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 5,
+      "unknown": 1
+    },
+    "by_asset_type": {
+      "health_post": {
+        "low": 0,
+        "moderate": 0,
+        "high": 0,
+        "critical": 1,
+        "unknown": 0
+      },
+      "school": {
+        "low": 0,
+        "moderate": 0,
+        "high": 0,
+        "critical": 1,
+        "unknown": 0
+      },
+      "bridge": {
+        "low": 0,
+        "moderate": 0,
+        "high": 0,
+        "critical": 1,
+        "unknown": 0
+      },
+      "road": {
+        "low": 0,
+        "moderate": 0,
+        "high": 0,
+        "critical": 1,
+        "unknown": 0
+      },
+      "farmland": {
+        "low": 0,
+        "moderate": 0,
+        "high": 0,
+        "critical": 1,
+        "unknown": 0
+      },
+      "hospital": {
+        "low": 0,
+        "moderate": 0,
+        "high": 0,
+        "critical": 0,
+        "unknown": 1
+      }
+    },
+    "infrastructure_metrics": {
+      "roads_exposed_km": 2.358,
+      "farmland_exposed_ha": 440.85,
+      "critical_facilities_exposed_count": 2
+    },
+    "unmatched_assets_count": 0,
+    "data_quality_notes": []
+  },
+  "sample_matched": [
+    {
+      "asset_id": "ast_chatara_health_post_01",
+      "asset_type": "health_post",
+      "name": "Chatara Primary Health Centre",
+      "location_id": "loc_barahachhetra_w2",
+      "horizon_hours": 3,
+      "predicted_risk_score": 0.7351,
+      "risk_category": "critical",
+      "exposure_status": "potential_risk_exposure",
+      "source_identifier": "nepal_dhm_osm_pilot",
+      "coordinates": [
+        87.162,
+        26.868
+      ],
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.162,
+          26.868
+        ]
+      },
+      "intersecting_metric_val": null,
+      "confirmed_damage": null,
+      "notes": [
+        "Matched via spatial geometry intersection."
+      ]
+    },
+    {
+      "asset_id": "ast_barahachhetra_school_02",
+      "asset_type": "school",
+      "name": "Barahachhetra Secondary School",
+      "location_id": "loc_barahachhetra_w2",
+      "horizon_hours": 3,
+      "predicted_risk_score": 0.7351,
+      "risk_category": "critical",
+      "exposure_status": "potential_risk_exposure",
+      "source_identifier": "nepal_dhm_osm_pilot",
+      "coordinates": [
+        87.145,
+        26.852
+      ],
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.145,
+          26.852
+        ]
+      },
+      "intersecting_metric_val": null,
+      "confirmed_damage": null,
+      "notes": [
+        "Matched via spatial geometry intersection."
+      ]
+    },
+    {
+      "asset_id": "ast_koshi_bridge_chatara_03",
+      "asset_type": "bridge",
+      "name": "Chatara Koshi Suspension & Road Bridge",
+      "location_id": "loc_barahachhetra_w2",
+      "horizon_hours": 3,
+      "predicted_risk_score": 0.7351,
+      "risk_category": "critical",
+      "exposure_status": "potential_risk_exposure",
+      "source_identifier": "nepal_dhm_osm_pilot",
+      "coordinates": [
+        87.158,
+        26.872
+      ],
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.158,
+          26.872
+        ]
+      },
+      "intersecting_metric_val": null,
+      "confirmed_damage": null,
+      "notes": [
+        "Matched via spatial geometry intersection."
+      ]
+    },
+    {
+      "asset_id": "ast_koshi_highway_seg_04",
+      "asset_type": "road",
+      "name": "Chatara-Dharan Access Road (Segment A)",
+      "location_id": "loc_barahachhetra_w2",
+      "horizon_hours": 3,
+      "predicted_risk_score": 0.7351,
+      "risk_category": "critical",
+      "exposure_status": "potential_risk_exposure",
+      "source_identifier": "nepal_dhm_osm_pilot",
+      "coordinates": [
+        87.165,
+        26.86
+      ],
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.155,
+            26.87
+          ],
+          [
+            87.16,
+            26.865
+          ],
+          [
+            87.17,
+            26.855
+          ]
+        ]
+      },
+      "intersecting_metric_val": 2.358,
+      "confirmed_damage": null,
+      "notes": [
+        "Matched via spatial geometry intersection."
+      ]
+    },
+    {
+      "asset_id": "ast_koshi_floodplain_cropland_05",
+      "asset_type": "farmland",
+      "name": "Koshi Right Bank Lowland Paddy Fields",
+      "location_id": "loc_barahachhetra_w2",
+      "horizon_hours": 3,
+      "predicted_risk_score": 0.7351,
+      "risk_category": "critical",
+      "exposure_status": "potential_risk_exposure",
+      "source_identifier": "nepal_dhm_osm_pilot",
+      "coordinates": [
+        87.135,
+        26.84
+      ],
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.125,
+              26.83
+            ],
+            [
+              87.145,
+              26.83
+            ],
+            [
+              87.145,
+              26.85
+            ],
+            [
+              87.125,
+              26.85
+            ],
+            [
+              87.125,
+              26.83
+            ]
+          ]
+        ]
+      },
+      "intersecting_metric_val": 440.85,
+      "confirmed_damage": null,
+      "notes": [
+        "Matched via spatial geometry intersection."
+      ]
+    },
+    {
+      "asset_id": "ast_dharan_hospital_safe_06",
+      "asset_type": "hospital",
+      "name": "BPKIHS Dharan Hospital (Highland / Safe Zone)",
+      "location_id": "loc_safe_sunsari_dharan",
+      "horizon_hours": 3,
+      "predicted_risk_score": null,
+      "risk_category": "unknown",
+      "exposure_status": "risk_unavailable",
+      "source_identifier": "nepal_dhm_osm_pilot",
+      "coordinates": [
+        87.284,
+        26.812
+      ],
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.284,
+          26.812
+        ]
+      },
+      "intersecting_metric_val": null,
+      "confirmed_damage": null,
+      "notes": [
+        "Location 'loc_safe_sunsari_dharan' has no prediction for horizon +3h."
+      ]
+    }
+  ]
+}

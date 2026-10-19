@@ -1,0 +1,158 @@
+{
+  "model_version": "era5-v1",
+  "timestamp": "2026-10-19T16:40:56Z",
+  "global_importance": {
+    "+1h": {
+      "horizon_hours": 1,
+      "model_version": "era5-v1",
+      "feature_importances": {
+        "upstream_discharge_m3s": 0.2706,
+        "catchment": 0.2693,
+        "rainfall_rolling_24h_mm": 0.2636,
+        "rainfall_rolling_6h_mm": 0.0563,
+        "rainfall_rolling_3h_mm": 0.0364,
+        "forecast_precip_next_3h_mm": 0.0336,
+        "rainfall_mm": 0.0243,
+        "relative_humidity_pct": 0.0242,
+        "temperature_c": 0.0218,
+        "river_stage_m": 0.0,
+        "river_stage_rate_of_rise_m_per_h": 0.0,
+        "season": 0.0
+      },
+      "top_risk_drivers": [
+        "upstream_discharge_m3s",
+        "catchment",
+        "rainfall_rolling_24h_mm",
+        "rainfall_rolling_6h_mm",
+        "rainfall_rolling_3h_mm"
+      ],
+      "method": "Mean Decrease in Impurity (Tree Gini Importance)"
+    },
+    "+3h": {
+      "horizon_hours": 3,
+      "model_version": "era5-v1",
+      "feature_importances": {
+        "rainfall_rolling_24h_mm": 0.2629,
+        "upstream_discharge_m3s": 0.2612,
+        "catchment": 0.2178,
+        "rainfall_rolling_6h_mm": 0.0724,
+        "forecast_precip_next_3h_mm": 0.0588,
+        "rainfall_rolling_3h_mm": 0.0415,
+        "rainfall_mm": 0.0316,
+        "relative_humidity_pct": 0.027,
+        "temperature_c": 0.0267,
+        "river_stage_m": 0.0,
+        "river_stage_rate_of_rise_m_per_h": 0.0,
+        "season": 0.0
+      },
+      "top_risk_drivers": [
+        "rainfall_rolling_24h_mm",
+        "upstream_discharge_m3s",
+        "catchment",
+        "rainfall_rolling_6h_mm",
+        "forecast_precip_next_3h_mm"
+      ],
+      "method": "Mean Decrease in Impurity (Tree Gini Importance)"
+    }
+  },
+  "sample_local_explanations": {
+    "high_risk_example": {
+      "forecast_id": "exp_h3_loc_barahachhetra_w2",
+      "location_id": "loc_barahachhetra_w2",
+      "horizon_hours": 3,
+      "predicted_risk_level": "high",
+      "calibrated_probability": 0.864,
+      "model_version": "era5-v1",
+      "explanation_narrative": "Risk classified as HIGH for horizon +3h (calibrated probability: 86.4%). Primary contributing evidence: heavy 24h rainfall of 135.0 mm (exceeds orange alert threshold), and intense hourly precipitation (18.5 mm/h), and river stage (6.85 m) above DHM Warning Level, and elevated river discharge (7,800 m3/s).",
+      "contributing_factors": [
+        {
+          "feature_name": "rainfall_rolling_24h_mm",
+          "display_label": "24-hour accumulated rainfall",
+          "observed_value": 135.0,
+          "unit": "mm",
+          "importance_rank": 26,
+          "influence_direction": "INCREASES_RISK",
+          "physical_benchmark_comparison": "HIGH_EXCEEDED",
+          "evidence_note": "Observed 135.0 mm exceeds the NDRRMA orange alert threshold (100 mm)."
+        },
+        {
+          "feature_name": "rainfall_mm",
+          "display_label": "Hourly rainfall intensity",
+          "observed_value": 18.5,
+          "unit": "mm/h",
+          "importance_rank": 3,
+          "influence_direction": "INCREASES_RISK",
+          "physical_benchmark_comparison": "CLOUD_BURST_RATE",
+          "evidence_note": "Intense hourly rain (18.5 mm/h) indicates high flash-flood runoff rate."
+        },
+        {
+          "feature_name": "river_stage_m",
+          "display_label": "River stage at Chatara gauge",
+          "observed_value": 6.85,
+          "unit": "m",
+          "importance_rank": 0,
+          "influence_direction": "INCREASES_RISK",
+          "physical_benchmark_comparison": "WARNING_EXCEEDED",
+          "evidence_note": "River stage (6.85 m) is ABOVE DHM Warning Level (6.0 m)."
+        },
+        {
+          "feature_name": "upstream_discharge_m3s",
+          "display_label": "Upstream river discharge",
+          "observed_value": 7800.0,
+          "unit": "m3/s",
+          "importance_rank": 26,
+          "influence_direction": "INCREASES_RISK",
+          "physical_benchmark_comparison": "ELEVATED_FLOW",
+          "evidence_note": "Upstream discharge (7800 m3/s) is significantly elevated above baseflow."
+        }
+      ],
+      "mitigating_factors": [],
+      "missing_inputs": [],
+      "disclaimer": "Statistical feature contributions reflect model association, NOT confirmed hydraulic causation. Do not use as the sole basis for emergency evacuation without authority confirmation."
+    },
+    "low_risk_example": {
+      "forecast_id": "exp_h3_loc_barahachhetra_w2",
+      "location_id": "loc_barahachhetra_w2",
+      "horizon_hours": 3,
+      "predicted_risk_level": "low",
+      "calibrated_probability": 0.082,
+      "model_version": "era5-v1",
+      "explanation_narrative": "Risk classified as LOW for horizon +3h (calibrated probability: 8.2%). Hydrological observations remain within safe bounds: Low 24h rainfall (12.0 mm) is below alert threshold (25 mm)., River stage (4.10 m) is below official warning level (6.0 m)..",
+      "contributing_factors": [],
+      "mitigating_factors": [
+        {
+          "feature_name": "rainfall_rolling_24h_mm",
+          "display_label": "24-hour accumulated rainfall",
+          "observed_value": 12.0,
+          "unit": "mm",
+          "importance_rank": 26,
+          "influence_direction": "MODERATES_RISK",
+          "physical_benchmark_comparison": "BELOW_WARNING",
+          "evidence_note": "Low 24h rainfall (12.0 mm) is below alert threshold (25 mm)."
+        },
+        {
+          "feature_name": "river_stage_m",
+          "display_label": "River stage at Chatara gauge",
+          "observed_value": 4.1,
+          "unit": "m",
+          "importance_rank": 0,
+          "influence_direction": "MODERATES_RISK",
+          "physical_benchmark_comparison": "NORMAL_FLOW",
+          "evidence_note": "River stage (4.10 m) is below official warning level (6.0 m)."
+        },
+        {
+          "feature_name": "upstream_discharge_m3s",
+          "display_label": "Upstream river discharge",
+          "observed_value": 1200.0,
+          "unit": "m3/s",
+          "importance_rank": 26,
+          "influence_direction": "MODERATES_RISK",
+          "physical_benchmark_comparison": "STANDARD_FLOW",
+          "evidence_note": "Discharge (1200 m3/s) within standard seasonal limits."
+        }
+      ],
+      "missing_inputs": [],
+      "disclaimer": "Statistical feature contributions reflect model association, NOT confirmed hydraulic causation. Do not use as the sole basis for emergency evacuation without authority confirmation."
+    }
+  }
+}

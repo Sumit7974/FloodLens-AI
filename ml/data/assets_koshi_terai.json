@@ -1,0 +1,129 @@
+{
+  "type": "FeatureCollection",
+  "name": "Barahachhetra_Chatara_Infrastructure_Assets",
+  "crs": {
+    "type": "name",
+    "properties": {
+      "name": "urn:ogc:def:crs:OGC:1.3:CRS84"
+    }
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "id": "ast_chatara_health_post_01",
+      "properties": {
+        "asset_id": "ast_chatara_health_post_01",
+        "asset_type": "health_post",
+        "name": "Chatara Primary Health Centre",
+        "location_id": "loc_barahachhetra_w2",
+        "capacity_beds": 15,
+        "emergency_access": true,
+        "vulnerability": "high",
+        "source_identifier": "osm_nepal_dhm_pilot"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [87.162, 26.868]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "ast_barahachhetra_school_02",
+      "properties": {
+        "asset_id": "ast_barahachhetra_school_02",
+        "asset_type": "school",
+        "name": "Barahachhetra Secondary School",
+        "location_id": "loc_barahachhetra_w2",
+        "students_count": 420,
+        "designated_shelter": true,
+        "source_identifier": "osm_nepal_dhm_pilot"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [87.145, 26.852]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "ast_koshi_bridge_chatara_03",
+      "properties": {
+        "asset_id": "ast_koshi_bridge_chatara_03",
+        "asset_type": "bridge",
+        "name": "Chatara Koshi Suspension & Road Bridge",
+        "location_id": "loc_barahachhetra_w2",
+        "span_m": 260,
+        "critical_evacuation_corridor": true,
+        "source_identifier": "osm_nepal_dhm_pilot"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [87.158, 26.872]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "ast_koshi_highway_seg_04",
+      "properties": {
+        "asset_id": "ast_koshi_highway_seg_04",
+        "asset_type": "road",
+        "name": "Chatara-Dharan Access Road (Segment A)",
+        "location_id": "loc_barahachhetra_w2",
+        "road_class": "secondary",
+        "surface": "paved",
+        "length_km": 2.45,
+        "source_identifier": "osm_nepal_dhm_pilot"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [87.155, 26.870],
+          [87.160, 26.865],
+          [87.170, 26.855]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "ast_koshi_floodplain_cropland_05",
+      "properties": {
+        "asset_id": "ast_koshi_floodplain_cropland_05",
+        "asset_type": "farmland",
+        "name": "Koshi Right Bank Lowland Paddy Fields",
+        "location_id": "loc_barahachhetra_w2",
+        "crop_type": "rice_paddy",
+        "area_ha": 38.5,
+        "monsoon_harvest_stage": "vegetative",
+        "source_identifier": "osm_nepal_dhm_pilot"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [87.125, 26.830],
+            [87.145, 26.830],
+            [87.145, 26.850],
+            [87.125, 26.850],
+            [87.125, 26.830]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "ast_dharan_hospital_safe_06",
+      "properties": {
+        "asset_id": "ast_dharan_hospital_safe_06",
+        "asset_type": "hospital",
+        "name": "BPKIHS Dharan Hospital (Highland / Safe Zone)",
+        "location_id": "loc_safe_sunsari_dharan",
+        "capacity_beds": 700,
+        "elevation_m": 350.0,
+        "source_identifier": "osm_nepal_dhm_pilot"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [87.284, 26.812]
+      }
+    }
+  ]
+}
