@@ -1,7 +1,10 @@
 """Flood events, observed extent, settlement exposure, and report endpoints."""
+import csv
 from datetime import datetime, timezone
+import io
+import json
 from typing import Any, Dict, List, Optional
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import require_roles
@@ -15,7 +18,9 @@ from app.core.spatial import (
 )
 from app.database import get_db
 from app.models.enums import EventType, OperationalMode, UserRole
+from app.models.evaluation import Evaluation
 from app.models.flood_event import FloodEvent
+from app.models.forecast import ForecastRun, RiskPrediction
 from app.models.satellite import FloodExtent
 from app.models.user import User
 from app.schemas.event import WebSocketEvent
@@ -27,6 +32,11 @@ from app.schemas.flood_event import (
     FloodExtentCreate,
     FloodExtentResponse,
     FloodReportResponse,
+)
+from app.schemas.timeline import (
+    EventTimelineCoverage,
+    EventTimelineResponse,
+    TimelineEntry,
 )
 from app.websocket.connection_manager import connection_manager
 
@@ -359,6 +369,8 @@ async def get_flood_report(event_id: str, db: Session = Depends(get_db)) -> Floo
     )
 
     affected_count = 0
+    total_evaluated = 0
+    settlements_status = "no_extent_available" if not extent else "no_settlement_data"
     roads_km = 0.0
     structures_count = 0
     cropland_ha = 0.0
@@ -368,8 +380,9 @@ async def get_flood_report(event_id: str, db: Session = Depends(get_db)) -> Floo
     if extent:
         extent_observed_at = extent.observed_at
         extent_area_km2 = extent.area_km2
-        affected, _ = get_affected_settlements_spatial(db, extent, region_id=event.region_id)
+        affected, total_evaluated = get_affected_settlements_spatial(db, extent, region_id=event.region_id)
         affected_count = len(affected)
+        settlements_status = "completed" if total_evaluated > 0 else "no_settlement_data"
         asset_metrics = get_exposed_assets_spatial(db, extent)
         roads_km = asset_metrics["roads_exposed_km"]
         structures_count = asset_metrics["structures_exposed_count"]
@@ -389,4 +402,346 @@ async def get_flood_report(event_id: str, db: Session = Depends(get_db)) -> Floo
         report_generated_at=None,
         status="summary_available" if extent else "pending_data",
         download_url=None,
+        settlements_evaluated=total_evaluated,
+        settlements_data_status=settlements_status,
+        assets_data_status="completed" if extent else "no_extent_available",
+        data_limitations=[
+            "Physical exposure indicates spatial intersection with satellite water mask; exposure does not equal verified damage.",
+            "Settlement population counts reflect census figures, not verified casualties or displaced persons.",
+        ],
+        data_provenance={
+            "extent_id": extent.id if extent else None,
+            "export_available": True if extent else False,
+            "export_endpoint": f"/api/v1/flood-events/{event_id}/report/export",
+        },
     )
+
+
+@router.get(
+    "/{event_id}/report/export",
+    status_code=status.HTTP_200_OK,
+    summary="Export impact assessment report as downloadable JSON or CSV",
+    description="Generates an authoritative downloadable impact assessment report artifact in JSON or CSV format.",
+)
+async def export_flood_report(
+    event_id: str,
+    format: str = Query(default="json", pattern="^(json|csv)$", description="Export format: json or csv"),
+    db: Session = Depends(get_db),
+) -> Response:
+    """Generate physical export file artifact (JSON or CSV) for the synthesized event impact report."""
+    event = db.query(FloodEvent).filter(FloodEvent.id == event_id).first()
+    if not event:
+        raise NotFoundError(message=f"Flood event '{event_id}' not found", code="EVENT_NOT_FOUND")
+
+    extent = (
+        db.query(FloodExtent)
+        .filter(FloodExtent.event_id == event_id)
+        .order_by(FloodExtent.observed_at.desc())
+        .first()
+    )
+
+    affected_count = 0
+    total_evaluated = 0
+    roads_km = 0.0
+    structures_count = 0
+    cropland_ha = 0.0
+    extent_observed_at_str = ""
+    extent_area = 0.0
+    extent_method = ""
+
+    if extent:
+        extent_observed_at_str = extent.observed_at.isoformat()
+        extent_area = extent.area_km2
+        extent_method = extent.method
+        affected, total_evaluated = get_affected_settlements_spatial(db, extent, region_id=event.region_id)
+        affected_count = len(affected)
+        asset_metrics = get_exposed_assets_spatial(db, extent)
+        roads_km = asset_metrics["roads_exposed_km"]
+        structures_count = asset_metrics["structures_exposed_count"]
+        cropland_ha = asset_metrics["cropland_exposed_ha"]
+
+    now_iso = datetime.now(timezone.utc).isoformat()
+    status_desc = "summary_available" if extent else "pending_data"
+
+    if format == "csv":
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow([
+            "event_id",
+            "event_name",
+            "region_id",
+            "mode",
+            "status",
+            "extent_observed_at",
+            "extent_area_km2",
+            "extent_method",
+            "settlements_evaluated",
+            "settlements_affected",
+            "roads_exposed_km",
+            "structures_exposed_count",
+            "cropland_exposed_ha",
+            "exported_at",
+        ])
+        writer.writerow([
+            event.id,
+            event.name,
+            event.region_id,
+            event.mode.value if hasattr(event.mode, "value") else str(event.mode),
+            status_desc,
+            extent_observed_at_str,
+            extent_area,
+            extent_method,
+            total_evaluated,
+            affected_count,
+            roads_km,
+            structures_count,
+            cropland_ha,
+            now_iso,
+        ])
+        csv_bytes = output.getvalue().encode("utf-8")
+        filename = f"floodlens_impact_report_{event.id}.csv"
+        return Response(
+            content=csv_bytes,
+            media_type="text/csv",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+    else:
+        report_data = {
+            "event_id": event.id,
+            "event_name": event.name,
+            "region_id": event.region_id,
+            "mode": event.mode.value if hasattr(event.mode, "value") else str(event.mode),
+            "status": status_desc,
+            "extent_observed_at": extent_observed_at_str or None,
+            "extent_area_km2": extent_area if extent else None,
+            "extent_method": extent_method or None,
+            "total_settlements_evaluated": total_evaluated,
+            "total_settlements_affected": affected_count,
+            "roads_exposed_km": roads_km,
+            "structures_exposed_count": structures_count,
+            "cropland_exposed_ha": cropland_ha,
+            "exported_at": now_iso,
+            "limitations": [
+                "Physical exposure indicates spatial intersection with satellite water mask; exposure does not equal verified damage.",
+                "Settlement population counts reflect census figures, not verified casualties.",
+            ],
+            "provenance": {
+                "system": "FloodLens AI Decision Support",
+                "extent_id": extent.id if extent else None,
+                "source_scenes": extent.source_scene_ids if extent else [],
+            },
+        }
+        json_bytes = json.dumps(report_data, indent=2).encode("utf-8")
+        filename = f"floodlens_impact_report_{event.id}.json"
+        return Response(
+            content=json_bytes,
+            media_type="application/json",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+
+
+@router.get(
+    "/{event_id}/timeline",
+    response_model=EventTimelineResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Get chronological historical event replay timeline",
+    description=(
+        "Presents chronological milestones for one historical flood event, including "
+        "event boundaries, AI forecast issue times, target horizon valid times, "
+        "satellite flood extent observations, and retrospective model evaluations."
+    ),
+)
+async def get_event_timeline(event_id: str, db: Session = Depends(get_db)) -> Dict[str, Any]:
+    """Retrieve chronological event milestones from persisted database records."""
+    event = db.query(FloodEvent).filter(FloodEvent.id == event_id).first()
+    if not event:
+        raise NotFoundError(message=f"Flood event '{event_id}' not found", code="EVENT_NOT_FOUND")
+
+    entries: List[TimelineEntry] = []
+
+    # 1. Event Start
+    entries.append(
+        TimelineEntry(
+            entry_id=f"evt_start_{event.id}",
+            timestamp=event.start_at,
+            entry_type="event_start",
+            title=f"Event Initiated: {event.name}",
+            description=event.description or f"Flood event episode registered in region {event.region_id}",
+            resource_id=event.id,
+            resource_type="flood_event",
+            details={
+                "region_id": event.region_id,
+                "mode": event.mode.value if hasattr(event.mode, "value") else str(event.mode),
+                "source_refs": event.source_refs if isinstance(event.source_refs, dict) else {},
+            },
+            data_quality="FULL",
+            limitations=[],
+        )
+    )
+
+    # 2. Event End if present
+    if event.end_at:
+        duration_hrs = round((event.end_at - event.start_at).total_seconds() / 3600.0, 2)
+        entries.append(
+            TimelineEntry(
+                entry_id=f"evt_end_{event.id}",
+                timestamp=event.end_at,
+                entry_type="event_end",
+                title=f"Event Concluded: {event.name}",
+                description="Official conclusion of the flood event episode",
+                resource_id=event.id,
+                resource_type="flood_event",
+                details={
+                    "region_id": event.region_id,
+                    "duration_hours": duration_hrs,
+                },
+                data_quality="FULL",
+                limitations=[],
+            )
+        )
+
+    # 3. Forecast Runs
+    forecast_runs = (
+        db.query(ForecastRun)
+        .filter(ForecastRun.event_id == event_id)
+        .order_by(ForecastRun.issued_at.asc())
+        .all()
+    )
+    for run in forecast_runs:
+        preds: List[RiskPrediction] = (
+            db.query(RiskPrediction)
+            .filter(RiskPrediction.forecast_run_id == run.id)
+            .order_by(RiskPrediction.horizon_hours.asc())
+            .all()
+        )
+        horizons_summary = [
+            {
+                "hours": p.horizon_hours,
+                "location_id": p.location_id,
+                "valid_at": p.valid_at.isoformat(),
+                "risk_level": p.risk_level.value if hasattr(p.risk_level, "value") else str(p.risk_level),
+                "calibrated_probability": p.calibrated_probability,
+                "data_quality": p.data_quality.value if hasattr(p.data_quality, "value") else str(p.data_quality),
+            }
+            for p in preds
+        ]
+        quality = preds[0].data_quality.value if (preds and hasattr(preds[0].data_quality, "value")) else "PARTIAL"
+        entries.append(
+            TimelineEntry(
+                entry_id=f"fc_{run.id}",
+                timestamp=run.issued_at,
+                entry_type="forecast_issued",
+                title=f"Risk Forecast Issued ({run.model_version})",
+                description=f"Hydrological forecast issued with {len(preds)} horizon prediction(s)",
+                resource_id=run.id,
+                resource_type="forecast_run",
+                details={
+                    "model_version": run.model_version,
+                    "issued_at": run.issued_at.isoformat(),
+                    "input_data_cutoff_at": run.input_data_cutoff_at.isoformat() if run.input_data_cutoff_at else None,
+                    "mode": run.mode.value if hasattr(run.mode, "value") else str(run.mode),
+                    "status": run.status,
+                    "prediction_horizons": horizons_summary,
+                },
+                data_quality=quality,
+                limitations=run.limitations if isinstance(run.limitations, list) else [],
+            )
+        )
+
+    # 4. Flood Extents
+    extents = (
+        db.query(FloodExtent)
+        .filter(FloodExtent.event_id == event_id)
+        .order_by(FloodExtent.observed_at.asc())
+        .all()
+    )
+    for ext in extents:
+        entries.append(
+            TimelineEntry(
+                entry_id=f"ext_{ext.id}",
+                timestamp=ext.observed_at,
+                entry_type="flood_observation",
+                title=f"Satellite Flood Extent Observed ({ext.method})",
+                description=f"Satellite sensor mapped {ext.area_km2} km2 inundated surface area",
+                resource_id=ext.id,
+                resource_type="flood_extent",
+                details={
+                    "method": ext.method,
+                    "area_km2": ext.area_km2,
+                    "observed_at": ext.observed_at.isoformat(),
+                    "confidence": ext.confidence,
+                    "source_scene_ids": ext.source_scene_ids if isinstance(ext.source_scene_ids, list) else [],
+                    "polygon_ref": ext.polygon_ref,
+                    "raster_ref": ext.raster_ref,
+                    "has_spatial_geometry": ext.geometry is not None,
+                },
+                data_quality="FULL" if (ext.confidence and ext.confidence > 0.8) else "PARTIAL",
+                limitations=[],
+            )
+        )
+
+    # 5. Evaluations
+    evals = (
+        db.query(Evaluation)
+        .filter(Evaluation.event_id == event_id)
+        .order_by(Evaluation.created_at.asc())
+        .all()
+    )
+    for ev in evals:
+        entries.append(
+            TimelineEntry(
+                entry_id=f"eval_{ev.id}",
+                timestamp=ev.created_at,
+                entry_type="evaluation_recorded",
+                title=f"Model Evaluation Benchmark: {ev.target_type}",
+                description=f"Retrospective performance benchmark against reference {ev.reference_id or 'ground truth'}",
+                resource_id=ev.id,
+                resource_type="evaluation",
+                details={
+                    "target_type": ev.target_type,
+                    "baseline_version": ev.baseline_version,
+                    "candidate_version": ev.candidate_version,
+                    "metrics": ev.metrics if isinstance(ev.metrics, dict) else {},
+                    "reference_id": ev.reference_id,
+                    "notes": ev.notes,
+                },
+                data_quality="FULL",
+                limitations=[],
+            )
+        )
+
+    # Sort strictly chronologically by timestamp
+    entries.sort(key=lambda x: x.timestamp)
+
+    now_utc = datetime.now(timezone.utc)
+    notes: List[str] = [
+        f"Timeline reconstructed strictly from database records durably associated with event '{event.id}'.",
+        "Alert dispatches and citizen assistance requests are handled via decoupled authority queues and are excluded from event timeline.",
+    ]
+    if len(forecast_runs) == 0:
+        notes.append("No AI risk forecast runs have been recorded for this event.")
+    if len(extents) == 0:
+        notes.append("No satellite flood extents have been recorded for this event.")
+    if len(evals) == 0:
+        notes.append("No model benchmark evaluations have been recorded for this event.")
+
+    return {
+        "event_id": event.id,
+        "event_name": event.name,
+        "region_id": event.region_id,
+        "mode": event.mode.value if hasattr(event.mode, "value") else str(event.mode),
+        "start_at": event.start_at,
+        "end_at": event.end_at,
+        "timeline_generated_at": now_utc,
+        "total_entries": len(entries),
+        "coverage": {
+            "has_forecasts": len(forecast_runs) > 0,
+            "forecast_runs_count": len(forecast_runs),
+            "has_flood_extents": len(extents) > 0,
+            "flood_extents_count": len(extents),
+            "has_evaluations": len(evals) > 0,
+            "evaluations_count": len(evals),
+        },
+        "entries": entries,
+        "notes": notes,
+    }

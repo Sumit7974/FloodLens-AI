@@ -1,0 +1,785 @@
+"""Day 4 Integration and Regression Test Suite for FloodLens AI.
+
+Validates:
+1. Facilities API: Shelters and hospitals with map-ready coordinates, EPSG:4326 GeoJSON, verification states, empty data handling.
+2. Route Hazard Assessment: Geographic spatial intersection screening, LineString validation, active vs cleared hazards, flood extent overlap, safe route false clean prevention.
+3. Event Analytics: Evaluation.event_id filtering, multi-evaluation scoping, missing events, honest model status.
+4. Historical Event Replay Timeline: Chronological sequencing, forecast vs observation vs evaluation, coverage summaries, no invented records.
+5. Impact Report & Downloadable Exports: Event-scoped metrics, genuine downloadable JSON & CSV exports, Content-Disposition headers.
+6. Security Regressions: Day 3 auth, role permissions, simulated-only alert dispatch, citizen privacy.
+"""
+import csv
+from datetime import datetime, timedelta, timezone
+import io
+import json
+import uuid
+import pytest
+from fastapi import status
+from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
+
+from app.core.spatial import to_wkt_element
+from app.models.asset import Facility, RoadHazard
+from app.models.enums import DataQuality, OperationalMode, RiskLevel
+from app.models.evaluation import Evaluation
+from app.models.flood_event import FloodEvent
+from app.models.forecast import ForecastRun, RiskPrediction
+from app.models.location import Location
+from app.models.satellite import FloodExtent
+
+
+# ==============================================================================
+# 1. FACILITIES TESTS
+# ==============================================================================
+
+def test_shelters_retrieval_with_coordinates_and_verification(client: TestClient, db_session: Session):
+    """Retrieve shelter facilities with map-ready GeoJSON Point coordinates, capacity, and limitations."""
+    # 1. Verified shelter with coordinates
+    shelter_1 = Facility(
+        id=f"fac_sh_1_{uuid.uuid4().hex[:6]}",
+        type="shelter",
+        name="Janakpur Community Emergency Shelter",
+        location=to_wkt_element({"type": "Point", "coordinates": [85.924, 26.728]}, expected_type="POINT"),
+        verification_status="verified",
+        status_checked_at=datetime.now(timezone.utc),
+        capacity=500,
+        contact_info="+977-41-520111",
+        details={"source": "DHM Nepal", "amenities": ["generator", "potable_water"]},
+    )
+    # 2. Unverified shelter with coordinates
+    shelter_2 = Facility(
+        id=f"fac_sh_2_{uuid.uuid4().hex[:6]}",
+        type="shelter",
+        name="Jaleshwar School Hall",
+        location=to_wkt_element({"type": "Point", "coordinates": [85.801, 26.647]}, expected_type="POINT"),
+        verification_status="unverified",
+        status_checked_at=None,
+        capacity=None,
+        contact_info=None,
+        details={"notes": "Reported during 2024 monsoon"},
+    )
+    # 3. Demo-labeled shelter without geometry
+    shelter_3 = Facility(
+        id=f"fac_sh_3_{uuid.uuid4().hex[:6]}",
+        type="shelter",
+        name="Simulated Flood Relief Camp",
+        location=None,
+        verification_status="demo_labeled",
+        capacity=200,
+        contact_info="demo@floodlens.internal",
+        details={"source": "simulation_engine"},
+    )
+    db_session.add_all([shelter_1, shelter_2, shelter_3])
+    db_session.commit()
+
+    resp = client.get("/api/v1/facilities/shelters")
+    assert resp.status_code == status.HTTP_200_OK
+    data = resp.json()
+    assert data["count"] >= 3
+    assert "shelters" in data
+    assert "data_notes" in data
+
+    # Find created shelters
+    sh_map = {s["id"]: s for s in data["shelters"]}
+    assert shelter_1.id in sh_map
+    s1 = sh_map[shelter_1.id]
+    assert s1["name"] == "Janakpur Community Emergency Shelter"
+    assert s1["verification_status"] == "verified"
+    assert s1["capacity"] == 500
+    assert s1["contact_info"] == "+977-41-520111"
+    assert s1["location"] == {"type": "Point", "coordinates": [85.924, 26.728]}
+    assert s1["longitude"] == 85.924
+    assert s1["latitude"] == 26.728
+    assert s1["source"] == "DHM Nepal"
+
+    # Verify unverified caveats
+    s2 = sh_map[shelter_2.id]
+    assert s2["verification_status"] == "unverified"
+    assert any("not been verified" in lim for lim in s2["limitations"])
+    assert any("Capacity unknown" in lim for lim in s2["limitations"])
+
+    # Verify missing geometry handling
+    s3 = sh_map[shelter_3.id]
+    assert s3["location"] is None
+    assert s3["longitude"] is None
+    assert s3["latitude"] is None
+    assert any("coordinates are missing" in lim for lim in s3["limitations"])
+    assert any("Simulated demonstration facility" in lim for lim in s3["limitations"])
+
+
+def test_shelters_filter_by_verification_status(client: TestClient, db_session: Session):
+    """Filter shelters by verified and unverified state."""
+    uid = uuid.uuid4().hex[:6]
+    f1 = Facility(
+        id=f"fac_v_{uid}",
+        type="shelter",
+        name="Verified Alpha",
+        verification_status="verified",
+        details={},
+    )
+    f2 = Facility(
+        id=f"fac_u_{uid}",
+        type="shelter",
+        name="Unverified Beta",
+        verification_status="unverified",
+        details={},
+    )
+    db_session.add_all([f1, f2])
+    db_session.commit()
+
+    resp = client.get("/api/v1/facilities/shelters?verification_status=verified")
+    assert resp.status_code == status.HTTP_200_OK
+    data = resp.json()
+    ids = [s["id"] for s in data["shelters"]]
+    assert f1.id in ids
+    assert f2.id not in ids
+
+
+def test_hospitals_retrieval_and_empty_dataset(client: TestClient, db_session: Session):
+    """Retrieve hospital records and verify empty dataset handling."""
+    # Query with non-existent verification filter to verify empty dataset handling
+    resp_empty = client.get("/api/v1/facilities/hospitals?verification_status=non_existent_status_xyz")
+    assert resp_empty.status_code == status.HTTP_200_OK
+    data_empty = resp_empty.json()
+    assert data_empty["count"] == 0
+    assert data_empty["hospitals"] == []
+
+    # Insert a verified hospital
+    hosp = Facility(
+        id=f"fac_hosp_{uuid.uuid4().hex[:6]}",
+        type="hospital",
+        name="Janakpur Zonal Hospital",
+        location=to_wkt_element({"type": "Point", "coordinates": [85.928, 26.732]}, expected_type="POINT"),
+        verification_status="verified",
+        status_checked_at=datetime.now(timezone.utc),
+        contact_info="+977-41-520133",
+        details={"icu_beds": 12, "source": "Ministry of Health"},
+    )
+    db_session.add(hosp)
+    db_session.commit()
+
+    resp = client.get("/api/v1/facilities/hospitals")
+    assert resp.status_code == status.HTTP_200_OK
+    data = resp.json()
+    assert data["count"] >= 1
+    found = next((h for h in data["hospitals"] if h["id"] == hosp.id), None)
+    assert found is not None
+    assert found["name"] == "Janakpur Zonal Hospital"
+    assert found["type"] == "hospital"
+    assert found["location"] == {"type": "Point", "coordinates": [85.928, 26.732]}
+    assert found["contact_info"] == "+977-41-520133"
+
+
+# ==============================================================================
+# 2. ROUTE HAZARD ASSESSMENT TESTS
+# ==============================================================================
+
+def test_route_assess_invalid_geometry_inputs(client: TestClient):
+    """Validate candidate route input schema constraints."""
+    # 1. Not a LineString
+    resp1 = client.post(
+        "/api/v1/routes/assess",
+        json={"route": {"type": "Point", "coordinates": [85.0, 26.0]}},
+    )
+    assert resp1.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+    # 2. Fewer than 2 coordinates
+    resp2 = client.post(
+        "/api/v1/routes/assess",
+        json={"route": {"type": "LineString", "coordinates": [[85.0, 26.0]]}},
+    )
+    assert resp2.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+    # 3. Coordinates out of range (longitude > 180)
+    resp3 = client.post(
+        "/api/v1/routes/assess",
+        json={"route": {"type": "LineString", "coordinates": [[185.0, 26.0], [85.0, 26.0]]}},
+    )
+    assert resp3.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+    # 4. Latitude out of range
+    resp4 = client.post(
+        "/api/v1/routes/assess",
+        json={"route": {"type": "LineString", "coordinates": [[85.0, -95.0], [85.0, 26.0]]}},
+    )
+    assert resp4.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+
+def test_route_assess_intersects_active_road_hazard(client: TestClient, db_session: Session):
+    """Route assessment detects intersection with an active road hazard."""
+    # Route across Janakpur: (85.80, 26.70) -> (85.90, 26.70)
+    # Hazard intersects: (85.85, 26.65) -> (85.85, 26.75)
+    hazard_id = f"rh_act_{uuid.uuid4().hex[:6]}"
+    hazard = RoadHazard(
+        id=hazard_id,
+        road_id="NH-02",
+        hazard_type="submerged",
+        geometry=to_wkt_element(
+            {"type": "LineString", "coordinates": [[85.85, 26.65], [85.85, 26.75]]},
+            expected_type="LINESTRING",
+        ),
+        status="active",
+        source="Copernicus_Emergency_Management",
+        observed_at=datetime.now(timezone.utc),
+        confidence=0.92,
+    )
+    db_session.add(hazard)
+    db_session.commit()
+
+    candidate_route = {
+        "type": "LineString",
+        "coordinates": [[85.80, 26.70], [85.90, 26.70]],
+    }
+    resp = client.post(
+        "/api/v1/routes/assess",
+        json={"route": candidate_route, "buffer_meters": 50.0},
+    )
+    assert resp.status_code == status.HTTP_200_OK
+    data = resp.json()
+    assert data["route_status"] == "hazards_detected"
+    assert data["assessment_status"] == "HAZARDS_INTERSECTED"
+    assert data["hazards_intersected_count"] >= 1
+    found_hazard = next((h for h in data["hazards_detected"] if h["hazard_id"] == hazard_id), None)
+    assert found_hazard is not None
+    assert found_hazard["hazard_type"] == "submerged"
+    assert found_hazard["source_layer"] == "road_hazard"
+    assert found_hazard["status"] == "active"
+    assert found_hazard["confidence"] == 0.92
+
+
+def test_route_assess_cleared_and_stale_hazards_excluded(client: TestClient, db_session: Session):
+    """Cleared hazards and hazards observed after evaluation cutoff are excluded from screening."""
+    now = datetime.now(timezone.utc)
+    # 1. Cleared hazard
+    rh_cleared = RoadHazard(
+        id=f"rh_clr_{uuid.uuid4().hex[:6]}",
+        hazard_type="debris",
+        geometry=to_wkt_element(
+            {"type": "LineString", "coordinates": [[85.50, 26.50], [85.50, 26.60]]},
+            expected_type="LINESTRING",
+        ),
+        status="cleared",
+        observed_at=now - timedelta(hours=2),
+    )
+    # 2. Future hazard relative to cutoff
+    rh_future = RoadHazard(
+        id=f"rh_fut_{uuid.uuid4().hex[:6]}",
+        hazard_type="bridge_closed",
+        geometry=to_wkt_element(
+            {"type": "LineString", "coordinates": [[85.50, 26.50], [85.50, 26.60]]},
+            expected_type="LINESTRING",
+        ),
+        status="active",
+        observed_at=now,
+    )
+    db_session.add_all([rh_cleared, rh_future])
+    db_session.commit()
+
+    candidate_route = {
+        "type": "LineString",
+        "coordinates": [[85.45, 26.55], [85.55, 26.55]],
+    }
+    # Cutoff time set to 1 hour ago (excludes rh_future)
+    cutoff = (now - timedelta(hours=1)).isoformat()
+    resp = client.post(
+        "/api/v1/routes/assess",
+        json={"route": candidate_route, "evaluation_time": cutoff},
+    )
+    assert resp.status_code == status.HTTP_200_OK
+    data = resp.json()
+    intersected_ids = [h["hazard_id"] for h in data["hazards_detected"]]
+    assert rh_cleared.id not in intersected_ids
+    assert rh_future.id not in intersected_ids
+
+
+def test_route_assess_intersects_event_flood_extent(client: TestClient, db_session: Session, authority_token: str):
+    """Route assessment screens against satellite flood extent polygons for a requested event."""
+    evt_id = f"evt_route_{uuid.uuid4().hex[:6]}"
+    client.post(
+        "/api/v1/flood-events",
+        json={
+            "id": evt_id,
+            "region_id": "dhanusha",
+            "name": "Route Flood Test Event",
+            "start_at": datetime.now(timezone.utc).isoformat(),
+        },
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+
+    # Ingest flood polygon covering (85.80, 26.70) to (85.85, 26.75)
+    ext_id = f"ext_route_{uuid.uuid4().hex[:6]}"
+    client.post(
+        f"/api/v1/flood-events/{evt_id}/extent",
+        json={
+            "id": ext_id,
+            "observed_at": datetime.now(timezone.utc).isoformat(),
+            "method": "MNDWI",
+            "area_km2": 15.0,
+            "confidence": 0.95,
+            "source_scene_ids": ["S2A_TEST_01"],
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [85.80, 26.70],
+                        [85.85, 26.70],
+                        [85.85, 26.75],
+                        [85.80, 26.75],
+                        [85.80, 26.70],
+                    ]
+                ],
+            },
+        },
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+
+    # Candidate route crossing through the flood extent
+    route_inundated = {
+        "type": "LineString",
+        "coordinates": [[85.78, 26.72], [85.87, 26.72]],
+    }
+    resp = client.post(
+        "/api/v1/routes/assess",
+        json={"route": route_inundated, "event_id": evt_id},
+    )
+    assert resp.status_code == status.HTTP_200_OK
+    data = resp.json()
+    assert data["route_status"] == "hazards_detected"
+    assert data["assessment_status"] == "HAZARDS_INTERSECTED"
+    extent_hazard = next((h for h in data["hazards_detected"] if h["hazard_id"] == ext_id), None)
+    assert extent_hazard is not None
+    assert extent_hazard["source_layer"] == "flood_extent"
+    assert extent_hazard["hazard_type"] == "observed_flood_extent"
+
+
+def test_route_assess_no_intersections_never_claims_safe(client: TestClient, db_session: Session):
+    """Route without intersections returns 'conditional' and explicit disclaimers, never 'safe'."""
+    # Insert an active hazard far away
+    hazard = RoadHazard(
+        id=f"rh_far_{uuid.uuid4().hex[:6]}",
+        hazard_type="submerged",
+        geometry=to_wkt_element(
+            {"type": "LineString", "coordinates": [[87.00, 27.00], [87.05, 27.00]]},
+            expected_type="LINESTRING",
+        ),
+        status="active",
+        observed_at=datetime.now(timezone.utc),
+    )
+    db_session.add(hazard)
+    db_session.commit()
+
+    candidate_route = {
+        "type": "LineString",
+        "coordinates": [[85.10, 25.10], [85.15, 25.10]],
+    }
+    resp = client.post("/api/v1/routes/assess", json={"route": candidate_route})
+    assert resp.status_code == status.HTTP_200_OK
+    data = resp.json()
+    assert data["route_status"] == "conditional"
+    assert data["assessment_status"] == "NO_KNOWN_INTERSECTIONS"
+    assert data["hazards_intersected_count"] == 0
+    # Crucial safety requirement: Never infer safe from absence of intersections
+    assert any("NEVER infer that a candidate route is safe" in lim for lim in data["limitations"])
+
+
+def test_route_assess_missing_event_returns_404(client: TestClient):
+    """Assessing route against a non-existent event ID returns 404 EVENT_NOT_FOUND."""
+    candidate_route = {
+        "type": "LineString",
+        "coordinates": [[85.10, 25.10], [85.15, 25.10]],
+    }
+    resp = client.post(
+        "/api/v1/routes/assess",
+        json={"route": candidate_route, "event_id": "nonexistent-event-9999"},
+    )
+    assert resp.status_code == status.HTTP_404_NOT_FOUND
+    err = resp.json()["error"]
+    assert err["code"] == "EVENT_NOT_FOUND"
+
+
+# ==============================================================================
+# 3. EVENT ANALYTICS TESTS
+# ==============================================================================
+
+def test_analytics_event_scoped_filtering(client: TestClient, db_session: Session, authority_token: str):
+    """Analytics strictly filters evaluations by Evaluation.event_id == event_id."""
+    evt1_id = f"evt_an1_{uuid.uuid4().hex[:6]}"
+    evt2_id = f"evt_an2_{uuid.uuid4().hex[:6]}"
+
+    for eid in (evt1_id, evt2_id):
+        client.post(
+            "/api/v1/flood-events",
+            json={
+                "id": eid,
+                "region_id": "terai_basin",
+                "name": f"Analytics Test {eid}",
+                "start_at": datetime.now(timezone.utc).isoformat(),
+            },
+            headers={"Authorization": f"Bearer {authority_token}"},
+        )
+
+    # Evaluations for Event 1
+    eval1 = Evaluation(
+        id=f"ev_1_{uuid.uuid4().hex[:6]}",
+        event_id=evt1_id,
+        target_type="flood_extent",
+        baseline_version="baseline-v1",
+        candidate_version="candidate-v2",
+        metrics={"iou": 0.84, "f1_score": 0.91, "precision": 0.89},
+        reference_id="ref_copernicus_ground_truth",
+        notes="Evaluated against Copernicus EMS rapid mapping",
+    )
+    eval2 = Evaluation(
+        id=f"ev_2_{uuid.uuid4().hex[:6]}",
+        event_id=evt1_id,
+        target_type="risk_forecast",
+        baseline_version="baseline-v1",
+        candidate_version=None,
+        metrics={"lead_time_hours": 6, "brier_score": 0.12},
+        reference_id="gauge_sensor_observed",
+    )
+    # Evaluation for Event 2 (must be excluded from Event 1 query)
+    eval_unrelated = Evaluation(
+        id=f"ev_unrelated_{uuid.uuid4().hex[:6]}",
+        event_id=evt2_id,
+        target_type="flood_extent",
+        baseline_version="baseline-v1",
+        metrics={"iou": 0.45},
+    )
+    db_session.add_all([eval1, eval2, eval_unrelated])
+    db_session.commit()
+
+    resp = client.get(f"/api/v1/analytics/events/{evt1_id}")
+    assert resp.status_code == status.HTTP_200_OK
+    data = resp.json()
+    assert data["event_id"] == evt1_id
+    assert data["evaluations_count"] == 2
+    assert data["status"] == "evaluations_available"
+
+    result_ids = [r["id"] for r in data["results"]]
+    assert eval1.id in result_ids
+    assert eval2.id in result_ids
+    assert eval_unrelated.id not in result_ids
+
+    ev1_res = next(r for r in data["results"] if r["id"] == eval1.id)
+    assert ev1_res["target_type"] == "flood_extent"
+    assert ev1_res["baseline_version"] == "baseline-v1"
+    assert ev1_res["candidate_version"] == "candidate-v2"
+    assert ev1_res["metrics"]["iou"] == 0.84
+    assert ev1_res["reference_id"] == "ref_copernicus_ground_truth"
+
+
+def test_analytics_missing_event_returns_404(client: TestClient):
+    """Querying analytics for a non-existent event returns 404 EVENT_NOT_FOUND."""
+    resp = client.get("/api/v1/analytics/events/unknown-event-id-999")
+    assert resp.status_code == status.HTTP_404_NOT_FOUND
+    assert resp.json()["error"]["code"] == "EVENT_NOT_FOUND"
+
+
+def test_analytics_empty_evaluations_distinction(client: TestClient, authority_token: str):
+    """Event with zero evaluations returns empty list with status 'no_evaluations_recorded'."""
+    evt_id = f"evt_empty_eval_{uuid.uuid4().hex[:6]}"
+    client.post(
+        "/api/v1/flood-events",
+        json={
+            "id": evt_id,
+            "region_id": "terai_basin",
+            "name": "Empty Eval Event",
+            "start_at": datetime.now(timezone.utc).isoformat(),
+        },
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+
+    resp = client.get(f"/api/v1/analytics/events/{evt_id}")
+    assert resp.status_code == status.HTTP_200_OK
+    data = resp.json()
+    assert data["evaluations_count"] == 0
+    assert data["results"] == []
+    assert data["status"] == "no_evaluations_recorded"
+
+
+def test_models_listing_honest_status(client: TestClient):
+    """Listing models clearly marks baseline as active and research models as prototypes."""
+    resp = client.get("/api/v1/models")
+    assert resp.status_code == status.HTTP_200_OK
+    models = resp.json()
+    assert len(models) >= 1
+    baseline = next((m for m in models if m["version"] == "baseline-v1"), None)
+    assert baseline is not None
+    assert baseline["status"] == "active"
+    assert len(baseline["limitations"]) > 0
+
+    candidate = next((m for m in models if m["version"] == "candidate-v2"), None)
+    if candidate:
+        assert candidate["status"] == "research_prototype"
+
+
+# ==============================================================================
+# 4. HISTORICAL EVENT REPLAY TIMELINE TESTS
+# ==============================================================================
+
+def test_event_timeline_chronological_ordering(client: TestClient, db_session: Session, authority_token: str):
+    """Timeline orders event start, forecast runs, satellite extents, evaluations, and end chronologically."""
+    evt_id = f"evt_timeline_{uuid.uuid4().hex[:6]}"
+    t0 = datetime(2024, 8, 15, 2, 0, 0, tzinfo=timezone.utc)
+    t1 = datetime(2024, 8, 15, 4, 0, 0, tzinfo=timezone.utc)
+    t2 = datetime(2024, 8, 15, 6, 0, 0, tzinfo=timezone.utc)
+    t3 = datetime(2024, 8, 15, 8, 0, 0, tzinfo=timezone.utc)
+    t4 = datetime(2024, 8, 15, 12, 0, 0, tzinfo=timezone.utc)
+
+    # Create FloodEvent
+    event = FloodEvent(
+        id=evt_id,
+        region_id="koshi_basin",
+        name="August 2024 Koshi Historical Episode",
+        start_at=t0,
+        end_at=t4,
+        mode=OperationalMode.HISTORICAL_DEMO,
+        source_refs={"dhm": "DHM_BULLETIN_20240815"},
+        description="Historical monsoon flood episode in Koshi basin",
+    )
+    db_session.add(event)
+    db_session.commit()
+
+    # Need location for prediction
+    loc_id = f"loc_tl_{uuid.uuid4().hex[:6]}"
+    loc = Location(id=loc_id, name="Koshi Flood Zone", admin_level=3, crs_source="EPSG:4326", metadata_json={})
+    db_session.add(loc)
+    db_session.commit()
+
+    # 1. ForecastRun at t1
+    fc_run = ForecastRun(
+        id=f"fc_{uuid.uuid4().hex[:6]}",
+        event_id=evt_id,
+        issued_at=t1,
+        model_version="baseline-v1",
+        mode=OperationalMode.HISTORICAL_DEMO,
+        status="completed",
+        limitations=["Upstream tributary gauge offline"],
+    )
+    db_session.add(fc_run)
+    db_session.commit()
+
+    pred1 = RiskPrediction(
+        id=f"pred_1_{uuid.uuid4().hex[:6]}",
+        forecast_run_id=fc_run.id,
+        location_id=loc_id,
+        valid_at=t1 + timedelta(hours=1),
+        horizon_hours=1,
+        risk_level=RiskLevel.LOW,
+        calibrated_probability=0.2,
+        data_quality=DataQuality.PARTIAL,
+    )
+    pred3 = RiskPrediction(
+        id=f"pred_3_{uuid.uuid4().hex[:6]}",
+        forecast_run_id=fc_run.id,
+        location_id=loc_id,
+        valid_at=t1 + timedelta(hours=3),
+        horizon_hours=3,
+        risk_level=RiskLevel.HIGH,
+        calibrated_probability=0.75,
+        data_quality=DataQuality.PARTIAL,
+    )
+    db_session.add_all([pred1, pred3])
+    db_session.commit()
+
+    # 2. FloodExtent observed at t2
+    extent = FloodExtent(
+        id=f"ext_{uuid.uuid4().hex[:6]}",
+        event_id=evt_id,
+        observed_at=t2,
+        method="MNDWI",
+        area_km2=28.4,
+        source_scene_ids=["S2A_20240815_T45RVP"],
+        confidence=0.94,
+    )
+    db_session.add(extent)
+    db_session.commit()
+
+    # 3. Evaluation recorded at t3
+    evaluation = Evaluation(
+        id=f"eval_{uuid.uuid4().hex[:6]}",
+        event_id=evt_id,
+        target_type="flood_extent",
+        baseline_version="baseline-v1",
+        metrics={"iou": 0.81, "f1": 0.89},
+        reference_id="ground_truth_mask_v1",
+        notes="Post-flood retrospective benchmark",
+        created_at=t3,
+    )
+    db_session.add(evaluation)
+    db_session.commit()
+
+    resp = client.get(f"/api/v1/flood-events/{evt_id}/timeline")
+    assert resp.status_code == status.HTTP_200_OK
+    data = resp.json()
+
+    assert data["event_id"] == evt_id
+    assert data["total_entries"] == 5  # event_start, forecast, extent, evaluation, event_end
+    assert data["coverage"]["has_forecasts"] is True
+    assert data["coverage"]["has_flood_extents"] is True
+    assert data["coverage"]["has_evaluations"] is True
+
+    # Verify chronological order
+    timestamps = [e["timestamp"] for e in data["entries"]]
+    sorted_ts = sorted(timestamps)
+    assert timestamps == sorted_ts
+
+    entry_types = [e["entry_type"] for e in data["entries"]]
+    assert entry_types == ["event_start", "forecast_issued", "flood_observation", "evaluation_recorded", "event_end"]
+
+    # Verify forecast entry details separate issue time from horizon valid times
+    fc_entry = next(e for e in data["entries"] if e["entry_type"] == "forecast_issued")
+    assert fc_entry["resource_id"] == fc_run.id
+    horizons = fc_entry["details"]["prediction_horizons"]
+    assert len(horizons) == 2
+    assert horizons[0]["hours"] == 1
+    assert horizons[1]["hours"] == 3
+
+
+def test_event_timeline_missing_event_returns_404(client: TestClient):
+    """Querying timeline for an unknown event returns 404 EVENT_NOT_FOUND."""
+    resp = client.get("/api/v1/flood-events/nonexistent-evt-timeline-999/timeline")
+    assert resp.status_code == status.HTTP_404_NOT_FOUND
+    assert resp.json()["error"]["code"] == "EVENT_NOT_FOUND"
+
+
+def test_event_timeline_empty_partial_records(client: TestClient, authority_token: str):
+    """Event with only start/end boundaries returns timeline gracefully without fabricated entries."""
+    evt_id = f"evt_tl_empty_{uuid.uuid4().hex[:6]}"
+    client.post(
+        "/api/v1/flood-events",
+        json={
+            "id": evt_id,
+            "region_id": "siraha",
+            "name": "Partial History Event",
+            "start_at": datetime.now(timezone.utc).isoformat(),
+        },
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+
+    resp = client.get(f"/api/v1/flood-events/{evt_id}/timeline")
+    assert resp.status_code == status.HTTP_200_OK
+    data = resp.json()
+    assert data["total_entries"] == 1  # Only event_start
+    assert data["coverage"]["has_forecasts"] is False
+    assert data["coverage"]["has_flood_extents"] is False
+    assert data["coverage"]["has_evaluations"] is False
+    assert any("No AI risk forecast runs" in n for n in data["notes"])
+    assert any("No satellite flood extents" in n for n in data["notes"])
+
+
+# ==============================================================================
+# 5. IMPACT REPORT AND EXPORT TESTS
+# ==============================================================================
+
+def test_report_export_downloadable_json_and_csv(client: TestClient, authority_token: str):
+    """Report export endpoint generates physical JSON and CSV attachments with Content-Disposition."""
+    evt_id = f"evt_exp_{uuid.uuid4().hex[:6]}"
+    client.post(
+        "/api/v1/flood-events",
+        json={
+            "id": evt_id,
+            "region_id": "saptari",
+            "name": "Export Benchmark Event",
+            "start_at": datetime.now(timezone.utc).isoformat(),
+        },
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+
+    client.post(
+        f"/api/v1/flood-events/{evt_id}/extent",
+        json={
+            "observed_at": datetime.now(timezone.utc).isoformat(),
+            "method": "NDWI",
+            "area_km2": 45.2,
+            "confidence": 0.91,
+            "source_scene_ids": ["S2A_MSI_2024"],
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": [
+                    [
+                        [86.70, 26.50],
+                        [86.90, 26.50],
+                        [86.90, 26.70],
+                        [86.70, 26.70],
+                        [86.70, 26.50],
+                    ]
+                ],
+            },
+        },
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+
+    # 1. Download JSON export
+    resp_json = client.get(f"/api/v1/flood-events/{evt_id}/report/export?format=json")
+    assert resp_json.status_code == status.HTTP_200_OK
+    assert "application/json" in resp_json.headers["Content-Type"]
+    assert f'attachment; filename="floodlens_impact_report_{evt_id}.json"' in resp_json.headers["Content-Disposition"]
+    json_data = resp_json.json()
+    assert json_data["event_id"] == evt_id
+    assert json_data["extent_area_km2"] == 45.2
+    assert json_data["status"] == "summary_available"
+
+    # 2. Download CSV export
+    resp_csv = client.get(f"/api/v1/flood-events/{evt_id}/report/export?format=csv")
+    assert resp_csv.status_code == status.HTTP_200_OK
+    assert "text/csv" in resp_csv.headers["Content-Type"]
+    assert f'attachment; filename="floodlens_impact_report_{evt_id}.csv"' in resp_csv.headers["Content-Disposition"]
+    csv_text = resp_csv.text
+    reader = csv.reader(io.StringIO(csv_text))
+    rows = list(reader)
+    assert len(rows) == 2  # header + data row
+    header = rows[0]
+    data_row = rows[1]
+    assert "event_id" in header
+    assert "extent_area_km2" in header
+    assert data_row[0] == evt_id
+    assert float(data_row[header.index("extent_area_km2")]) == 45.2
+
+
+def test_report_export_missing_event_returns_404(client: TestClient):
+    """Exporting a report for an unknown event returns 404 EVENT_NOT_FOUND."""
+    resp = client.get("/api/v1/flood-events/nonexistent-evt-export/report/export")
+    assert resp.status_code == status.HTTP_404_NOT_FOUND
+    assert resp.json()["error"]["code"] == "EVENT_NOT_FOUND"
+
+
+# ==============================================================================
+# 6. SECURITY AND PRIVACY REGRESSIONS
+# ==============================================================================
+
+def test_security_regressions_preserved_day3_guarantees(
+    client: TestClient,
+    authority_token: str,
+    citizen_token: str,
+):
+    """Verify Day 3 security rules remain strictly enforced on Day 4."""
+    # 1. Public endpoints must be accessible without token
+    assert client.get("/api/v1/facilities/shelters").status_code == status.HTTP_200_OK
+    assert client.get("/api/v1/facilities/hospitals").status_code == status.HTTP_200_OK
+    assert client.get("/api/v1/models").status_code == status.HTTP_200_OK
+
+    # 2. Protected endpoints reject unauthenticated or unauthorized citizen requests
+    assert client.post("/api/v1/flood-events", json={}).status_code == status.HTTP_401_UNAUTHORIZED
+    resp_cit = client.post(
+        "/api/v1/flood-events",
+        json={"name": "Forbidden Citizen Event"},
+        headers={"Authorization": f"Bearer {citizen_token}"},
+    )
+    assert resp_cit.status_code == status.HTTP_403_FORBIDDEN
+
+    # 3. Model training job initiation requires authority
+    resp_train_cit = client.post(
+        "/api/v1/models/training-jobs",
+        json={},
+        headers={"Authorization": f"Bearer {citizen_token}"},
+    )
+    assert resp_train_cit.status_code == status.HTTP_403_FORBIDDEN
+
+    resp_train_auth = client.post(
+        "/api/v1/models/training-jobs",
+        json={"candidate_version": "candidate-v2"},
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+    assert resp_train_auth.status_code == status.HTTP_202_ACCEPTED

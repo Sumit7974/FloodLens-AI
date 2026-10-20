@@ -259,3 +259,42 @@ def test_postgis_live_flood_extent_settlements_intersection(db_session: Session,
         except Exception:
             pass
 
+
+def test_postgis_live_candidate_route_hazard_screening(db_session: Session, is_postgres: bool):
+    """Test candidate route hazard screening against live PostGIS ST_Intersects and ST_DWithin."""
+    if not is_postgres:
+        pytest.skip("Live PostGIS queries require PostgreSQL with PostGIS extension")
+
+    from app.core.spatial import assess_route_spatial
+    from app.models.asset import RoadHazard
+    now = datetime.now(timezone.utc)
+    uid = uuid.uuid4().hex[:6]
+    rh_id = f"rh_pg_{uid}"
+    rh = RoadHazard(
+        id=rh_id,
+        hazard_type="submerged",
+        geometry="SRID=4326;LINESTRING(85.10 25.60, 85.20 25.60)",
+        status="active",
+        source="postgis_test",
+        observed_at=now,
+    )
+    db_session.add(rh)
+    db_session.commit()
+
+    try:
+        route_crossing = {
+            "type": "LineString",
+            "coordinates": [[85.15, 25.55], [85.15, 25.65]],
+        }
+        res = assess_route_spatial(db=db_session, route_geojson=route_crossing, buffer_meters=25.0)
+        assert res["assessment_status"] == "HAZARDS_INTERSECTED"
+        assert res["hazards_intersected_count"] >= 1
+        assert res["provenance"]["spatial_engine"] == "PostGIS (native)"
+    finally:
+        try:
+            db_session.rollback()
+            db_session.execute(text("DELETE FROM road_hazards WHERE id = :id"), {"id": rh_id})
+            db_session.commit()
+        except Exception:
+            pass
+
