@@ -306,8 +306,9 @@ def test_postgis_live_exposed_assets_inventory_completeness(db_session: Session,
     if not is_postgres:
         pytest.skip("Live PostGIS queries require PostgreSQL with PostGIS extension")
 
-    from app.core.spatial import get_exposed_assets_spatial
+    from app.core.spatial import get_exposed_assets_spatial, to_wkt_element
     from app.models.asset import Asset
+    from app.models.enums import OperationalMode
     from app.models.flood_event import FloodEvent
     from app.models.satellite import FloodExtent
 
@@ -318,30 +319,38 @@ def test_postgis_live_exposed_assets_inventory_completeness(db_session: Session,
     ast_far_id = f"ast_far_{uid}"
     ast_near_id = f"ast_near_{uid}"
 
-    # 1. Create event and flood extent in PostGIS
-    db_session.execute(
-        text("""
-            INSERT INTO flood_events (id, region_id, name, start_at, mode, created_at, updated_at)
-            VALUES (:id, 'koshi', 'PostGIS Asset Test Event', :now, 'historical_demo', :now, :now);
-        """),
-        {"id": evt_id, "now": now},
+    # 1. Clean existing assets to test empty inventory
+    db_session.query(Asset).delete()
+    db_session.commit()
+
+    # 2. Create event and flood extent in PostGIS via ORM
+    event = FloodEvent(
+        id=evt_id,
+        region_id="koshi",
+        name="PostGIS Asset Test Event",
+        start_at=now,
+        mode=OperationalMode.HISTORICAL_DEMO,
+        source_refs={},
     )
-    db_session.execute(
-        text("""
-            INSERT INTO flood_extents (id, event_id, observed_at, method, area_km2, confidence, geometry, created_at, updated_at)
-            VALUES (:id, :event_id, :now, 'MNDWI', 25.0, 0.95,
-                    ST_GeomFromText('POLYGON((86.90 26.50, 87.10 26.50, 87.10 26.70, 86.90 26.70, 86.90 26.50))', 4326),
-                    :now, :now);
-        """),
-        {"id": ext_id, "event_id": evt_id, "now": now},
+    db_session.add(event)
+
+    extent = FloodExtent(
+        id=ext_id,
+        event_id=evt_id,
+        observed_at=now,
+        method="MNDWI",
+        area_km2=25.0,
+        confidence=0.95,
+        source_scene_ids=[],
+        geometry=to_wkt_element({
+            "type": "MultiPolygon",
+            "coordinates": [[[[86.90, 26.50], [87.10, 26.50], [87.10, 26.70], [86.90, 26.70], [86.90, 26.50]]]],
+        }, expected_type="MULTIPOLYGON"),
     )
-    # Clear any leftover assets from previous tests to guarantee empty inventory
-    db_session.execute(text("DELETE FROM assets;"))
+    db_session.add(extent)
     db_session.commit()
 
     try:
-        extent = db_session.query(FloodExtent).filter(FloodExtent.id == ext_id).one()
-
         # A. Case 1: Empty asset inventory -> returns no_assets_available
         res_empty = get_exposed_assets_spatial(db_session, extent)
         assert res_empty["status"] == "no_assets_available"
@@ -349,15 +358,16 @@ def test_postgis_live_exposed_assets_inventory_completeness(db_session: Session,
         assert len(res_empty["exposed_assets"]) == 0
 
         # B. Case 2: Usable asset exists, but is far away (Kathmandu 85.32, 27.71)
-        db_session.execute(
-            text("""
-                INSERT INTO assets (id, asset_type, geometry, metadata_json, created_at, updated_at)
-                VALUES (:id, 'road',
-                        ST_GeomFromText('LINESTRING(85.30 27.70, 85.35 27.70)', 4326),
-                        '{"name": "Kathmandu Ring Road"}', :now, :now);
-            """),
-            {"id": ast_far_id, "now": now},
+        ast_far = Asset(
+            id=ast_far_id,
+            asset_type="road",
+            geometry=to_wkt_element({
+                "type": "LineString",
+                "coordinates": [[85.30, 27.70], [85.35, 27.70]],
+            }, expected_type="LINESTRING"),
+            metadata_json={"name": "Kathmandu Ring Road"},
         )
+        db_session.add(ast_far)
         db_session.commit()
 
         # Valid inventory evaluated and zero intersected: status must be completed with 0.0 values
@@ -367,15 +377,16 @@ def test_postgis_live_exposed_assets_inventory_completeness(db_session: Session,
         assert len(res_zero["exposed_assets"]) == 0
 
         # C. Case 3: Usable asset intersects extent (inside polygon 86.90-87.10, 26.50-26.70)
-        db_session.execute(
-            text("""
-                INSERT INTO assets (id, asset_type, geometry, metadata_json, created_at, updated_at)
-                VALUES (:id, 'road',
-                        ST_GeomFromText('LINESTRING(86.95 26.55, 87.05 26.65)', 4326),
-                        '{"name": "Inundated Koshi Corridor"}', :now, :now);
-            """),
-            {"id": ast_near_id, "now": now},
+        ast_near = Asset(
+            id=ast_near_id,
+            asset_type="road",
+            geometry=to_wkt_element({
+                "type": "LineString",
+                "coordinates": [[86.95, 26.55], [87.05, 26.65]],
+            }, expected_type="LINESTRING"),
+            metadata_json={"name": "Inundated Koshi Corridor"},
         )
+        db_session.add(ast_near)
         db_session.commit()
 
         res_intersect = get_exposed_assets_spatial(db_session, extent)
@@ -386,9 +397,9 @@ def test_postgis_live_exposed_assets_inventory_completeness(db_session: Session,
     finally:
         try:
             db_session.rollback()
-            db_session.execute(text("DELETE FROM assets WHERE id IN (:id1, :id2);"), {"id1": ast_far_id, "id2": ast_near_id})
-            db_session.execute(text("DELETE FROM flood_extents WHERE id = :id;"), {"id": ext_id})
-            db_session.execute(text("DELETE FROM flood_events WHERE id = :id;"), {"id": evt_id})
+            db_session.query(Asset).filter(Asset.id.in_([ast_far_id, ast_near_id])).delete(synchronize_session=False)
+            db_session.query(FloodExtent).filter(FloodExtent.id == ext_id).delete(synchronize_session=False)
+            db_session.query(FloodEvent).filter(FloodEvent.id == evt_id).delete(synchronize_session=False)
             db_session.commit()
         except Exception:
             pass
