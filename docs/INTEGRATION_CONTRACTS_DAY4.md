@@ -2,8 +2,8 @@
 
 **Author:** Member 1 (Backend & Integration Lead)  
 **Branch:** `feature/backend-day4`  
-**Target Consumers:** Member 3 (Web Frontend Lead), Member 4 (Mobile/Edge Lead), Member 2 (Satellite & GIS)  
-**Status:** Verified via Integration Test Suite (88 tests passing, 0 regressions, 0 Pyrefly type errors)
+**Target Consumers:** Member 3 (AI/ML Lead), Member 4 (Frontend/Android Lead), Member 2 (Satellite & GIS Lead)  
+**Status:** Verified via Integration Test Suite (98 tests passing, 0 regressions, 0 Pyrefly type errors)
 
 ---
 
@@ -139,22 +139,26 @@ Evidence-based spatial hazard screening between a candidate route corridor and a
       "observed_at": "2026-10-20T08:30:00Z",
       "source": "Copernicus_Emergency_Management",
       "confidence": 0.92,
+      "match_type": "direct_intersection",
+      "proximity_distance_meters": 0.0,
       "intersection_details": {
         "type": "Point",
         "coordinates": [85.85, 26.70]
       },
-      "notes": "Active road hazard of type 'submerged' intersects candidate route corridor."
+      "notes": "Active road hazard of type 'submerged' directly intersects candidate route corridor."
     },
     {
-      "hazard_id": "ext_koshi_001",
-      "hazard_type": "observed_flood_extent",
-      "source_layer": "flood_extent",
-      "status": "active_inundation",
-      "observed_at": "2026-10-20T04:45:00Z",
-      "source": "Satellite MNDWI",
-      "confidence": 0.94,
-      "intersection_details": { ... },
-      "notes": "Observed satellite flood extent (MNDWI, area 28.4 km2) physically inundates route segment."
+      "hazard_id": "rh_prox_102",
+      "hazard_type": "debris",
+      "source_layer": "road_hazard",
+      "status": "active",
+      "observed_at": "2026-10-20T09:15:00Z",
+      "source": "Local_Authority",
+      "confidence": 0.85,
+      "match_type": "proximity_warning",
+      "proximity_distance_meters": 18.4,
+      "intersection_details": null,
+      "notes": "Active road hazard of type 'debris' is located within 18.4m buffer corridor (buffer=50.0m)."
     }
   ],
   "event_id": "evt_koshi_2024",
@@ -165,23 +169,29 @@ Evidence-based spatial hazard screening between a candidate route corridor and a
   "limitations": [
     "Demonstration decision-support prototype only: route hazard assessment does NOT command emergency deployments or guarantee alternative paths.",
     "Always follow official directives from emergency authorities.",
-    "Identified 2 hazard intersection(s) along candidate corridor; route may be submerged, blocked, or impassable."
+    "NEVER classify an unverified route as safe; absence of recorded hazards does NOT guarantee road passability or structural stability.",
+    "Identified 2 hazard intersection(s) / proximity warning(s) along candidate corridor; route may be submerged, blocked, or impassable."
   ],
   "provenance": {
-    "spatial_engine": "PostGIS (native)",
+    "spatial_engine": "PostGIS (native) or Shapely / pyproj (fallback)",
     "road_hazards_screened": 12,
     "flood_extents_screened": 2,
     "buffer_meters": 50.0,
     "event_id": "evt_koshi_2024",
+    "temporal_window_start": "2024-08-14T02:00:00Z",
+    "temporal_window_end": "2026-10-20T12:00:00Z",
     "evaluation_context": { ... }
   }
 }
 ```
 
-### 2.3 Status Categories
+### 2.3 Status Categories & Methodological Guarantees
+- **Temporal Event Scoping:** Road hazards are scoped to the historical event window (`event.start_at - 24h` through `min(cutoff_time, event.end_at)`). Hazards outside this window are excluded to prevent temporally mismatched historical records from contaminating event evaluation.
+- **Metric Spatial Projection:** For non-PostGIS fallback, exact geodesic distances in meters are computed using `pyproj` Azimuthal Equidistant (AEQD) projection centered at the route centroid, avoiding spherical distortion.
+- **Match Distinction:** Detected hazards distinguish `match_type: "direct_intersection"` (0.0m) from `match_type: "proximity_warning"` with `proximity_distance_meters`.
 - `HAZARDS_INTERSECTED` (`route_status: "hazards_detected"`): Intersecting road blockages, submerged sections, or flood extents detected.
-- `NO_KNOWN_INTERSECTIONS` (`route_status: "conditional"`): No intersections among active records; limitations explicitly remind authorities that unmapped hazards or recent changes may exist.
-- `NOT_EVALUATED` (`route_status: "not_evaluated"`): No active road hazards or satellite extents exist in the database for screening.
+- `NO_KNOWN_INTERSECTIONS` (`route_status: "conditional"`): No intersections among active records; limitations explicitly remind authorities that unmapped hazards or recent changes may exist. Candidate routes are **never** classified as "safe".
+- `NOT_EVALUATED` (`route_status: "not_evaluated"`): No active road hazards or satellite extents exist within the event window for screening.
 
 ---
 
@@ -226,9 +236,12 @@ Corrected event-scoped model benchmark analytics filtering strictly on `Evaluati
 ```
 
 ### 3.2 Model Versions Listing (`GET /api/v1/models`)
-Truthfully distinguishes active baseline logic from offline research prototypes:
-- `baseline-v1`: `status: "active"` (deterministic rule-based hydrological risk baseline)
-- `candidate-v2`: `status: "research_prototype"` (offline comparative experiment; not promoted to live warning dispatch)
+Truthfully lists verified baseline models and offline research benchmarks matching Member 3 artifacts:
+- `baseline-v1`: `type: "demo_prototype"`, `status: "demo_ready"` (Demonstration pipeline baseline model trained on synthetic historical data for pipeline testing and software integration verification; pipeline test only, not for real-world alerts).
+- `era5-v1`: `type: "offline_benchmark"`, `status: "offline_research"` (Research benchmark model trained on open-access ERA5 reanalysis precipitation and GloFAS discharge proxy data; not validated against in-situ Nepal DHM gauge observations).
+
+### 3.3 Training Jobs (`POST /api/v1/models/training-jobs`)
+Responds with **`501 Not Implemented`** (`code: "TRAINING_NOT_IMPLEMENTED"`). Model training is executed strictly offline via research scripts and notebooks (`ml/src/train_models.py`). No background online training executor is configured, preserving truthful API semantics without claiming phantom queue execution.
 
 ---
 
@@ -276,8 +289,8 @@ Entries are strictly sorted by UTC timestamp (`timestamp` ascending):
       "resource_id": "evt_koshi_2024",
       "resource_type": "flood_event",
       "details": { "region_id": "koshi_basin", "mode": "historical_demo" },
-      "data_quality": "FULL",
-      "limitations": []
+      "data_quality": null,
+      "limitations": ["Historical dataset start boundary milestone."]
     },
     {
       "entry_id": "fc_run_01",
@@ -314,8 +327,8 @@ Entries are strictly sorted by UTC timestamp (`timestamp` ascending):
         "confidence": 0.94,
         "source_scene_ids": ["S2A_20240815_T45RVP"]
       },
-      "data_quality": "FULL",
-      "limitations": []
+      "data_quality": "SATELLITE_DERIVED",
+      "limitations": ["Derived via MNDWI satellite processing; surface extent accuracy subject to sensor resolution and canopy penetration limitations."]
     },
     {
       "entry_id": "eval_01",
@@ -330,20 +343,20 @@ Entries are strictly sorted by UTC timestamp (`timestamp` ascending):
         "baseline_version": "baseline-v1",
         "metrics": { "iou": 0.81, "f1": 0.89 }
       },
-      "data_quality": "FULL",
-      "limitations": []
+      "data_quality": "BENCHMARK_DERIVED",
+      "limitations": ["Post-flood retrospective benchmark"]
     },
     {
       "entry_id": "evt_end_evt_koshi_2024",
       "timestamp": "2024-08-15T12:00:00Z",
       "entry_type": "event_end",
-      "title": "Event Concluded: August 2024 Koshi Historical Episode",
-      "description": "Official conclusion of the flood event episode",
+      "title": "Historical Episode End: August 2024 Koshi Historical Episode",
+      "description": "Recorded end timestamp of the historical flood episode dataset",
       "resource_id": "evt_koshi_2024",
       "resource_type": "flood_event",
       "details": { "duration_hours": 10.0 },
-      "data_quality": "FULL",
-      "limitations": []
+      "data_quality": null,
+      "limitations": ["Recorded dataset conclusion; does not represent an official government conclusion without external verification."]
     }
   ],
   "notes": [
@@ -355,13 +368,13 @@ Entries are strictly sorted by UTC timestamp (`timestamp` ascending):
 
 ---
 
-## 5. Impact Reports & Downloadable Exports
+## 5. Historical Impact Reports & Downloadable Exports
 
 ### 5.1 Impact Summary Report
 - **URL:** `GET /api/v1/flood-events/{event_id}/report`
 - **Access:** Public
 
-Returns synthesized impact metrics including `extent_area_km2`, `total_settlements_affected`, `roads_exposed_km`, `structures_exposed_count`, and `cropland_exposed_ha`, along with `data_provenance` and `data_limitations`.
+Returns synthesized historical impact assessment metrics (`extent_area_km2`, `total_settlements_affected`, `roads_exposed_km`, `structures_exposed_count`, `cropland_exposed_ha`), along with `data_provenance`, `data_limitations`, and consistent status (`summary_available`, `incomplete_evidence`, or `pending_data`).
 
 ### 5.2 Downloadable File Export Endpoint
 - **URL:** `GET /api/v1/flood-events/{event_id}/report/export`

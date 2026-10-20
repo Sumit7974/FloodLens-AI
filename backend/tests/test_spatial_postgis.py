@@ -289,6 +289,8 @@ def test_postgis_live_candidate_route_hazard_screening(db_session: Session, is_p
         res = assess_route_spatial(db=db_session, route_geojson=route_crossing, buffer_meters=25.0)
         assert res["assessment_status"] == "HAZARDS_INTERSECTED"
         assert res["hazards_intersected_count"] >= 1
+        assert res["hazards_detected"][0]["match_type"] == "direct_intersection"
+        assert res["hazards_detected"][0]["proximity_distance_meters"] == 0.0
         assert res["provenance"]["spatial_engine"] == "PostGIS (native)"
     finally:
         try:

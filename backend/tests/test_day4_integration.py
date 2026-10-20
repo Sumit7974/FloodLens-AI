@@ -499,19 +499,48 @@ def test_analytics_empty_evaluations_distinction(client: TestClient, authority_t
 
 
 def test_models_listing_honest_status(client: TestClient):
-    """Listing models clearly marks baseline as active and research models as prototypes."""
+    """Listing models clearly marks baseline-v1 as demonstration prototype and era5-v1 as offline benchmark."""
     resp = client.get("/api/v1/models")
     assert resp.status_code == status.HTTP_200_OK
     models = resp.json()
-    assert len(models) >= 1
-    baseline = next((m for m in models if m["version"] == "baseline-v1"), None)
-    assert baseline is not None
-    assert baseline["status"] == "active"
-    assert len(baseline["limitations"]) > 0
+    assert len(models) == 2
+    versions = [m["version"] for m in models]
+    assert "baseline-v1" in versions
+    assert "era5-v1" in versions
+    assert "candidate-v2" not in versions  # Fiction removed
 
-    candidate = next((m for m in models if m["version"] == "candidate-v2"), None)
-    if candidate:
-        assert candidate["status"] == "research_prototype"
+    baseline = next(m for m in models if m["version"] == "baseline-v1")
+    assert baseline["type"] == "demo_prototype"
+    assert baseline["status"] == "demo_ready"
+    assert any("PIPELINE TEST ONLY" in lim for lim in baseline["limitations"])
+
+    era5 = next(m for m in models if m["version"] == "era5-v1")
+    assert era5["type"] == "offline_benchmark"
+    assert era5["status"] == "offline_research"
+    assert any("RESEARCH PROTOTYPE" in lim for lim in era5["limitations"])
+
+
+def test_models_training_job_returns_501_not_implemented(client: TestClient, authority_token: str, citizen_token: str):
+    """POST /models/training-jobs must not claim queued jobs and must return 501 Not Implemented."""
+    # 1. Citizen cannot access
+    resp_cit = client.post(
+        "/api/v1/models/training-jobs",
+        json={"candidate_version": "era5-v1"},
+        headers={"Authorization": f"Bearer {citizen_token}"},
+    )
+    assert resp_cit.status_code == status.HTTP_403_FORBIDDEN
+
+    # 2. Authority gets 501 Not Implemented with truthful explanation
+    resp_auth = client.post(
+        "/api/v1/models/training-jobs",
+        json={"candidate_version": "era5-v1"},
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+    assert resp_auth.status_code == status.HTTP_501_NOT_IMPLEMENTED
+    err = resp_auth.json()["error"]
+    assert err["code"] == "TRAINING_NOT_IMPLEMENTED"
+    assert "not implemented" in err["message"].lower()
+    assert err["details"]["execution_environment"] == "offline_research_only"
 
 
 # ==============================================================================
@@ -635,6 +664,27 @@ def test_event_timeline_chronological_ordering(client: TestClient, db_session: S
     assert len(horizons) == 2
     assert horizons[0]["hours"] == 1
     assert horizons[1]["hours"] == 3
+    assert fc_entry["data_quality"] == "PARTIAL"
+
+    # Verify event_start and event_end do not fabricate FULL data quality
+    start_entry = next(e for e in data["entries"] if e["entry_type"] == "event_start")
+    assert start_entry["data_quality"] is None
+    assert len(start_entry["limitations"]) > 0
+
+    end_entry = next(e for e in data["entries"] if e["entry_type"] == "event_end")
+    assert end_entry["title"].startswith("Historical Episode End:")
+    assert "Recorded end timestamp" in end_entry["description"]
+    assert "official conclusion" not in end_entry["description"].lower()
+    assert end_entry["data_quality"] is None
+
+    # Verify satellite flood extent has SATELLITE_DERIVED quality, not FULL
+    extent_entry = next(e for e in data["entries"] if e["entry_type"] == "flood_observation")
+    assert extent_entry["data_quality"] == "SATELLITE_DERIVED"
+    assert any("Derived via MNDWI satellite processing" in lim for lim in extent_entry["limitations"])
+
+    # Verify evaluation benchmark has BENCHMARK_DERIVED quality
+    eval_entry = next(e for e in data["entries"] if e["entry_type"] == "evaluation_recorded")
+    assert eval_entry["data_quality"] == "BENCHMARK_DERIVED"
 
 
 def test_event_timeline_missing_event_returns_404(client: TestClient):
@@ -769,7 +819,7 @@ def test_security_regressions_preserved_day3_guarantees(
     )
     assert resp_cit.status_code == status.HTTP_403_FORBIDDEN
 
-    # 3. Model training job initiation requires authority
+    # 3. Model training job initiation requires authority and returns 501 Not Implemented
     resp_train_cit = client.post(
         "/api/v1/models/training-jobs",
         json={},
@@ -779,7 +829,298 @@ def test_security_regressions_preserved_day3_guarantees(
 
     resp_train_auth = client.post(
         "/api/v1/models/training-jobs",
-        json={"candidate_version": "candidate-v2"},
+        json={"candidate_version": "era5-v1"},
         headers={"Authorization": f"Bearer {authority_token}"},
     )
-    assert resp_train_auth.status_code == status.HTTP_202_ACCEPTED
+    assert resp_train_auth.status_code == status.HTTP_501_NOT_IMPLEMENTED
+    assert resp_train_auth.json()["error"]["code"] == "TRAINING_NOT_IMPLEMENTED"
+
+
+# ==============================================================================
+# 7. DAY 4 CODE REVIEW REGRESSION TESTS
+# ==============================================================================
+
+def test_impact_report_flood_extent_without_geometry(client: TestClient, db_session: Session, authority_token: str):
+    """When a flood extent exists without valid geometry, status is no_extent_geometry and report is incomplete_evidence."""
+    evt_id = f"evt_nogeom_{uuid.uuid4().hex[:6]}"
+    client.post(
+        "/api/v1/flood-events",
+        json={
+            "id": evt_id,
+            "region_id": "siraha",
+            "name": "No Geometry Test Event",
+            "start_at": datetime.now(timezone.utc).isoformat(),
+        },
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+
+    # Ingest extent record WITHOUT geometry
+    ext = FloodExtent(
+        id=f"ext_nogeom_{uuid.uuid4().hex[:6]}",
+        event_id=evt_id,
+        observed_at=datetime.now(timezone.utc),
+        method="SAR_CHANGE",
+        area_km2=12.5,
+        confidence=0.88,
+        geometry=None,
+    )
+    db_session.add(ext)
+    db_session.commit()
+
+    # 1. Assets endpoint returns no_extent_geometry
+    resp_assets = client.get(f"/api/v1/flood-events/{evt_id}/assets")
+    assert resp_assets.status_code == status.HTTP_200_OK
+    assert resp_assets.json()["status"] == "no_extent_geometry"
+
+    # 2. Settlements endpoint returns no_extent_geometry
+    resp_settlements = client.get(f"/api/v1/flood-events/{evt_id}/settlements")
+    assert resp_settlements.status_code == status.HTTP_200_OK
+    assert resp_settlements.json()["status"] == "no_extent_geometry"
+
+    # 3. Report endpoint returns incomplete_evidence
+    resp_rep = client.get(f"/api/v1/flood-events/{evt_id}/report")
+    assert resp_rep.status_code == status.HTTP_200_OK
+    data_rep = resp_rep.json()
+    assert data_rep["status"] == "incomplete_evidence"
+    assert data_rep["settlements_data_status"] == "no_extent_geometry"
+    assert data_rep["assets_data_status"] == "no_extent_geometry"
+
+    # 4. JSON export matches incomplete_evidence
+    resp_json = client.get(f"/api/v1/flood-events/{evt_id}/report/export?format=json")
+    assert resp_json.status_code == status.HTTP_200_OK
+    assert resp_json.json()["status"] == "incomplete_evidence"
+
+    # 5. CSV export matches incomplete_evidence
+    resp_csv = client.get(f"/api/v1/flood-events/{evt_id}/report/export?format=csv")
+    assert resp_csv.status_code == status.HTTP_200_OK
+    csv_rows = list(csv.reader(io.StringIO(resp_csv.text)))
+    header = csv_rows[0]
+    data_row = csv_rows[1]
+    assert data_row[header.index("status")] == "incomplete_evidence"
+
+
+def test_impact_report_distinguishes_missing_geometry_from_measured_zero_exposure(client: TestClient, db_session: Session, authority_token: str):
+    """Distinguishes no_extent_geometry from measured zero exposure (completed with 0.0 metrics)."""
+    from app.models.asset import Asset
+    # Create event
+    evt_id = f"evt_assets_test_{uuid.uuid4().hex[:6]}"
+    client.post(
+        "/api/v1/flood-events",
+        json={
+            "id": evt_id,
+            "region_id": "rautahat",
+            "name": "Asset Zero Exposure Event",
+            "start_at": datetime.now(timezone.utc).isoformat(),
+        },
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+
+    # 1. Extent without geometry returns no_extent_geometry
+    ext_nogeom = FloodExtent(
+        id=f"ext_nogeom_{uuid.uuid4().hex[:6]}",
+        event_id=evt_id,
+        observed_at=datetime(2024, 7, 10, 10, 0, tzinfo=timezone.utc),
+        method="MNDWI",
+        area_km2=5.0,
+        confidence=0.8,
+        geometry=None,
+    )
+    db_session.add(ext_nogeom)
+    db_session.commit()
+
+    resp_nogeom = client.get(f"/api/v1/flood-events/{evt_id}/assets")
+    assert resp_nogeom.status_code == status.HTTP_200_OK
+    assert resp_nogeom.json()["status"] == "no_extent_geometry"
+
+    # 2. Add an asset far outside (86.00, 27.00)
+    far_asset = Asset(
+        id=f"ast_far_{uuid.uuid4().hex[:6]}",
+        asset_type="road",
+        geometry=to_wkt_element(
+            {"type": "LineString", "coordinates": [[86.00, 27.00], [86.05, 27.00]]},
+            expected_type="LINESTRING",
+        ),
+        metadata_json={"road_name": "Far Highway"},
+    )
+    db_session.add(far_asset)
+
+    # Now add an extent with valid geometry observed later (85.20 to 85.30)
+    ext_valid = FloodExtent(
+        id=f"ext_valid_{uuid.uuid4().hex[:6]}",
+        event_id=evt_id,
+        observed_at=datetime(2024, 7, 10, 12, 0, tzinfo=timezone.utc),
+        method="MNDWI",
+        area_km2=8.0,
+        confidence=0.9,
+        geometry=to_wkt_element({
+            "type": "Polygon",
+            "coordinates": [[[85.20, 27.00], [85.30, 27.00], [85.30, 27.10], [85.20, 27.10], [85.20, 27.00]]],
+        }),
+    )
+    db_session.add(ext_valid)
+    db_session.commit()
+
+    resp_measured = client.get(f"/api/v1/flood-events/{evt_id}/assets")
+    assert resp_measured.status_code == status.HTTP_200_OK
+    data_measured = resp_measured.json()
+    # Mapped assets were evaluated, and zero intersected: status must be 'completed' with 0.0 values
+    assert data_measured["status"] == "completed"
+    assert data_measured["roads_exposed_km"] == 0.0
+    assert len(data_measured["exposed_assets"]) == 0
+
+    # Report status reflects summary_available
+    resp_rep = client.get(f"/api/v1/flood-events/{evt_id}/report")
+    assert resp_rep.status_code == status.HTTP_200_OK
+    assert resp_rep.json()["status"] == "summary_available"
+    assert resp_rep.json()["assets_data_status"] == "completed"
+
+
+def test_route_assess_temporal_event_scoping_excludes_unrelated_hazards(client: TestClient, db_session: Session):
+    """Hazards outside the historical event window (event.start_at - 24h to event.end_at) are excluded."""
+    # Historical event: August 15, 2024
+    evt_id = f"evt_temp_{uuid.uuid4().hex[:6]}"
+    t_start = datetime(2024, 8, 15, 0, 0, tzinfo=timezone.utc)
+    t_end = datetime(2024, 8, 16, 0, 0, tzinfo=timezone.utc)
+    event = FloodEvent(
+        id=evt_id,
+        region_id="morang",
+        name="August 2024 Historical Morang Event",
+        start_at=t_start,
+        end_at=t_end,
+        mode=OperationalMode.HISTORICAL_DEMO,
+    )
+    db_session.add(event)
+
+    # 1. Unrelated old hazard from July 2024 (1.5 months earlier) crossing the route
+    rh_old = RoadHazard(
+        id=f"rh_old_{uuid.uuid4().hex[:6]}",
+        hazard_type="submerged",
+        geometry=to_wkt_element(
+            {"type": "LineString", "coordinates": [[87.25, 26.65], [87.25, 26.75]]},
+            expected_type="LINESTRING",
+        ),
+        status="active",
+        observed_at=datetime(2024, 7, 1, 10, 0, tzinfo=timezone.utc),
+    )
+    # 2. In-event hazard observed during the August 15 event crossing the route
+    rh_event = RoadHazard(
+        id=f"rh_in_event_{uuid.uuid4().hex[:6]}",
+        hazard_type="bridge_closed",
+        geometry=to_wkt_element(
+            {"type": "LineString", "coordinates": [[87.25, 26.65], [87.25, 26.75]]},
+            expected_type="LINESTRING",
+        ),
+        status="active",
+        observed_at=datetime(2024, 8, 15, 12, 0, tzinfo=timezone.utc),
+    )
+    # 3. Future hazard observed in 2026
+    rh_future = RoadHazard(
+        id=f"rh_future_{uuid.uuid4().hex[:6]}",
+        hazard_type="debris",
+        geometry=to_wkt_element(
+            {"type": "LineString", "coordinates": [[87.25, 26.65], [87.25, 26.75]]},
+            expected_type="LINESTRING",
+        ),
+        status="active",
+        observed_at=datetime(2026, 1, 1, 0, 0, tzinfo=timezone.utc),
+    )
+    db_session.add_all([rh_old, rh_event, rh_future])
+    db_session.commit()
+
+    candidate_route = {
+        "type": "LineString",
+        "coordinates": [[87.20, 26.70], [87.30, 26.70]],
+    }
+    resp = client.post(
+        "/api/v1/routes/assess",
+        json={"route": candidate_route, "event_id": evt_id},
+    )
+    assert resp.status_code == status.HTTP_200_OK
+    data = resp.json()
+    detected_ids = [h["hazard_id"] for h in data["hazards_detected"]]
+    assert rh_event.id in detected_ids
+    assert rh_old.id not in detected_ids  # Excluded due to temporal mismatch
+    assert rh_future.id not in detected_ids  # Excluded due to temporal mismatch
+
+
+def test_route_assess_distinguishes_direct_intersection_from_proximity_warning(client: TestClient, db_session: Session):
+    """Route screening distinguishes direct intersections (0.0m) from proximity warnings with geodesic meter distance."""
+    # Candidate route along latitude 26.7000: (85.80, 26.7000) -> (85.90, 26.7000)
+    # 1. Hazard directly intersecting route at (85.85, 26.7000)
+    rh_direct = RoadHazard(
+        id=f"rh_dir_{uuid.uuid4().hex[:6]}",
+        hazard_type="submerged",
+        geometry=to_wkt_element(
+            {"type": "LineString", "coordinates": [[85.85, 26.6990], [85.85, 26.7010]]},
+            expected_type="LINESTRING",
+        ),
+        status="active",
+        observed_at=datetime.now(timezone.utc),
+    )
+    # 2. Hazard ~22 meters north of route (0.0002 deg lat ~ 22m), not directly intersecting
+    rh_prox = RoadHazard(
+        id=f"rh_prox_{uuid.uuid4().hex[:6]}",
+        hazard_type="debris",
+        geometry=to_wkt_element(
+            {"type": "Point", "coordinates": [85.85, 26.7002]},
+            expected_type="POINT",
+        ),
+        status="active",
+        observed_at=datetime.now(timezone.utc),
+    )
+    db_session.add_all([rh_direct, rh_prox])
+    db_session.commit()
+
+    candidate_route = {
+        "type": "LineString",
+        "coordinates": [[85.80, 26.7000], [85.90, 26.7000]],
+    }
+    resp = client.post(
+        "/api/v1/routes/assess",
+        json={"route": candidate_route, "buffer_meters": 50.0},
+    )
+    assert resp.status_code == status.HTTP_200_OK
+    data = resp.json()
+    assert data["route_status"] == "hazards_detected"
+
+    h_direct = next(h for h in data["hazards_detected"] if h["hazard_id"] == rh_direct.id)
+    assert h_direct["match_type"] == "direct_intersection"
+    assert h_direct["proximity_distance_meters"] == 0.0
+    assert h_direct["intersection_details"] is not None
+
+    h_prox = next(h for h in data["hazards_detected"] if h["hazard_id"] == rh_prox.id)
+    assert h_prox["match_type"] == "proximity_warning"
+    assert 10.0 < h_prox["proximity_distance_meters"] < 35.0
+    assert "buffer corridor" in h_prox["notes"]
+
+
+def test_route_assess_never_classifies_unverified_route_as_safe(client: TestClient, db_session: Session):
+    """Absence of hazards returns 'conditional', never 'safe', with mandatory disclaimers."""
+    rh_away = RoadHazard(
+        id=f"rh_away_{uuid.uuid4().hex[:6]}",
+        hazard_type="bridge_closed",
+        geometry=to_wkt_element(
+            {"type": "Point", "coordinates": [88.0, 27.5]},
+            expected_type="POINT",
+        ),
+        status="active",
+        observed_at=datetime.now(timezone.utc),
+    )
+    db_session.add(rh_away)
+    db_session.commit()
+
+    candidate_route = {
+        "type": "LineString",
+        "coordinates": [[85.0, 26.0], [85.05, 26.0]],
+    }
+    resp = client.post(
+        "/api/v1/routes/assess",
+        json={"route": candidate_route, "buffer_meters": 25.0},
+    )
+    assert resp.status_code == status.HTTP_200_OK
+    data = resp.json()
+    assert data["route_status"] == "conditional"
+    assert data["assessment_status"] == "NO_KNOWN_INTERSECTIONS"
+    assert "safe" not in data["route_status"].lower()
+    assert any("NEVER infer that a candidate route is safe" in lim for lim in data["limitations"])
+    assert any("NEVER classify an unverified route as safe" in lim for lim in data["limitations"])

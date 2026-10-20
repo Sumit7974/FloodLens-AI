@@ -278,6 +278,19 @@ async def get_affected_settlements(
             notes="No flood extent has been observed or imported for this event.",
         )
 
+    if not extent.geometry:
+        return AffectedSettlementsResponse(
+            event_id=event_id,
+            region_id=event.region_id,
+            extent_id=extent.id,
+            observed_at=extent.observed_at,
+            total_settlements_evaluated=0,
+            total_settlements_affected=0,
+            affected_settlements=[],
+            status="no_extent_geometry",
+            notes="Observed flood extent has no valid geospatial polygon geometry attached for spatial intersection.",
+        )
+
     # Perform actual PostGIS / spatial intersection scoped to event study area / region
     affected, total_evaluated = get_affected_settlements_spatial(db, extent, region_id=event.region_id)
 
@@ -344,7 +357,7 @@ async def get_exposed_assets(event_id: str, db: Session = Depends(get_db)) -> Ex
         structures_exposed_count=asset_metrics["structures_exposed_count"],
         cropland_exposed_ha=asset_metrics["cropland_exposed_ha"],
         exposed_assets=asset_metrics["exposed_assets"],
-        status="completed",
+        status=asset_metrics["status"],
     )
 
 
@@ -371,22 +384,35 @@ async def get_flood_report(event_id: str, db: Session = Depends(get_db)) -> Floo
     affected_count = 0
     total_evaluated = 0
     settlements_status = "no_extent_available" if not extent else "no_settlement_data"
+    assets_status = "no_extent_available" if not extent else "no_assets_available"
     roads_km = 0.0
     structures_count = 0
     cropland_ha = 0.0
     extent_observed_at = None
     extent_area_km2 = None
+    overall_status = "pending_data"
 
     if extent:
         extent_observed_at = extent.observed_at
         extent_area_km2 = extent.area_km2
-        affected, total_evaluated = get_affected_settlements_spatial(db, extent, region_id=event.region_id)
-        affected_count = len(affected)
-        settlements_status = "completed" if total_evaluated > 0 else "no_settlement_data"
-        asset_metrics = get_exposed_assets_spatial(db, extent)
-        roads_km = asset_metrics["roads_exposed_km"]
-        structures_count = asset_metrics["structures_exposed_count"]
-        cropland_ha = asset_metrics["cropland_exposed_ha"]
+        if not extent.geometry:
+            settlements_status = "no_extent_geometry"
+            assets_status = "no_extent_geometry"
+            overall_status = "incomplete_evidence"
+        else:
+            affected, total_evaluated = get_affected_settlements_spatial(db, extent, region_id=event.region_id)
+            affected_count = len(affected)
+            settlements_status = "completed" if total_evaluated > 0 else "no_settlement_data"
+            asset_metrics = get_exposed_assets_spatial(db, extent)
+            assets_status = asset_metrics["status"]
+            roads_km = asset_metrics["roads_exposed_km"]
+            structures_count = asset_metrics["structures_exposed_count"]
+            cropland_ha = asset_metrics["cropland_exposed_ha"]
+
+            if asset_metrics.get("status") == "no_extent_geometry":
+                overall_status = "incomplete_evidence"
+            else:
+                overall_status = "summary_available"
 
     return FloodReportResponse(
         event_id=event_id,
@@ -400,11 +426,11 @@ async def get_flood_report(event_id: str, db: Session = Depends(get_db)) -> Floo
         structures_exposed_count=structures_count,
         cropland_exposed_ha=cropland_ha,
         report_generated_at=None,
-        status="summary_available" if extent else "pending_data",
+        status=overall_status,
         download_url=None,
         settlements_evaluated=total_evaluated,
         settlements_data_status=settlements_status,
-        assets_data_status="completed" if extent else "no_extent_available",
+        assets_data_status=assets_status,
         data_limitations=[
             "Physical exposure indicates spatial intersection with satellite water mask; exposure does not equal verified damage.",
             "Settlement population counts reflect census figures, not verified casualties or displaced persons.",
@@ -421,7 +447,7 @@ async def get_flood_report(event_id: str, db: Session = Depends(get_db)) -> Floo
     "/{event_id}/report/export",
     status_code=status.HTTP_200_OK,
     summary="Export impact assessment report as downloadable JSON or CSV",
-    description="Generates an authoritative downloadable impact assessment report artifact in JSON or CSV format.",
+    description="Generates a downloadable historical impact assessment or demo report artifact in JSON or CSV format.",
 )
 async def export_flood_report(
     event_id: str,
@@ -448,20 +474,30 @@ async def export_flood_report(
     extent_observed_at_str = ""
     extent_area = 0.0
     extent_method = ""
+    status_desc = "pending_data"
 
     if extent:
         extent_observed_at_str = extent.observed_at.isoformat()
         extent_area = extent.area_km2
         extent_method = extent.method
-        affected, total_evaluated = get_affected_settlements_spatial(db, extent, region_id=event.region_id)
-        affected_count = len(affected)
-        asset_metrics = get_exposed_assets_spatial(db, extent)
-        roads_km = asset_metrics["roads_exposed_km"]
-        structures_count = asset_metrics["structures_exposed_count"]
-        cropland_ha = asset_metrics["cropland_exposed_ha"]
+        if not extent.geometry:
+            status_desc = "incomplete_evidence"
+        else:
+            affected, total_evaluated = get_affected_settlements_spatial(db, extent, region_id=event.region_id)
+            affected_count = len(affected)
+            settlements_status = "completed" if total_evaluated > 0 else "no_settlement_data"
+            asset_metrics = get_exposed_assets_spatial(db, extent)
+            assets_status = asset_metrics["status"]
+            roads_km = asset_metrics["roads_exposed_km"]
+            structures_count = asset_metrics["structures_exposed_count"]
+            cropland_ha = asset_metrics["cropland_exposed_ha"]
+
+            if asset_metrics.get("status") == "no_extent_geometry":
+                status_desc = "incomplete_evidence"
+            else:
+                status_desc = "summary_available"
 
     now_iso = datetime.now(timezone.utc).isoformat()
-    status_desc = "summary_available" if extent else "pending_data"
 
     if format == "csv":
         output = io.StringIO()
@@ -574,8 +610,8 @@ async def get_event_timeline(event_id: str, db: Session = Depends(get_db)) -> Di
                 "mode": event.mode.value if hasattr(event.mode, "value") else str(event.mode),
                 "source_refs": event.source_refs if isinstance(event.source_refs, dict) else {},
             },
-            data_quality="FULL",
-            limitations=[],
+            data_quality=None,
+            limitations=["Historical dataset start boundary milestone."],
         )
     )
 
@@ -587,16 +623,16 @@ async def get_event_timeline(event_id: str, db: Session = Depends(get_db)) -> Di
                 entry_id=f"evt_end_{event.id}",
                 timestamp=event.end_at,
                 entry_type="event_end",
-                title=f"Event Concluded: {event.name}",
-                description="Official conclusion of the flood event episode",
+                title=f"Historical Episode End: {event.name}",
+                description="Recorded end timestamp of the historical flood episode dataset",
                 resource_id=event.id,
                 resource_type="flood_event",
                 details={
                     "region_id": event.region_id,
                     "duration_hours": duration_hrs,
                 },
-                data_quality="FULL",
-                limitations=[],
+                data_quality=None,
+                limitations=["Recorded dataset conclusion; does not represent an official government conclusion without external verification."],
             )
         )
 
@@ -625,7 +661,14 @@ async def get_event_timeline(event_id: str, db: Session = Depends(get_db)) -> Di
             }
             for p in preds
         ]
-        quality = preds[0].data_quality.value if (preds and hasattr(preds[0].data_quality, "value")) else "PARTIAL"
+        qualities = [p.data_quality.value for p in preds if hasattr(p.data_quality, "value")]
+        if len(qualities) == 0:
+            quality = None
+        elif len(set(qualities)) == 1:
+            quality = qualities[0]
+        else:
+            quality = "MIXED"
+
         entries.append(
             TimelineEntry(
                 entry_id=f"fc_{run.id}",
@@ -675,8 +718,8 @@ async def get_event_timeline(event_id: str, db: Session = Depends(get_db)) -> Di
                     "raster_ref": ext.raster_ref,
                     "has_spatial_geometry": ext.geometry is not None,
                 },
-                data_quality="FULL" if (ext.confidence and ext.confidence > 0.8) else "PARTIAL",
-                limitations=[],
+                data_quality="SATELLITE_DERIVED",
+                limitations=[f"Derived via {ext.method} satellite processing; surface extent accuracy subject to sensor resolution and canopy penetration limitations."],
             )
         )
 
@@ -705,8 +748,8 @@ async def get_event_timeline(event_id: str, db: Session = Depends(get_db)) -> Di
                     "reference_id": ev.reference_id,
                     "notes": ev.notes,
                 },
-                data_quality="FULL",
-                limitations=[],
+                data_quality="BENCHMARK_DERIVED",
+                limitations=[ev.notes] if ev.notes else [],
             )
         )
 

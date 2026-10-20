@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 from app.api.deps import require_roles
-from app.core.exceptions import NotFoundError
+from app.core.exceptions import FloodLensAPIException, NotFoundError
 from app.database import get_db
 from app.models.enums import UserRole
 from app.models.evaluation import Evaluation
@@ -72,31 +72,33 @@ async def get_event_analytics(event_id: str, db: Session = Depends(get_db)) -> D
     response_model=List[ModelVersionItem],
     status_code=status.HTTP_200_OK,
     summary="List available AI/ML model versions and status",
-    description="Lists baseline operational models and offline research candidates with explicit deployment status.",
+    description="Lists baseline demonstration models and offline research prototypes with explicit status and limitations.",
 )
 async def list_models() -> List[Dict[str, Any]]:
-    """List baseline and candidate models without claiming unverified active deployment."""
+    """List baseline and research models without claiming unverified active deployment or candidate availability."""
     return [
         {
             "version": "baseline-v1",
-            "type": "hydrological_baseline",
-            "status": "active",
+            "type": "demo_prototype",
+            "status": "demo_ready",
             "horizons": [1, 3, 6],
-            "description": "Deterministic rule-based hydrological risk baseline used for historical simulation and benchmarks",
+            "description": "Demonstration pipeline baseline model trained on synthetic historical data for pipeline testing and software integration verification.",
             "limitations": [
-                "Calibrated on historical Nepal Terai river gauge observations and runoff thresholds",
-                "Does not simulate hydrodynamic 2D overland flow velocity or micro-topography",
+                "PIPELINE TEST ONLY: Model trained on synthetic demonstration data.",
+                "Metrics reflect software pipeline functionality and code correctness, NOT real-world operational flood prediction accuracy.",
+                "Do NOT use for real-world operational flood warnings.",
             ],
         },
         {
-            "version": "candidate-v2",
-            "type": "research_candidate",
-            "status": "research_prototype",
+            "version": "era5-v1",
+            "type": "offline_benchmark",
+            "status": "offline_research",
             "horizons": [1, 3, 6],
-            "description": "Offline experimental candidate model for retrospective comparative benchmarking",
+            "description": "Research benchmark model trained on open-access ERA5 reanalysis precipitation and GloFAS discharge proxy data.",
             "limitations": [
-                "Offline research prototype only; not promoted to operational authority warning workflow",
-                "Requires continuous upstream telemetry without sensor dropouts",
+                "RESEARCH PROTOTYPE: Offline model trained on ERA5 reanalysis and GloFAS proxies; not validated against in-situ Nepal DHM gauge observations.",
+                "River stage telemetry was unavailable during training; uses proxy discharge approximations.",
+                "Do NOT use for real-world operational flood warnings.",
             ],
         },
     ]
@@ -104,18 +106,23 @@ async def list_models() -> List[Dict[str, Any]]:
 
 @router.post(
     "/models/training-jobs",
-    status_code=status.HTTP_202_ACCEPTED,
-    summary="Start controlled candidate-training job (requires authority)",
+    status_code=status.HTTP_501_NOT_IMPLEMENTED,
+    summary="Trigger candidate-training job (Not Implemented)",
+    description="Returns 501 Not Implemented because model training is executed offline via research scripts. No online background training executor is configured.",
 )
 async def start_training_job(
     config: Dict[str, Any],
     current_user: User = Depends(require_roles([UserRole.AUTHORITY, UserRole.ADMIN])),
 ) -> Dict[str, Any]:
-    """Trigger offline model candidate training and benchmark."""
-    return {
-        "job_id": "train_job_placeholder",
-        "status": "queued",
-        "model_version": config.get("candidate_version", "candidate-v2"),
-        "initiated_by": current_user.id,
-        "message": "Candidate training initiated in sandbox",
-    }
+    """Reject online training job requests truthfully with 501 Not Implemented."""
+    raise FloodLensAPIException(
+        status_code=status.HTTP_501_NOT_IMPLEMENTED,
+        code="TRAINING_NOT_IMPLEMENTED",
+        message="Automated online model training is not implemented: model training is executed offline in research scripts and notebooks. No online background training executor is configured.",
+        details={
+            "execution_environment": "offline_research_only",
+            "available_models": ["baseline-v1", "era5-v1"],
+            "requested_config": config,
+            "documentation": "Training workflows are managed offline via ml/src/train_models.py",
+        },
+    )

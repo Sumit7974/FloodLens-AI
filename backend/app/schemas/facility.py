@@ -123,6 +123,14 @@ class RouteHazardIntersection(BaseModel):
     observed_at: datetime = Field(..., description="UTC timestamp when hazard was observed")
     source: Optional[str] = Field(default=None, description="Sensor, satellite, or authority reporting source")
     confidence: Optional[float] = Field(default=None, description="Confidence score if available (0.0 to 1.0)")
+    match_type: Optional[str] = Field(
+        default="direct_intersection",
+        description="Hazard spatial match type: direct_intersection or proximity_warning",
+    )
+    proximity_distance_meters: Optional[float] = Field(
+        default=0.0,
+        description="Distance in meters from candidate route to hazard boundary (0.0 for direct intersection)",
+    )
     intersection_details: Optional[Dict[str, Any]] = Field(
         default=None,
         description="Geographic details of intersection (e.g. approximate location, proximity distance)",
