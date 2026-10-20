@@ -307,6 +307,7 @@ def test_assistance_request_lifecycle_and_privacy(
     client: TestClient,
     citizen_token: str,
     authority_token: str,
+    test_authority_user: User,
     db_session: Session,
 ):
     """Citizen submits assistance request; privacy boundary is enforced between citizens."""
@@ -375,13 +376,13 @@ def test_assistance_request_lifecycle_and_privacy(
         headers=authority_headers,
         json={
             "status": "in_progress",
-            "assigned_to": "Nepal Army Disaster Response Unit",
+            "assigned_to": test_authority_user.id,
             "status_notes": "Boat dispatched to coordinate.",
         },
     )
     assert update_res.status_code == status.HTTP_200_OK
     assert update_res.json()["status"] == "in_progress"
-    assert update_res.json()["assigned_to"] == "Nepal Army Disaster Response Unit"
+    assert update_res.json()["assigned_to"] == test_authority_user.id
 
 
 def test_assistance_multiple_requests_by_citizen(

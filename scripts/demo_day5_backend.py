@@ -432,8 +432,8 @@ def run_day5_demonstration() -> bool:
         headers=auth_headers,
         json={
             "status": "in_progress",
-            "assigned_to": "Janakpur Municipal Disaster Relief Cell",
-            "status_notes": "Directed family toward Janakpur Higher Secondary School Shelter.",
+            "assigned_to": authority_user.id,
+            "status_notes": "Assigned to Municipal Disaster Relief Cell. Directed family toward Janakpur Higher Secondary School Shelter.",
         },
     )
     assert res_triage.status_code == 200, f"Assistance triage failed: {res_triage.text}"
