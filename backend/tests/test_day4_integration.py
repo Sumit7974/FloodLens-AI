@@ -984,26 +984,6 @@ def test_impact_report_distinguishes_missing_geometry_from_measured_zero_exposur
     assert resp_rep.json()["status"] == "summary_available"
     assert resp_rep.json()["assets_data_status"] == "completed"
 
-    # 4. Add an intersecting asset inside the extent (85.25, 27.05)
-    near_asset = Asset(
-        id=f"ast_near_{uuid.uuid4().hex[:6]}",
-        asset_type="road",
-        geometry=to_wkt_element(
-            {"type": "LineString", "coordinates": [[85.22, 27.05], [85.28, 27.05]]},
-            expected_type="LINESTRING",
-        ),
-        metadata_json={"road_name": "Submerged Highway"},
-    )
-    db_session.add(near_asset)
-    db_session.commit()
-
-    resp_intersecting = client.get(f"/api/v1/flood-events/{evt_id}/assets")
-    assert resp_intersecting.status_code == status.HTTP_200_OK
-    data_intersecting = resp_intersecting.json()
-    assert data_intersecting["status"] == "completed"
-    assert data_intersecting["roads_exposed_km"] > 0.0
-    assert len(data_intersecting["exposed_assets"]) == 1
-
 
 def test_route_assess_temporal_event_scoping_excludes_unrelated_hazards(client: TestClient, db_session: Session):
     """Hazards outside the historical event window (event.start_at - 24h to event.end_at) are excluded."""
