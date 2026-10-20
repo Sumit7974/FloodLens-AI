@@ -1,0 +1,1330 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "id": "0",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 518803080,
+        "settlement": "Birtamod",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 135.8,
+        "impact_status": "inundated",
+        "flood_poly_id": 3722,
+        "height": 10.5,
+        "elevation_offset": 0.0,
+        "extrudedHeight": 10.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "fill": "#E63946",
+        "fill-opacity": 0.85,
+        "stroke": "#7F1D1D",
+        "stroke-width": 1.0
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.9949222,
+              26.6453545,
+              0.0
+            ],
+            [
+              87.9949181,
+              26.6452705,
+              0.0
+            ],
+            [
+              87.9950654,
+              26.6452646,
+              0.0
+            ],
+            [
+              87.9950648,
+              26.6452843,
+              0.0
+            ],
+            [
+              87.99507,
+              26.6453482,
+              0.0
+            ],
+            [
+              87.9949222,
+              26.6453545,
+              0.0
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "1",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 518803081,
+        "settlement": "Birtamod",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 125.2,
+        "impact_status": "inundated",
+        "flood_poly_id": 3718,
+        "height": 10.5,
+        "elevation_offset": 0.0,
+        "extrudedHeight": 10.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "fill": "#E63946",
+        "fill-opacity": 0.85,
+        "stroke": "#7F1D1D",
+        "stroke-width": 1.0
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.99507,
+              26.6453482,
+              0.0
+            ],
+            [
+              87.9950648,
+              26.6452843,
+              0.0
+            ],
+            [
+              87.9952416,
+              26.6452729,
+              0.0
+            ],
+            [
+              87.9952468,
+              26.6453368,
+              0.0
+            ],
+            [
+              87.99507,
+              26.6453482,
+              0.0
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "2",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 518803083,
+        "settlement": "Birtamod",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 260.7,
+        "impact_status": "inundated",
+        "flood_poly_id": 3729,
+        "height": 10.5,
+        "elevation_offset": 0.0,
+        "extrudedHeight": 10.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "fill": "#E63946",
+        "fill-opacity": 0.85,
+        "stroke": "#7F1D1D",
+        "stroke-width": 1.0
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.9952383,
+              26.6449387,
+              0.0
+            ],
+            [
+              87.9954383,
+              26.6449471,
+              0.0
+            ],
+            [
+              87.9954304,
+              26.6450468,
+              0.0
+            ],
+            [
+              87.9954332,
+              26.6450668,
+              0.0
+            ],
+            [
+              87.9952298,
+              26.6450549,
+              0.0
+            ],
+            [
+              87.9952383,
+              26.6449387,
+              0.0
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "3",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 519102103,
+        "settlement": "Birtamod",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 261.4,
+        "impact_status": "inundated",
+        "flood_poly_id": 3707,
+        "height": 10.5,
+        "elevation_offset": 0.0,
+        "extrudedHeight": 10.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "fill": "#E63946",
+        "fill-opacity": 0.85,
+        "stroke": "#7F1D1D",
+        "stroke-width": 1.0
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.998584,
+              26.6466211,
+              0.0
+            ],
+            [
+              87.9985894,
+              26.6463358,
+              0.0
+            ],
+            [
+              87.9986698,
+              26.6463358,
+              0.0
+            ],
+            [
+              87.9986698,
+              26.6466211,
+              0.0
+            ],
+            [
+              87.998584,
+              26.6466211,
+              0.0
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "4",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 519102108,
+        "settlement": "Birtamod",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 239.8,
+        "impact_status": "inundated",
+        "flood_poly_id": 3736,
+        "height": 10.5,
+        "elevation_offset": 0.0,
+        "extrudedHeight": 10.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "fill": "#E63946",
+        "fill-opacity": 0.85,
+        "stroke": "#7F1D1D",
+        "stroke-width": 1.0
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.9974977,
+              26.6447799,
+              0.0
+            ],
+            [
+              87.9975218,
+              26.6446217,
+              0.0
+            ],
+            [
+              87.9975755,
+              26.6446217,
+              0.0
+            ],
+            [
+              87.9975607,
+              26.6447284,
+              0.0
+            ],
+            [
+              87.9976171,
+              26.6447367,
+              0.0
+            ],
+            [
+              87.9976358,
+              26.6446229,
+              0.0
+            ],
+            [
+              87.9976935,
+              26.6446265,
+              0.0
+            ],
+            [
+              87.9976696,
+              26.6447925,
+              0.0
+            ],
+            [
+              87.9974977,
+              26.6447799,
+              0.0
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "5",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 519110988,
+        "settlement": "Birtamod",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 154.3,
+        "impact_status": "inundated",
+        "flood_poly_id": 3826,
+        "height": 10.5,
+        "elevation_offset": 0.0,
+        "extrudedHeight": 10.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "fill": "#E63946",
+        "fill-opacity": 0.85,
+        "stroke": "#7F1D1D",
+        "stroke-width": 1.0
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.9906612,
+              26.6397904,
+              0.0
+            ],
+            [
+              87.9906509,
+              26.6397266,
+              0.0
+            ],
+            [
+              87.9908659,
+              26.6396987,
+              0.0
+            ],
+            [
+              87.9908763,
+              26.6397624,
+              0.0
+            ],
+            [
+              87.9906612,
+              26.6397904,
+              0.0
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "6",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 519110995,
+        "settlement": "Birtamod",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 129.2,
+        "impact_status": "inundated",
+        "flood_poly_id": 3826,
+        "height": 10.5,
+        "elevation_offset": 0.0,
+        "extrudedHeight": 10.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "fill": "#E63946",
+        "fill-opacity": 0.85,
+        "stroke": "#7F1D1D",
+        "stroke-width": 1.0
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.9907315,
+              26.6398733,
+              0.0
+            ],
+            [
+              87.9907286,
+              26.6398481,
+              0.0
+            ],
+            [
+              87.9906907,
+              26.6398515,
+              0.0
+            ],
+            [
+              87.990687,
+              26.6398191,
+              0.0
+            ],
+            [
+              87.990905,
+              26.6397994,
+              0.0
+            ],
+            [
+              87.9909115,
+              26.639857,
+              0.0
+            ],
+            [
+              87.9907315,
+              26.6398733,
+              0.0
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "7",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 519273632,
+        "settlement": "Birtamod",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 82.2,
+        "impact_status": "inundated",
+        "flood_poly_id": 3840,
+        "height": 7.5,
+        "elevation_offset": 0.0,
+        "extrudedHeight": 7.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "fill": "#E63946",
+        "fill-opacity": 0.85,
+        "stroke": "#7F1D1D",
+        "stroke-width": 1.0
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.9916455,
+              26.6388822,
+              0.0
+            ],
+            [
+              87.991629,
+              26.638828,
+              0.0
+            ],
+            [
+              87.9917594,
+              26.6388001,
+              0.0
+            ],
+            [
+              87.9917741,
+              26.6388543,
+              0.0
+            ],
+            [
+              87.9916455,
+              26.6388822,
+              0.0
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "8",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 519354323,
+        "settlement": "Birtamod",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 158.4,
+        "impact_status": "inundated",
+        "flood_poly_id": 3722,
+        "height": 10.5,
+        "elevation_offset": 0.0,
+        "extrudedHeight": 10.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "fill": "#E63946",
+        "fill-opacity": 0.85,
+        "stroke": "#7F1D1D",
+        "stroke-width": 1.0
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.9948576,
+              26.6451985,
+              0.0
+            ],
+            [
+              87.9948494,
+              26.6450712,
+              0.0
+            ],
+            [
+              87.9947369,
+              26.6450769,
+              0.0
+            ],
+            [
+              87.9947451,
+              26.6452042,
+              0.0
+            ],
+            [
+              87.9948576,
+              26.6451985,
+              0.0
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "9",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 519354326,
+        "settlement": "Birtamod",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 118.0,
+        "impact_status": "inundated",
+        "flood_poly_id": 3722,
+        "height": 10.5,
+        "elevation_offset": 0.0,
+        "extrudedHeight": 10.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "fill": "#E63946",
+        "fill-opacity": 0.85,
+        "stroke": "#7F1D1D",
+        "stroke-width": 1.0
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.9947338,
+              26.6453664,
+              0.0
+            ],
+            [
+              87.9947329,
+              26.645289,
+              0.0
+            ],
+            [
+              87.9948712,
+              26.6452877,
+              0.0
+            ],
+            [
+              87.9948721,
+              26.6453651,
+              0.0
+            ],
+            [
+              87.9947338,
+              26.6453664,
+              0.0
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "10",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 519624560,
+        "settlement": "Birtamod",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 136.4,
+        "impact_status": "inundated",
+        "flood_poly_id": 3692,
+        "height": 10.5,
+        "elevation_offset": 0.0,
+        "extrudedHeight": 10.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "fill": "#E63946",
+        "fill-opacity": 0.85,
+        "stroke": "#7F1D1D",
+        "stroke-width": 1.0
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.9969031,
+              26.6474351,
+              0.0
+            ],
+            [
+              87.996995,
+              26.6474398,
+              0.0
+            ],
+            [
+              87.9970036,
+              26.6473055,
+              0.0
+            ],
+            [
+              87.9969118,
+              26.6473008,
+              0.0
+            ],
+            [
+              87.9969031,
+              26.6474351,
+              0.0
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "11",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 519624562,
+        "settlement": "Birtamod",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 146.0,
+        "impact_status": "inundated",
+        "flood_poly_id": 3692,
+        "height": 10.5,
+        "elevation_offset": 0.0,
+        "extrudedHeight": 10.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "fill": "#E63946",
+        "fill-opacity": 0.85,
+        "stroke": "#7F1D1D",
+        "stroke-width": 1.0
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.9970126,
+              26.6474027,
+              0.0
+            ],
+            [
+              87.9971088,
+              26.6474058,
+              0.0
+            ],
+            [
+              87.9971144,
+              26.6472683,
+              0.0
+            ],
+            [
+              87.9970182,
+              26.6472652,
+              0.0
+            ],
+            [
+              87.9970126,
+              26.6474027,
+              0.0
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "12",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 519624572,
+        "settlement": "Birtamod",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 125.3,
+        "impact_status": "inundated",
+        "flood_poly_id": 3696,
+        "height": 10.5,
+        "elevation_offset": 0.0,
+        "extrudedHeight": 10.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "fill": "#E63946",
+        "fill-opacity": 0.85,
+        "stroke": "#7F1D1D",
+        "stroke-width": 1.0
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.9969686,
+              26.647164,
+              0.0
+            ],
+            [
+              87.9971033,
+              26.6471714,
+              0.0
+            ],
+            [
+              87.9971092,
+              26.6470874,
+              0.0
+            ],
+            [
+              87.9969744,
+              26.6470799,
+              0.0
+            ],
+            [
+              87.9969686,
+              26.647164,
+              0.0
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "13",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 519722187,
+        "settlement": "Birtamod",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 165.6,
+        "impact_status": "inundated",
+        "flood_poly_id": 3707,
+        "height": 10.5,
+        "elevation_offset": 0.0,
+        "extrudedHeight": 10.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "fill": "#E63946",
+        "fill-opacity": 0.85,
+        "stroke": "#7F1D1D",
+        "stroke-width": 1.0
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.9985453,
+              26.6462261,
+              0.0
+            ],
+            [
+              87.9985502,
+              26.6461526,
+              0.0
+            ],
+            [
+              87.9983466,
+              26.6461418,
+              0.0
+            ],
+            [
+              87.9983417,
+              26.6462153,
+              0.0
+            ],
+            [
+              87.9985453,
+              26.6462261,
+              0.0
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "14",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 963126675,
+        "settlement": "Birtamod",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 240.8,
+        "impact_status": "inundated",
+        "flood_poly_id": 3864,
+        "height": 10.5,
+        "elevation_offset": 0.0,
+        "extrudedHeight": 10.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "fill": "#E63946",
+        "fill-opacity": 0.85,
+        "stroke": "#7F1D1D",
+        "stroke-width": 1.0
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.9798889,
+              26.6355722,
+              0.0
+            ],
+            [
+              87.9800042,
+              26.6355722,
+              0.0
+            ],
+            [
+              87.9800042,
+              26.6353828,
+              0.0
+            ],
+            [
+              87.9798889,
+              26.6353828,
+              0.0
+            ],
+            [
+              87.9798889,
+              26.6355722,
+              0.0
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "15",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 1007106851,
+        "settlement": "Birtamod",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 300.3,
+        "impact_status": "inundated",
+        "flood_poly_id": 3769,
+        "height": 14.0,
+        "elevation_offset": 0.0,
+        "extrudedHeight": 14.0,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "fill": "#E63946",
+        "fill-opacity": 0.85,
+        "stroke": "#7F1D1D",
+        "stroke-width": 1.0
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.9870161,
+              26.6425801,
+              0.0
+            ],
+            [
+              87.9870015,
+              26.6424605,
+              0.0
+            ],
+            [
+              87.9872352,
+              26.6424448,
+              0.0
+            ],
+            [
+              87.9872493,
+              26.6425561,
+              0.0
+            ],
+            [
+              87.9870161,
+              26.6425801,
+              0.0
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "16",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 1299032260,
+        "settlement": "Birtamod",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 38.2,
+        "impact_status": "inundated",
+        "flood_poly_id": 3769,
+        "height": 4.5,
+        "elevation_offset": 0.0,
+        "extrudedHeight": 4.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "fill": "#E63946",
+        "fill-opacity": 0.85,
+        "stroke": "#7F1D1D",
+        "stroke-width": 1.0
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.9870578,
+              26.6426508,
+              0.0
+            ],
+            [
+              87.9871215,
+              26.642646,
+              0.0
+            ],
+            [
+              87.9871164,
+              26.642592,
+              0.0
+            ],
+            [
+              87.9870527,
+              26.6425968,
+              0.0
+            ],
+            [
+              87.9870578,
+              26.6426508,
+              0.0
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "17",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 1299040420,
+        "settlement": "Birtamod",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 186.3,
+        "impact_status": "inundated",
+        "flood_poly_id": 3733,
+        "height": 10.5,
+        "elevation_offset": 0.0,
+        "extrudedHeight": 10.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "fill": "#E63946",
+        "fill-opacity": 0.85,
+        "stroke": "#7F1D1D",
+        "stroke-width": 1.0
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.9961498,
+              26.6448995,
+              0.0
+            ],
+            [
+              87.996363,
+              26.6448936,
+              0.0
+            ],
+            [
+              87.9963603,
+              26.6448144,
+              0.0
+            ],
+            [
+              87.996147,
+              26.6448204,
+              0.0
+            ],
+            [
+              87.9961498,
+              26.6448995,
+              0.0
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "18",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 1299040450,
+        "settlement": "Birtamod",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 117.0,
+        "impact_status": "inundated",
+        "flood_poly_id": 3733,
+        "height": 10.5,
+        "elevation_offset": 0.0,
+        "extrudedHeight": 10.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "fill": "#E63946",
+        "fill-opacity": 0.85,
+        "stroke": "#7F1D1D",
+        "stroke-width": 1.0
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.9961874,
+              26.6449667,
+              0.0
+            ],
+            [
+              87.9963966,
+              26.6449499,
+              0.0
+            ],
+            [
+              87.9963915,
+              26.6448996,
+              0.0
+            ],
+            [
+              87.9961823,
+              26.6449164,
+              0.0
+            ],
+            [
+              87.9961874,
+              26.6449667,
+              0.0
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "19",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 1059150110,
+        "settlement": "Damak",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 23.3,
+        "impact_status": "inundated",
+        "flood_poly_id": 3569,
+        "height": 4.5,
+        "elevation_offset": 0.0,
+        "extrudedHeight": 4.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "fill": "#E63946",
+        "fill-opacity": 0.85,
+        "stroke": "#7F1D1D",
+        "stroke-width": 1.0
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.7041793,
+              26.6564764,
+              0.0
+            ],
+            [
+              87.7042153,
+              26.6564565,
+              0.0
+            ],
+            [
+              87.7041858,
+              26.656414,
+              0.0
+            ],
+            [
+              87.7041498,
+              26.6564339,
+              0.0
+            ],
+            [
+              87.7041793,
+              26.6564764,
+              0.0
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "20",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 527373982,
+        "settlement": "Pathari Shanishchare",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 167.1,
+        "impact_status": "inundated",
+        "flood_poly_id": 3515,
+        "height": 10.5,
+        "elevation_offset": 0.0,
+        "extrudedHeight": 10.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "fill": "#E63946",
+        "fill-opacity": 0.85,
+        "stroke": "#7F1D1D",
+        "stroke-width": 1.0
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.5603365,
+              26.661352,
+              0.0
+            ],
+            [
+              87.5604312,
+              26.6613839,
+              0.0
+            ],
+            [
+              87.5604628,
+              26.6613091,
+              0.0
+            ],
+            [
+              87.5605026,
+              26.661314,
+              0.0
+            ],
+            [
+              87.5605205,
+              26.6612208,
+              0.0
+            ],
+            [
+              87.5604477,
+              26.6612024,
+              0.0
+            ],
+            [
+              87.5603887,
+              26.6613251,
+              0.0
+            ],
+            [
+              87.5603544,
+              26.6613116,
+              0.0
+            ],
+            [
+              87.5603365,
+              26.661352,
+              0.0
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "21",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 519936800,
+        "settlement": "Bhadrapur",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 48.0,
+        "impact_status": "inundated",
+        "flood_poly_id": 5719,
+        "height": 7.5,
+        "elevation_offset": 0.0,
+        "extrudedHeight": 7.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "fill": "#E63946",
+        "fill-opacity": 0.85,
+        "stroke": "#7F1D1D",
+        "stroke-width": 1.0
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              88.0857133,
+              26.5425726,
+              0.0
+            ],
+            [
+              88.0857094,
+              26.5425101,
+              0.0
+            ],
+            [
+              88.08564,
+              26.5425135,
+              0.0
+            ],
+            [
+              88.0856439,
+              26.542576,
+              0.0
+            ],
+            [
+              88.0857133,
+              26.5425726,
+              0.0
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "22",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 991044364,
+        "settlement": "Rangeli",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 20.2,
+        "impact_status": "inundated",
+        "flood_poly_id": 7866,
+        "height": 4.5,
+        "elevation_offset": 0.0,
+        "extrudedHeight": 4.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "fill": "#E63946",
+        "fill-opacity": 0.85,
+        "stroke": "#7F1D1D",
+        "stroke-width": 1.0
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.4993397,
+              26.4602788,
+              0.0
+            ],
+            [
+              87.4993427,
+              26.4603096,
+              0.0
+            ],
+            [
+              87.4994017,
+              26.460305,
+              0.0
+            ],
+            [
+              87.4993987,
+              26.4602742,
+              0.0
+            ],
+            [
+              87.4993397,
+              26.4602788,
+              0.0
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}
