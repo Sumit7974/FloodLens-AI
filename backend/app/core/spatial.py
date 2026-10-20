@@ -507,9 +507,9 @@ def get_exposed_assets_spatial(
                 ST_AsGeoJSON(a.geometry) AS geojson,
                 ST_GeometryType(a.geometry) AS geom_type,
                 CASE
-                    WHEN ST_GeometryType(a.geometry) IN ('ST_LineString', 'ST_MultiLineString')
+                    WHEN LOWER(ST_GeometryType(a.geometry)) LIKE '%linestring%'
                     THEN ROUND((ST_Length(ST_Intersection(a.geometry, fe.geometry)::geography) / 1000.0)::numeric, 3)
-                    WHEN ST_GeometryType(a.geometry) IN ('ST_Polygon', 'ST_MultiPolygon')
+                    WHEN LOWER(ST_GeometryType(a.geometry)) LIKE '%polygon%'
                     THEN ROUND((ST_Area(ST_Intersection(a.geometry, fe.geometry)::geography) / 10000.0)::numeric, 3)
                     ELSE 0.0
                 END AS metric_val

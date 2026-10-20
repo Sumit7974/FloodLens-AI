@@ -940,10 +940,11 @@ def test_impact_report_distinguishes_missing_geometry_from_measured_zero_exposur
         method="MNDWI",
         area_km2=8.0,
         confidence=0.9,
+        source_scene_ids=[],
         geometry=to_wkt_element({
-            "type": "Polygon",
-            "coordinates": [[[85.20, 27.00], [85.30, 27.00], [85.30, 27.10], [85.20, 27.10], [85.20, 27.00]]],
-        }),
+            "type": "MultiPolygon",
+            "coordinates": [[[[85.20, 27.00], [85.30, 27.00], [85.30, 27.10], [85.20, 27.10], [85.20, 27.00]]]],
+        }, expected_type="MULTIPOLYGON"),
     )
     db_session.add(ext_valid)
     db_session.commit()
