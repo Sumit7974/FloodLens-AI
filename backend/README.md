@@ -232,7 +232,23 @@ Run unit, contract conformance, security RBAC, and regression tests locally:
 python -m pytest backend/tests -v
 ```
 
-### 2. Live PostgreSQL / PostGIS 16 Testing
+### 2. Static Type Verification (Pyrefly)
+Check codebase type safety using Pyrefly:
+```bash
+python -m pyrefly check
+```
+
+### 3. Historical Demonstration Scripts
+Execute the reproducible backend demonstrations:
+```bash
+# Day 3 flow: citizen assistance & authority alert simulation
+python scripts/demo_day3_flows.py
+
+# Day 5 release candidate: all 13 historical flood intelligence capabilities
+python scripts/demo_day5_backend.py
+```
+
+### 4. Live PostgreSQL / PostGIS 16 Testing
 When running against a live PostgreSQL 16 / PostGIS database:
 ```bash
 # Run live Alembic migrations
@@ -245,7 +261,7 @@ python scripts/verify_spatial_postgis.py
 DATABASE_URL="postgresql+psycopg2://user:pass@localhost:5432/floodlens_db" pytest -v
 ```
 
-### 3. Continuous Integration (GitHub Actions)
+### 5. Continuous Integration (GitHub Actions)
 The repository includes `.github/workflows/backend-ci.yml` which automatically:
 - Provisions a `postgis/postgis:16-3.4` service container.
 - Verifies PostGIS 16 extensions and GIST indexes.
