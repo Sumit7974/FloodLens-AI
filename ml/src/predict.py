@@ -88,9 +88,16 @@ class FloodRiskPredictor:
         """
         limitations: List[str] = []
 
-        # Check metadata synthetic flag
-        if self.metadata.get("is_synthetic_data", True):
+        # Check metadata synthetic or reanalysis flags
+        if self.metadata.get("is_synthetic_data", False):
             limitations.append("Experimental pipeline test mode: Model trained on synthetic demonstration data.")
+        elif self.metadata.get("is_reanalysis_data", False) or "reanalysis" in (
+            self.metadata.get("disclaimer", "") + self.metadata.get("model_version", "")
+        ).lower():
+            limitations.append(
+                "RESEARCH PROTOTYPE: Model trained on ERA5/GloFAS reanalysis proxy data. "
+                "Not validated against in-situ DHM stage records."
+            )
 
         # Check presence of critical features
         missing_critical: List[str] = []
@@ -117,13 +124,20 @@ class FloodRiskPredictor:
         issued_at: Optional[str] = None,
         input_data_cutoff_at: Optional[str] = None,
         mode: Optional[str] = None,
+        include_explanations: bool = False,
     ) -> Dict[str, Any]:
         """Generate multi-horizon risk forecast matching backend API schema."""
         now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         issued_ts = issued_at or now_iso
         cutoff_ts = input_data_cutoff_at or now_iso
 
-        operational_mode = mode or ("historical_demo" if self.metadata.get("is_synthetic_data", True) else "model_estimate")
+        is_demo = (
+            self.metadata.get("is_synthetic_data", False)
+            or self.metadata.get("is_reanalysis_data", False)
+            or "baseline" in self.model_version.lower()
+            or "era5" in self.model_version.lower()
+        )
+        operational_mode = mode or ("historical_demo" if is_demo else "model_estimate")
         is_valid, limitations, data_quality = self.validate_features(features)
 
         # Safety rule: If critical inputs are missing, NEVER emit a false low-risk result!
@@ -168,9 +182,6 @@ class FloodRiskPredictor:
                 prob = None
                 if hasattr(model, "predict_proba"):
                     proba_vec = model.predict_proba(df_row)[0]
-                    # Probability of critical or high risk
-                    # Note: We do not present uncalibrated model probability as ground truth
-                    # We report the model's confidence for the predicted class
                     classes = getattr(model, "classes_", [0, 1, 2, 3])
                     if pred_class_id in classes:
                         class_idx = list(classes).index(pred_class_id)
@@ -190,7 +201,7 @@ class FloodRiskPredictor:
                     "calibrated_probability": None,
                 })
 
-        return {
+        forecast_payload: Dict[str, Any] = {
             "forecast_id": f"fc_{uuid.uuid4().hex[:12]}",
             "event_id": event_id,
             "location_id": location_id,
@@ -202,6 +213,28 @@ class FloodRiskPredictor:
             "horizons": horizon_predictions,
             "limitations": limitations,
         }
+
+        if include_explanations:
+            try:
+                from ml.src.explainability import FloodRiskExplainer
+                explainer = FloodRiskExplainer(models_dir=self.models_dir, model_version=self.model_version)
+                explanations = {}
+                for h_item in horizon_predictions:
+                    h = h_item["hours"]
+                    exp = explainer.explain_prediction(
+                        features=features,
+                        predicted_risk_level=h_item["risk_level"],
+                        calibrated_probability=h_item["calibrated_probability"],
+                        location_id=location_id,
+                        horizon_hours=h,
+                        forecast_id=forecast_payload["forecast_id"],
+                    )
+                    explanations[f"+{h}h"] = exp.to_dict()
+                forecast_payload["explanations"] = explanations
+            except Exception as exp_err:
+                logger.warning(f"Could not compute local explanation: {exp_err}")
+
+        return forecast_payload
 
 
 def main() -> None:

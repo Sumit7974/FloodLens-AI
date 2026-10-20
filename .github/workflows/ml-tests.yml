@@ -1,0 +1,103 @@
+name: ML Tests
+
+on:
+  push:
+    branches:
+      - main
+      - 'feature/**'
+    paths:
+      - 'ml/**'
+      - '.github/workflows/ml-tests.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'ml/**'
+      - '.github/workflows/ml-tests.yml'
+
+jobs:
+  ml-test:
+    name: ML Unit Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+          cache-dependency-path: ml/requirements.txt
+
+      - name: Install ML dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r ml/requirements.txt
+
+      - name: Verify package imports
+        run: |
+          python -c "import pandas, numpy, sklearn, joblib; print('Core ML imports OK')"
+          python -c "from ml.src.data_cleaning import clean_hydrological_data; print('data_cleaning OK')"
+          python -c "from ml.src.label_builder import generate_synthetic_koshi_event; print('label_builder OK')"
+          python -c "from ml.src.train_baseline import train_baseline_pipeline; print('train_baseline OK')"
+          python -c "from ml.src.predict import FloodRiskPredictor; print('predict OK')"
+          python -c "from ml.src.data_ingestion import ingest_historical_data; print('data_ingestion OK')"
+          python -c "from ml.src.reanalysis_labeling import build_reanalysis_labels; print('reanalysis_labeling OK')"
+
+      - name: Run full ML test suite
+        run: |
+          python -m pytest ml/tests -v --tb=short --no-header \
+            --junit-xml=ml-test-results.xml \
+            -q
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ml-test-results-py${{ matrix.python-version }}
+          path: ml-test-results.xml
+          retention-days: 14
+
+      - name: Verify synthetic data generation is reproducible
+        run: |
+          python -c "
+          from ml.src.label_builder import generate_synthetic_koshi_event
+          df1 = generate_synthetic_koshi_event(n_hours=48, random_state=42)
+          df2 = generate_synthetic_koshi_event(n_hours=48, random_state=42)
+          assert df1.equals(df2), 'REPRODUCIBILITY FAILURE: Synthetic datasets differ!'
+          print('Reproducibility check: PASSED (48-hour synthetic dataset)')
+          "
+
+      - name: Verify safety guard — no false low-risk on empty input
+        run: |
+          python -c "
+          import sys, tempfile, json
+          from pathlib import Path
+          from ml.src.label_builder import generate_synthetic_koshi_event
+          from ml.src.train_baseline import train_baseline_pipeline
+          from ml.src.predict import FloodRiskPredictor
+
+          with tempfile.TemporaryDirectory() as tmp:
+              csv = Path(tmp) / 'test.csv'
+              generate_synthetic_koshi_event(n_hours=120, random_state=42).to_csv(csv, index=False)
+              train_baseline_pipeline(csv, Path(tmp)/'models', Path(tmp)/'reports', model_version='ci-v1')
+              predictor = FloodRiskPredictor(Path(tmp)/'models', 'ci-v1')
+              result = predictor.predict({})
+              assert result['data_quality'] == 'UNAVAILABLE', f'Expected UNAVAILABLE, got {result[\"data_quality\"]}'
+              for h in result['horizons']:
+                  assert h['risk_level'] == 'unknown', f'Expected unknown, got {h[\"risk_level\"]}'
+          print('Safety guard check: PASSED — empty input returns UNAVAILABLE/unknown')
+          "
+
+      - name: Check data ingestion module syntax
+        run: |
+          python -m py_compile ml/src/data_ingestion.py
+          python -m py_compile ml/src/reanalysis_labeling.py
+          echo "Syntax check passed for new Day 2 modules"
