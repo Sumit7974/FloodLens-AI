@@ -97,49 +97,48 @@ export const SatelliteIntelligence: React.FC<SatelliteIntelligenceProps> = ({
 
   return (
     <div className="space-y-3.5">
-      {/* 1. HEADER CONTROLS */}
-      <div className="p-4 rounded-none bg-[#0a0a0a] border border-[#3a3a3f] shadow-none space-y-3.5">
+      <div className="p-4 rounded-lg bg-[#071326]/85 border border-[#1e3a5f]/80 shadow-[0_4px_20px_rgba(0,0,0,0.5)] backdrop-blur-xl space-y-3.5">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           <div className="flex items-center gap-2.5 flex-wrap">
-            <div className="p-1.5 border border-[#3a3a3f] bg-black text-white">
-              <Satellite className="w-4 h-4 text-white" />
+            <div className="p-2 rounded bg-purple-500/20 border border-purple-500/40 text-purple-400">
+              <Satellite className="w-4 h-4 text-purple-400" />
             </div>
             <div>
               <h1 className="font-display text-base font-bold text-white tracking-[1.4px] uppercase flex items-center gap-2">
                 Earth Observation &amp; Satellite Flood Intelligence
-                <span className="badge-chip text-[9px] font-mono">
+                <span className="px-2 py-0.5 rounded-full bg-purple-500/15 border border-purple-500/40 text-purple-300 text-[9px] font-mono font-bold tracking-wider">
                   AUTOMATED WATER EXTRACTION
                 </span>
               </h1>
-              <p className="font-mono text-[10px] text-[#5a5a5f] uppercase tracking-wider mt-0.5">
+              <p className="font-mono text-[10px] text-[#38bdf8] uppercase tracking-wider mt-0.5 font-semibold">
                 COPERNICUS SENTINEL CONSTELLATION // MNDWI &amp; SAR BACKSCATTER // {currentScene.name}
               </p>
             </div>
           </div>
 
-          {/* Scene Modality Selector: Ghost Pill Style */}
-          <div className="flex items-center gap-1.5 p-1 bg-black border border-[#3a3a3f] rounded-full text-xs">
+          {/* Scene Modality Selector: Colored Pill Style */}
+          <div className="flex items-center gap-1.5 p-1 bg-[#060e1d] border border-[#1e3a5f] rounded-full text-xs">
             <button
               onClick={() => setModality('optical')}
-              className={`flex items-center gap-1.5 px-3 py-1 font-mono font-bold uppercase rounded-full transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1 font-mono font-bold uppercase rounded-full transition-all cursor-pointer ${
                 modality === 'optical'
-                  ? 'bg-white text-black'
-                  : 'text-[#f0f0fa] hover:text-white'
+                  ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-[0_0_10px_rgba(168,85,247,0.4)]'
+                  : 'text-[#94a3b8] hover:text-white'
               }`}
             >
-              <Eye className="w-3.5 h-3.5" />
+              <Eye className="w-3.5 h-3.5 text-purple-300" />
               <span>SENTINEL-2 OPTICAL (NDWI)</span>
             </button>
 
             <button
               onClick={() => setModality('sar')}
-              className={`flex items-center gap-1.5 px-3 py-1 font-mono font-bold uppercase rounded-full transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1 font-mono font-bold uppercase rounded-full transition-all cursor-pointer ${
                 modality === 'sar'
-                  ? 'bg-white text-black'
-                  : 'text-[#f0f0fa] hover:text-white'
+                  ? 'bg-gradient-to-r from-sky-600 to-blue-600 text-white shadow-[0_0_10px_rgba(14,165,233,0.4)]'
+                  : 'text-[#94a3b8] hover:text-white'
               }`}
             >
-              <Radio className="w-3.5 h-3.5" />
+              <Radio className="w-3.5 h-3.5 text-sky-300" />
               <span>SENTINEL-1 SAR (RADAR)</span>
             </button>
           </div>

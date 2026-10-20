@@ -238,27 +238,27 @@ export const AlertDispatcher: React.FC<AlertDispatcherProps> = ({
   return (
     <div className="space-y-4">
       {/* Top Header */}
-      <div className="p-4 rounded-none bg-[#0a0a0a] border border-[#3a3a3f] shadow-none flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div className="p-4 rounded-lg bg-[#071326]/85 border border-[#1e3a5f]/80 shadow-[0_4px_20px_rgba(0,0,0,0.5)] backdrop-blur-xl flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <div className="p-1.5 border border-[#3a3a3f] bg-black text-white">
-            <Send className="w-4 h-4 text-white" />
+          <div className="p-2 rounded bg-rose-500/20 border border-rose-500/40 text-rose-400">
+            <Send className="w-4 h-4 text-rose-400" />
           </div>
           <div>
             <h1 className="font-display text-base font-bold text-white tracking-[1.4px] uppercase flex items-center gap-2">
               Alert Dispatcher // Emergency Geofence Studio
-              <span className="badge-chip text-[9px] font-mono">
+              <span className="px-2 py-0.5 rounded-full bg-[#38bdf8]/15 border border-[#38bdf8]/40 text-[#38bdf8] text-[9px] font-mono font-bold tracking-wider">
                 CAP V1.2 PROTOCOL
               </span>
             </h1>
-            <p className="font-mono text-[10px] text-[#5a5a5f] uppercase tracking-wider mt-0.5">
+            <p className="font-mono text-[10px] text-[#38bdf8] uppercase tracking-wider mt-0.5 font-semibold">
               CIVIL BROADCASTING SUITE // {currentScene.name} ({currentScene.district})
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="badge-chip font-mono text-xs">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+          <span className="px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 font-mono text-xs font-bold flex items-center gap-1.5 shadow-[0_0_10px_rgba(16,185,129,0.2)]">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
             GATEWAYS ARMED
           </span>
         </div>

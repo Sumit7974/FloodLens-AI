@@ -173,50 +173,50 @@ export const ModelAnalytics: React.FC<ModelAnalyticsProps> = ({
   return (
     <div className="space-y-4">
       {/* 1. TOP HEADER & MODEL VERSION CONTROLS */}
-      <div className="p-4 bg-[#0a0a0a] border border-[#3a3a3f] space-y-3.5">
+      <div className="p-4 rounded-lg bg-[#071326]/85 border border-[#1e3a5f]/80 shadow-[0_4px_20px_rgba(0,0,0,0.5)] backdrop-blur-xl space-y-3.5">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           <div className="flex items-center gap-3 flex-wrap">
-            <div className="p-2 border border-[#3a3a3f] bg-black text-white">
-              <BrainCircuit className="w-5 h-5 text-white" />
+            <div className="p-2 rounded bg-indigo-500/20 border border-indigo-500/40 text-indigo-400">
+              <BrainCircuit className="w-5 h-5 text-indigo-400" />
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="font-display text-lg font-bold text-white uppercase tracking-wider">
                   Model Analytics &amp; Closed-Loop AI Retraining
                 </h1>
-                <span className="badge-chip border-white text-white">
+                <span className="px-2 py-0.5 rounded-full bg-indigo-500/15 border border-indigo-500/40 text-indigo-300 text-[9px] font-mono font-bold tracking-wider">
                   EVIDENCE-BASED AUDIT
                 </span>
               </div>
-              <p className="font-mono text-xs text-[#888890] uppercase tracking-wide mt-0.5">
+              <p className="font-mono text-xs text-[#38bdf8] uppercase tracking-wide mt-0.5 font-semibold">
                 Ground-truth spatial alignment &bull; IoU evaluation &bull; Continuous checkpoint deployment
               </p>
             </div>
           </div>
 
-          {/* Model Version Toggle Badges (Ghost Pill Group) */}
-          <div className="inline-flex p-1 rounded-full border border-[#3a3a3f] bg-black text-xs">
+          {/* Model Version Toggle Badges */}
+          <div className="inline-flex p-1 rounded-full border border-[#1e3a5f] bg-[#060e1d] text-xs">
             <button
               onClick={() => setSelectedModel('prod')}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-full font-bold uppercase tracking-wider transition-colors ${
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-full font-bold uppercase tracking-wider transition-colors cursor-pointer ${
                 selectedModel === 'prod'
-                  ? 'bg-white text-black font-display'
-                  : 'text-[#888890] hover:text-white'
+                  ? 'bg-gradient-to-r from-sky-600 to-blue-600 text-white font-display shadow-[0_0_10px_rgba(14,165,233,0.4)]'
+                  : 'text-[#94a3b8] hover:text-white'
               }`}
             >
-              <GitCommit className="w-3.5 h-3.5" />
+              <GitCommit className="w-3.5 h-3.5 text-sky-300" />
               <span>PRODUCTION ({deployedModelVersion.split(' ')[1] || 'v1.2'})</span>
             </button>
 
             <button
               onClick={() => setSelectedModel('candidate')}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-full font-bold uppercase tracking-wider transition-colors ${
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-full font-bold uppercase tracking-wider transition-colors cursor-pointer ${
                 selectedModel === 'candidate'
-                  ? 'bg-white text-black font-display'
-                  : 'text-[#888890] hover:text-white'
+                  ? 'bg-gradient-to-r from-[#e86e25] to-[#f97316] text-white font-display shadow-[0_0_10px_rgba(232,110,37,0.4)]'
+                  : 'text-[#94a3b8] hover:text-white'
               }`}
             >
-              <Sparkles className="w-3.5 h-3.5" />
+              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
               <span>CANDIDATE: v1.3-RC</span>
             </button>
           </div>

@@ -127,118 +127,118 @@ export const PredictionCentre: React.FC<PredictionCentreProps> = ({
   return (
     <div className="space-y-4">
       {/* 1. TOP CONTROL BAR */}
-      <div className="p-4 rounded-none bg-[#0a0a0a] border border-[#3a3a3f] shadow-none space-y-3.5">
+      <div className="p-4 rounded-lg bg-[#071326]/85 border border-[#1e3a5f]/80 shadow-[0_4px_20px_rgba(0,0,0,0.5)] backdrop-blur-xl space-y-3.5">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           <div>
             <div className="flex items-center gap-2.5 flex-wrap">
-              <div className="p-1.5 border border-[#3a3a3f] bg-black text-white">
-                <TrendingUp className="w-4 h-4 text-white" />
+              <div className="p-2 rounded bg-amber-500/20 border border-amber-500/40 text-amber-400">
+                <TrendingUp className="w-4 h-4 text-amber-400" />
               </div>
               <div>
                 <h1 className="font-display text-base font-bold text-white tracking-[1.4px] uppercase flex items-center gap-2">
                   Prediction Centre — Multi-Horizon Hydrological Forecasting
-                  <span className="badge-chip text-[9px] font-mono">
+                  <span className="px-2 py-0.5 rounded-full bg-[#38bdf8]/15 border border-[#38bdf8]/40 text-[#38bdf8] text-[9px] font-mono font-bold tracking-wider">
                     MODEL: FLOODLENS-LSTM-GNN V1.2
                   </span>
                 </h1>
-                <p className="font-mono text-[10px] text-[#5a5a5f] uppercase tracking-wider mt-0.5">
+                <p className="font-mono text-[10px] text-[#38bdf8] uppercase tracking-wider mt-0.5 font-semibold">
                   PHYSICS-INFORMED GRAPH NEURAL NETWORK // {currentScene.name} ({currentScene.district})
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Interactive Time-Horizon Switcher: Ghost-outlined Pill Selectors */}
-          <div className="flex items-center gap-1.5 p-1 bg-black border border-[#3a3a3f] rounded-full">
+          {/* Interactive Time-Horizon Switcher: Colored Pill Selectors */}
+          <div className="flex items-center gap-1.5 p-1 bg-[#060e1d] border border-[#1e3a5f] rounded-full">
             <button
               onClick={() => setHorizon('1h')}
-              className={`flex items-center gap-1.5 px-3 py-1 text-xs font-mono font-bold uppercase rounded-full transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1 text-xs font-mono font-bold uppercase rounded-full transition-all cursor-pointer ${
                 horizon === '1h'
-                  ? 'bg-white text-black'
-                  : 'text-[#f0f0fa] hover:text-white'
+                  ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-[0_0_10px_rgba(16,185,129,0.4)]'
+                  : 'text-[#94a3b8] hover:text-white'
               }`}
             >
-              <Clock className="w-3 h-3" />
+              <Clock className="w-3 h-3 text-emerald-300" />
               <span>+1 HOUR</span>
-              <span className="text-[9px] opacity-75">(MODERATE)</span>
+              <span className="text-[9px] opacity-80">(MODERATE)</span>
             </button>
 
             <button
               onClick={() => setHorizon('3h')}
-              className={`flex items-center gap-1.5 px-3 py-1 text-xs font-mono font-bold uppercase rounded-full transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1 text-xs font-mono font-bold uppercase rounded-full transition-all cursor-pointer ${
                 horizon === '3h'
-                  ? 'bg-white text-black'
-                  : 'text-[#f0f0fa] hover:text-white'
+                  ? 'bg-gradient-to-r from-[#e86e25] to-[#f97316] text-white shadow-[0_0_10px_rgba(232,110,37,0.4)]'
+                  : 'text-[#94a3b8] hover:text-white'
               }`}
             >
-              <Clock className="w-3 h-3" />
+              <Clock className="w-3 h-3 text-[#fed7aa]" />
               <span>+3 HOURS</span>
-              <span className="text-[9px] opacity-75">(HIGH)</span>
+              <span className="text-[9px] opacity-80">(HIGH)</span>
             </button>
 
             <button
               onClick={() => setHorizon('6h')}
-              className={`flex items-center gap-1.5 px-3 py-1 text-xs font-mono font-bold uppercase rounded-full transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1 text-xs font-mono font-bold uppercase rounded-full transition-all cursor-pointer ${
                 horizon === '6h'
-                  ? 'bg-white text-black'
-                  : 'text-[#f0f0fa] hover:text-white'
+                  ? 'bg-gradient-to-r from-rose-600 to-red-600 text-white shadow-[0_0_10px_rgba(244,63,94,0.4)]'
+                  : 'text-[#94a3b8] hover:text-white'
               }`}
             >
-              <AlertTriangle className="w-3 h-3" />
+              <AlertTriangle className="w-3 h-3 text-rose-300" />
               <span>+6 HOURS</span>
-              <span className="text-[9px] opacity-75">(SEVERE)</span>
+              <span className="text-[9px] opacity-80">(SEVERE)</span>
             </button>
           </div>
         </div>
 
         {/* Hydraulic Indicators & Model Metadata Strip */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 pt-3 border-t border-[#3a3a3f] text-xs font-mono">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 pt-3 border-t border-[#1e3a5f]/80 text-xs font-mono">
           {/* Hydraulic Inflow Rate */}
-          <div className="p-2.5 bg-black border border-[#3a3a3f] space-y-0.5">
-            <span className="font-micro text-[9px] uppercase tracking-[0.96px] text-[#5a5a5f] flex items-center gap-1">
-              <Waves className="w-3 h-3 text-white" />
+          <div className="p-2.5 rounded bg-[#0c1d38]/75 border border-[#0ea5e9]/40 space-y-0.5">
+            <span className="font-micro text-[9px] uppercase tracking-[0.96px] text-[#38bdf8] font-bold flex items-center gap-1">
+              <Waves className="w-3 h-3 text-[#38bdf8]" />
               PREDICTED INFLOW
             </span>
             <div className="font-bold text-sm text-white">
-              {forecast.inflowCusecs.toLocaleString()} <span className="text-xs text-[#5a5a5f]">CUSECS</span>
+              {forecast.inflowCusecs.toLocaleString()} <span className="text-xs text-[#38bdf8]">CUSECS</span>
             </div>
-            <p className="text-[9px] text-[#5a5a5f] uppercase">ARUN + TAMOR BASIN</p>
+            <p className="text-[9px] text-[#94a3b8] uppercase">ARUN + TAMOR BASIN</p>
           </div>
 
           {/* Dam Release Status */}
-          <div className="p-2.5 bg-black border border-[#3a3a3f] space-y-0.5">
-            <span className="font-micro text-[9px] uppercase tracking-[0.96px] text-[#5a5a5f] flex items-center gap-1">
-              <Activity className="w-3 h-3 text-white" />
+          <div className="p-2.5 rounded bg-[#0c1d38]/75 border border-[#e86e25]/40 space-y-0.5">
+            <span className="font-micro text-[9px] uppercase tracking-[0.96px] text-[#fb923c] font-bold flex items-center gap-1">
+              <Activity className="w-3 h-3 text-[#e86e25]" />
               BARRAGE SLUICE STATUS
             </span>
-            <div className="font-bold text-sm text-white">
+            <div className="font-bold text-sm text-[#fed7aa]">
               {forecast.damGatesOpen.toUpperCase()}
             </div>
-            <p className="text-[9px] text-[#5a5a5f] uppercase">OUTFLOW: 94% CAPACITY</p>
+            <p className="text-[9px] text-[#94a3b8] uppercase">OUTFLOW: 94% CAPACITY</p>
           </div>
 
           {/* Crest Arrival ETA */}
-          <div className="p-2.5 bg-black border border-[#3a3a3f] space-y-0.5">
-            <span className="font-micro text-[9px] uppercase tracking-[0.96px] text-[#5a5a5f] flex items-center gap-1">
-              <Clock className="w-3 h-3 text-white" />
+          <div className="p-2.5 rounded bg-[#0c1d38]/75 border border-[#f59e0b]/40 space-y-0.5">
+            <span className="font-micro text-[9px] uppercase tracking-[0.96px] text-[#fbbf24] font-bold flex items-center gap-1">
+              <Clock className="w-3 h-3 text-[#f59e0b]" />
               PREDICTED CREST ETA
             </span>
             <div className="font-bold text-sm text-white">
               {forecast.peakCrestEta.toUpperCase()}
             </div>
-            <p className="text-[9px] text-[#5a5a5f] uppercase">FLOW VELOCITY: 3.4 M/S</p>
+            <p className="text-[9px] text-[#94a3b8] uppercase">FLOW VELOCITY: 3.4 M/S</p>
           </div>
 
           {/* Model Confidence */}
-          <div className="p-2.5 bg-black border border-[#3a3a3f] space-y-0.5">
-            <span className="font-micro text-[9px] uppercase tracking-[0.96px] text-[#5a5a5f] flex items-center gap-1">
-              <BrainCircuit className="w-3 h-3 text-white" />
+          <div className="p-2.5 rounded bg-[#0c1d38]/75 border border-[#10b981]/40 space-y-0.5">
+            <span className="font-micro text-[9px] uppercase tracking-[0.96px] text-[#34d399] font-bold flex items-center gap-1">
+              <BrainCircuit className="w-3 h-3 text-[#10b981]" />
               CONFIDENCE INTERVAL
             </span>
-            <div className="font-bold text-sm text-white">
+            <div className="font-bold text-sm text-[#a7f3d0]">
               88.4% (TIER 1)
             </div>
-            <p className="text-[9px] text-[#5a5a5f] uppercase">RUN: 18 OCT 04:30 UTC • 1.2S</p>
+            <p className="text-[9px] text-[#94a3b8] uppercase">HIGH ENSEMBLE COHERENCE</p>
           </div>
         </div>
       </div>

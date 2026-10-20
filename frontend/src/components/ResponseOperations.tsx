@@ -161,47 +161,47 @@ export const ResponseOperations: React.FC<ResponseOperationsProps> = ({
   return (
     <div className="space-y-3.5">
       {/* Top Header Bar */}
-      <div className="p-4 rounded-none bg-[#0a0a0a] border border-[#3a3a3f] shadow-none flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div className="p-4 rounded-lg bg-[#071326]/85 border border-[#1e3a5f]/80 shadow-[0_4px_20px_rgba(0,0,0,0.5)] backdrop-blur-xl flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <div className="p-1.5 border border-[#3a3a3f] bg-black text-white">
-            <LifeBuoy className="w-4 h-4 text-white" />
+          <div className="p-2 rounded bg-emerald-500/20 border border-emerald-500/40 text-emerald-400">
+            <LifeBuoy className="w-4 h-4 text-emerald-400" />
           </div>
           <div>
             <h1 className="font-display text-base font-bold text-white tracking-[1.4px] uppercase flex items-center gap-2">
               Response Operations // Citizen SOS Triage Center
-              <span className="badge-chip text-[9px] font-mono">
+              <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-[9px] font-mono font-bold tracking-wider">
                 LIVE INCIDENT STREAM
               </span>
             </h1>
-            <p className="font-mono text-[10px] text-[#5a5a5f] uppercase tracking-wider mt-0.5">
+            <p className="font-mono text-[10px] text-[#38bdf8] uppercase tracking-wider mt-0.5 font-semibold">
               RAPID EXTRACTION COORDINATION // {currentScene.name}
             </p>
           </div>
         </div>
 
-        {/* View Switcher Sub-tabs: Pill Buttons */}
-        <div className="flex items-center gap-1.5 p-1 bg-black border border-[#3a3a3f] rounded-full text-xs">
+        {/* View Switcher Sub-tabs: Colored Pill Buttons */}
+        <div className="flex items-center gap-1.5 p-1 bg-[#060e1d] border border-[#1e3a5f] rounded-full text-xs">
           <button
             onClick={() => setActiveSubTab('triage')}
-            className={`flex items-center gap-1.5 px-3 py-1 font-mono font-bold uppercase rounded-full transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1 font-mono font-bold uppercase rounded-full transition-all cursor-pointer ${
               activeSubTab === 'triage'
-                ? 'bg-white text-black'
-                : 'text-[#f0f0fa] hover:text-white'
+                ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-[0_0_10px_rgba(16,185,129,0.4)]'
+                : 'text-[#94a3b8] hover:text-white'
             }`}
           >
-            <LifeBuoy className="w-3.5 h-3.5" />
+            <LifeBuoy className="w-3.5 h-3.5 text-emerald-300" />
             <span>SOS TRIAGE QUEUE ({requests.length})</span>
           </button>
 
           <button
             onClick={() => setActiveSubTab('infrastructure')}
-            className={`flex items-center gap-1.5 px-3 py-1 font-mono font-bold uppercase rounded-full transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1 font-mono font-bold uppercase rounded-full transition-all cursor-pointer ${
               activeSubTab === 'infrastructure'
-                ? 'bg-white text-black'
-                : 'text-[#f0f0fa] hover:text-white'
+                ? 'bg-gradient-to-r from-[#e86e25] to-[#f97316] text-white shadow-[0_0_10px_rgba(232,110,37,0.4)]'
+                : 'text-[#94a3b8] hover:text-white'
             }`}
           >
-            <ShieldAlert className="w-3.5 h-3.5" />
+            <ShieldAlert className="w-3.5 h-3.5 text-amber-300" />
             <span>INFRASTRUCTURE EXPOSURE (4)</span>
           </button>
         </div>

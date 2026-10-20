@@ -161,18 +161,18 @@ export function App() {
       prev.map((r) =>
         r.id === requestId
           ? {
-              ...r,
-              status: 'ASSIGNED',
-              assigned_unit: unitName,
-              activity_log: [
-                ...(r.activity_log || []),
-                {
-                  timestamp: 'Just now',
-                  action: `Assigned rescue team: ${unitName}`,
-                  author: 'EOC Duty Officer',
-                },
-              ],
-            }
+            ...r,
+            status: 'ASSIGNED',
+            assigned_unit: unitName,
+            activity_log: [
+              ...(r.activity_log || []),
+              {
+                timestamp: 'Just now',
+                action: `Assigned rescue team: ${unitName}`,
+                author: 'EOC Duty Officer',
+              },
+            ],
+          }
           : r
       )
     );
