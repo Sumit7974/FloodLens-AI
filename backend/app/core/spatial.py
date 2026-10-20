@@ -5,17 +5,22 @@ GeoJSON serialization conforming to RFC 7946, and settlement/asset exposure asse
 """
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
 import json
+import math
 from typing import Any, Dict, List, Optional, Tuple, Union
 # Type stubs provided by types-shapely
+import pyproj
 import shapely
+import shapely.ops
 from shapely.geometry import MultiPolygon, Point, Polygon, mapping, shape
 from geoalchemy2.elements import WKBElement, WKTElement
 from geoalchemy2.shape import to_shape
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from app.models.asset import Asset
+from app.core.exceptions import NotFoundError
+from app.models.asset import Asset, Facility, RoadHazard
 from app.models.flood_event import FloodEvent
 from app.models.location import Location
 from app.models.satellite import FloodExtent
@@ -456,7 +461,13 @@ def get_exposed_assets_spatial(
     db: Session,
     flood_extent: FloodExtent,
 ) -> Dict[str, Any]:
-    """Execute spatial intersection between a flood extent and critical assets (roads, buildings, agriculture)."""
+    """Execute spatial intersection between a flood extent and critical assets (roads, buildings, agriculture).
+
+    Distinguishes:
+    - Missing or invalid flood extent geometry ('no_extent_geometry')
+    - Absence of mapped assets in the database ('no_assets_available')
+    - Measured zero exposure after evaluating existing assets ('completed')
+    """
     if not flood_extent.geometry:
         return {
             "roads_exposed_km": 0.0,
@@ -464,6 +475,17 @@ def get_exposed_assets_spatial(
             "cropland_exposed_ha": 0.0,
             "exposed_assets": [],
             "status": "no_extent_geometry",
+        }
+
+    # Verify if usable mapped assets exist in inventory across the database
+    usable_assets_count = db.query(Asset).filter(Asset.geometry.isnot(None)).count()
+    if usable_assets_count == 0:
+        return {
+            "roads_exposed_km": 0.0,
+            "structures_exposed_count": 0,
+            "cropland_exposed_ha": 0.0,
+            "exposed_assets": [],
+            "status": "no_assets_available",
         }
 
     is_postgres = False
@@ -485,9 +507,9 @@ def get_exposed_assets_spatial(
                 ST_AsGeoJSON(a.geometry) AS geojson,
                 ST_GeometryType(a.geometry) AS geom_type,
                 CASE
-                    WHEN ST_GeometryType(a.geometry) IN ('ST_LineString', 'ST_MultiLineString')
+                    WHEN LOWER(ST_GeometryType(a.geometry)) LIKE '%linestring%'
                     THEN ROUND((ST_Length(ST_Intersection(a.geometry, fe.geometry)::geography) / 1000.0)::numeric, 3)
-                    WHEN ST_GeometryType(a.geometry) IN ('ST_Polygon', 'ST_MultiPolygon')
+                    WHEN LOWER(ST_GeometryType(a.geometry)) LIKE '%polygon%'
                     THEN ROUND((ST_Area(ST_Intersection(a.geometry, fe.geometry)::geography) / 10000.0)::numeric, 3)
                     ELSE 0.0
                 END AS metric_val
@@ -513,36 +535,44 @@ def get_exposed_assets_spatial(
             })
     else:
         extent_shp = geometry_to_shapely(flood_extent.geometry)
-        if extent_shp is not None and not extent_shp.is_empty:
-            assets = db.query(Asset).filter(Asset.geometry.isnot(None)).all()
-            for asset in assets:
-                asset_shp = geometry_to_shapely(asset.geometry)
-                if asset_shp is None or asset_shp.is_empty:
-                    continue
-                if extent_shp.intersects(asset_shp):
-                    asset_type = asset.asset_type.lower()
-                    if "road" in asset_type:
-                        try:
-                            inter = extent_shp.intersection(asset_shp)
-                            # approximate km for linestring
-                            roads_km += round(inter.length * 111.139, 3)
-                        except Exception:
-                            roads_km += 0.5
-                    elif "structure" in asset_type or "building" in asset_type:
-                        structures_count += 1
-                    elif "crop" in asset_type or "farm" in asset_type or "agri" in asset_type:
-                        try:
-                            inter = extent_shp.intersection(asset_shp)
-                            # 1 km2 = 100 hectares
-                            cropland_ha += round(calculate_area_km2_from_geometry(inter) * 100.0, 2)
-                        except Exception:
-                            cropland_ha += 1.0
+        if extent_shp is None or extent_shp.is_empty:
+            return {
+                "roads_exposed_km": 0.0,
+                "structures_exposed_count": 0,
+                "cropland_exposed_ha": 0.0,
+                "exposed_assets": [],
+                "status": "no_extent_geometry",
+            }
 
-                    exposed_items.append({
-                        "asset_id": asset.id,
-                        "asset_type": asset.asset_type,
-                        "metadata": asset.metadata_json if isinstance(asset.metadata_json, dict) else {},
-                    })
+        assets = db.query(Asset).filter(Asset.geometry.isnot(None)).all()
+        for asset in assets:
+            asset_shp = geometry_to_shapely(asset.geometry)
+            if asset_shp is None or asset_shp.is_empty:
+                continue
+            if extent_shp.intersects(asset_shp):
+                asset_type = asset.asset_type.lower()
+                if "road" in asset_type:
+                    try:
+                        inter = extent_shp.intersection(asset_shp)
+                        # approximate km for linestring
+                        roads_km += round(inter.length * 111.139, 3)
+                    except Exception:
+                        roads_km += 0.5
+                elif "structure" in asset_type or "building" in asset_type:
+                    structures_count += 1
+                elif "crop" in asset_type or "farm" in asset_type or "agri" in asset_type:
+                    try:
+                        inter = extent_shp.intersection(asset_shp)
+                        # 1 km2 = 100 hectares
+                        cropland_ha += round(calculate_area_km2_from_geometry(inter) * 100.0, 2)
+                    except Exception:
+                        cropland_ha += 1.0
+
+                exposed_items.append({
+                    "asset_id": asset.id,
+                    "asset_type": asset.asset_type,
+                    "metadata": asset.metadata_json if isinstance(asset.metadata_json, dict) else {},
+                })
 
     return {
         "roads_exposed_km": round(roads_km, 3),
@@ -550,4 +580,454 @@ def get_exposed_assets_spatial(
         "cropland_exposed_ha": round(cropland_ha, 3),
         "exposed_assets": exposed_items,
         "status": "completed",
+    }
+
+
+def facility_to_response_dict(facility: Facility) -> Dict[str, Any]:
+    """Convert a Facility database model into an enriched map-ready response dict.
+
+    Preserves legacy fields (id, name, verification_status, capacity, contact_info)
+    and adds map-ready RFC 7946 GeoJSON Point geometry in EPSG:4326, longitude/latitude,
+    status check freshness, provenance source, and explicit data limitations.
+    """
+    loc_geojson = geometry_to_geojson(facility.location)
+    lon: Optional[float] = None
+    lat: Optional[float] = None
+    if loc_geojson and loc_geojson.get("type") == "Point":
+        coords = loc_geojson.get("coordinates")
+        if isinstance(coords, (list, tuple)) and len(coords) >= 2:
+            lon = float(coords[0])
+            lat = float(coords[1])
+
+    details = facility.details if isinstance(facility.details, dict) else {}
+    source = details.get("source") or details.get("provenance") or details.get("data_source")
+
+    limitations: List[str] = []
+    if loc_geojson is None:
+        limitations.append(
+            "Facility coordinates are missing or unmapped in geospatial database; physical location cannot be displayed on map."
+        )
+    if facility.verification_status == "unverified":
+        limitations.append(
+            "Facility operational readiness and flood safety have not been verified by local authorities; presence in database does not guarantee safety."
+        )
+    elif facility.verification_status == "demo_labeled":
+        limitations.append(
+            "Simulated demonstration facility for testing purposes only."
+        )
+
+    if facility.capacity is None:
+        limitations.append("Capacity unknown or unrecorded in local administrative database.")
+
+    if facility.contact_info is None:
+        limitations.append("Public contact information is not on file.")
+
+    return {
+        "id": facility.id,
+        "type": facility.type,
+        "name": facility.name,
+        "verification_status": facility.verification_status,
+        "capacity": facility.capacity,
+        "contact_info": facility.contact_info,
+        "status_checked_at": facility.status_checked_at,
+        "location": loc_geojson,
+        "longitude": lon,
+        "latitude": lat,
+        "source": source,
+        "details": details,
+        "limitations": limitations,
+    }
+
+
+def assess_route_spatial(
+    db: Session,
+    route_geojson: Dict[str, Any],
+    event_id: Optional[str] = None,
+    cutoff_time: Optional[datetime] = None,
+    buffer_meters: float = 25.0,
+    evaluation_context: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """Execute evidence-based geographic hazard screening along a candidate route LineString.
+
+    Performs spatial intersection and proximity screening against:
+    A. Relevant active road-hazard geometries scoped to the historical event window and evaluation time
+    B. Relevant observed flood extents for the specified historical event (FloodExtent, event_id=event_id)
+
+    Supports both live PostGIS (PostgreSQL) using ST_Intersects / ST_DWithin and
+    Shapely spatial fallback with rigorous pyproj Azimuthal Equidistant (AEQD) metric projections.
+
+    Distinguishes direct geometric intersections (0.0m) from proximity corridor warnings.
+    Never classifies an unverified route as safe; reports explicit limitations and provenance.
+    """
+    eval_time = datetime.now(timezone.utc)
+
+    # 1. Convert route to Shapely geometry
+    route_shp = geometry_to_shapely(route_geojson)
+    if route_shp is None or route_shp.is_empty:
+        raise ValueError("Invalid route geometry: unable to parse GeoJSON LineString")
+
+    if route_shp.geom_type not in ("LineString", "MultiLineString"):
+        raise ValueError(f"Route geometry must be LineString or MultiLineString, got {route_shp.geom_type}")
+
+    # 2. Scope evaluation time window to historical event if event_id is provided
+    def _to_utc(dt: Optional[datetime]) -> Optional[datetime]:
+        if dt is None:
+            return None
+        if dt.tzinfo is None:
+            return dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(timezone.utc)
+
+    norm_cutoff = _to_utc(cutoff_time)
+    window_start: Optional[datetime] = None
+    window_end: Optional[datetime] = norm_cutoff
+
+    if event_id:
+        event_obj = db.query(FloodEvent).filter(FloodEvent.id == event_id).first()
+        if not event_obj:
+            raise NotFoundError(message=f"Flood event '{event_id}' not found", code="EVENT_NOT_FOUND")
+        evt_start = _to_utc(event_obj.start_at)
+        evt_end = _to_utc(event_obj.end_at)
+        if evt_start is not None:
+            window_start = evt_start - timedelta(hours=24)
+
+        if evt_end is not None:
+            if norm_cutoff is not None:
+                window_end = min(norm_cutoff, evt_end)
+            else:
+                window_end = evt_end
+        else:
+            window_end = norm_cutoff
+
+    is_postgres = False
+    bind = db.get_bind()
+    if bind is not None and getattr(bind.dialect, "name", None) == "postgresql":
+        is_postgres = True
+
+    hazards_detected: List[Dict[str, Any]] = []
+    total_road_hazards_screened = 0
+    total_extents_screened = 0
+
+    if is_postgres:
+        route_wkt = route_shp.wkt
+
+        # Count active road hazards within temporal window
+        count_rh_query = text("""
+            SELECT COUNT(*)
+            FROM road_hazards rh
+            WHERE rh.geometry IS NOT NULL
+              AND rh.status = 'active'
+              AND (:window_start IS NULL OR rh.observed_at >= :window_start)
+              AND (:window_end IS NULL OR rh.observed_at <= :window_end);
+        """)
+        total_road_hazards_screened = db.execute(count_rh_query, {
+            "window_start": window_start,
+            "window_end": window_end,
+        }).scalar() or 0
+
+        # Query intersecting / proximity active road hazards
+        rh_intersect_query = text("""
+            SELECT
+                rh.id,
+                rh.hazard_type,
+                rh.status,
+                rh.source,
+                rh.observed_at,
+                rh.confidence,
+                ST_Intersects(rh.geometry, ST_GeomFromText(:route_wkt, 4326)) AS is_direct,
+                ROUND(ST_Distance(rh.geometry::geography, ST_GeomFromText(:route_wkt, 4326)::geography)::numeric, 1) AS distance_meters,
+                ST_AsGeoJSON(ST_Intersection(rh.geometry, ST_GeomFromText(:route_wkt, 4326))) AS intersection_geojson
+            FROM road_hazards rh
+            WHERE rh.geometry IS NOT NULL
+              AND rh.status = 'active'
+              AND (:window_start IS NULL OR rh.observed_at >= :window_start)
+              AND (:window_end IS NULL OR rh.observed_at <= :window_end)
+              AND (
+                  ST_Intersects(rh.geometry, ST_GeomFromText(:route_wkt, 4326))
+                  OR (:buffer_meters > 0.0 AND ST_DWithin(rh.geometry::geography, ST_GeomFromText(:route_wkt, 4326)::geography, :buffer_meters))
+              )
+            ORDER BY rh.observed_at DESC;
+        """)
+        rh_rows = db.execute(rh_intersect_query, {
+            "route_wkt": route_wkt,
+            "window_start": window_start,
+            "window_end": window_end,
+            "buffer_meters": float(buffer_meters),
+        }).fetchall()
+
+        for row in rh_rows:
+            h_id, h_type, h_status, h_source, h_obs_at, h_conf, is_direct, dist_m, inter_geojson_str = row
+            is_direct_bool = bool(is_direct)
+            distance_val = float(dist_m) if dist_m is not None else 0.0
+            inter_details = json.loads(inter_geojson_str) if inter_geojson_str else None
+            match_type = "direct_intersection" if is_direct_bool else "proximity_warning"
+            prox_dist = 0.0 if is_direct_bool else distance_val
+
+            hazards_detected.append({
+                "hazard_id": h_id,
+                "hazard_type": h_type,
+                "source_layer": "road_hazard",
+                "status": h_status,
+                "observed_at": h_obs_at,
+                "source": h_source,
+                "confidence": float(h_conf) if h_conf is not None else None,
+                "match_type": match_type,
+                "proximity_distance_meters": prox_dist,
+                "intersection_details": inter_details,
+                "notes": (
+                    f"Active road hazard of type '{h_type}' directly intersects candidate route corridor."
+                    if is_direct_bool
+                    else f"Active road hazard of type '{h_type}' is located within {prox_dist}m buffer corridor (buffer={buffer_meters}m)."
+                ),
+            })
+
+        # Query intersecting flood extents if event_id provided
+        if event_id:
+            count_fe_query = text("""
+                SELECT COUNT(*)
+                FROM flood_extents fe
+                WHERE fe.event_id = :event_id
+                  AND fe.geometry IS NOT NULL
+                  AND (:window_start IS NULL OR fe.observed_at >= :window_start)
+                  AND (:window_end IS NULL OR fe.observed_at <= :window_end);
+            """)
+            total_extents_screened = db.execute(count_fe_query, {
+                "event_id": event_id,
+                "window_start": window_start,
+                "window_end": window_end,
+            }).scalar() or 0
+
+            fe_intersect_query = text("""
+                SELECT
+                    fe.id,
+                    fe.method,
+                    fe.observed_at,
+                    fe.confidence,
+                    fe.area_km2,
+                    ST_Intersects(fe.geometry, ST_GeomFromText(:route_wkt, 4326)) AS is_direct,
+                    ROUND(ST_Distance(fe.geometry::geography, ST_GeomFromText(:route_wkt, 4326)::geography)::numeric, 1) AS distance_meters,
+                    ST_AsGeoJSON(ST_Intersection(fe.geometry, ST_GeomFromText(:route_wkt, 4326))) AS intersection_geojson
+                FROM flood_extents fe
+                WHERE fe.event_id = :event_id
+                  AND fe.geometry IS NOT NULL
+                  AND (:window_start IS NULL OR fe.observed_at >= :window_start)
+                  AND (:window_end IS NULL OR fe.observed_at <= :window_end)
+                  AND (
+                      ST_Intersects(fe.geometry, ST_GeomFromText(:route_wkt, 4326))
+                      OR (:buffer_meters > 0.0 AND ST_DWithin(fe.geometry::geography, ST_GeomFromText(:route_wkt, 4326)::geography, :buffer_meters))
+                  )
+                ORDER BY fe.observed_at DESC;
+            """)
+            fe_rows = db.execute(fe_intersect_query, {
+                "route_wkt": route_wkt,
+                "event_id": event_id,
+                "window_start": window_start,
+                "window_end": window_end,
+                "buffer_meters": float(buffer_meters),
+            }).fetchall()
+
+            for row in fe_rows:
+                f_id, f_method, f_obs_at, f_conf, f_area, is_direct, dist_m, inter_geojson_str = row
+                is_direct_bool = bool(is_direct)
+                distance_val = float(dist_m) if dist_m is not None else 0.0
+                inter_details = json.loads(inter_geojson_str) if inter_geojson_str else None
+                match_type = "direct_intersection" if is_direct_bool else "proximity_warning"
+                prox_dist = 0.0 if is_direct_bool else distance_val
+
+                hazards_detected.append({
+                    "hazard_id": f_id,
+                    "hazard_type": "observed_flood_extent",
+                    "source_layer": "flood_extent",
+                    "status": "active_inundation",
+                    "observed_at": f_obs_at,
+                    "source": f"Satellite {f_method}",
+                    "confidence": float(f_conf) if f_conf is not None else None,
+                    "match_type": match_type,
+                    "proximity_distance_meters": prox_dist,
+                    "intersection_details": inter_details,
+                    "notes": (
+                        f"Observed satellite flood extent ({f_method}, area {f_area} km2) physically inundates route segment."
+                        if is_direct_bool
+                        else f"Observed satellite flood extent ({f_method}, area {f_area} km2) is within {prox_dist}m buffer corridor (buffer={buffer_meters}m)."
+                    ),
+                })
+    else:
+        # SQLite / Shapely fallback with metric projection via pyproj
+        centroid = route_shp.centroid
+        crs_aeqd = pyproj.CRS(proj="aeqd", lat_0=centroid.y, lon_0=centroid.x, datum="WGS84")
+        transformer_to_m = pyproj.Transformer.from_crs("EPSG:4326", crs_aeqd, always_xy=True).transform
+        route_m = shapely.ops.transform(transformer_to_m, route_shp)
+
+        # Screen active road hazards scoped to event window
+        rh_q = db.query(RoadHazard).filter(RoadHazard.status == "active", RoadHazard.geometry.isnot(None))
+        if window_start is not None:
+            rh_q = rh_q.filter(RoadHazard.observed_at >= window_start)
+        if window_end is not None:
+            rh_q = rh_q.filter(RoadHazard.observed_at <= window_end)
+        active_hazards = rh_q.order_by(RoadHazard.observed_at.desc()).all()
+        total_road_hazards_screened = len(active_hazards)
+
+        for rh in active_hazards:
+            h_shp = geometry_to_shapely(rh.geometry)
+            if h_shp is None or h_shp.is_empty:
+                continue
+
+            h_m = shapely.ops.transform(transformer_to_m, h_shp)
+            dist_m = float(route_m.distance(h_m))
+            is_direct = (dist_m == 0.0) or route_shp.intersects(h_shp)
+
+            if is_direct or (buffer_meters > 0.0 and dist_m <= buffer_meters):
+                match_type = "direct_intersection" if is_direct else "proximity_warning"
+                prox_dist = 0.0 if is_direct else round(dist_m, 1)
+                inter_details = None
+                if is_direct:
+                    try:
+                        inter_geom = route_shp.intersection(h_shp)
+                        if not inter_geom.is_empty:
+                            inter_geojson_str = shapely.to_geojson(inter_geom)
+                            if inter_geojson_str:
+                                inter_details = json.loads(inter_geojson_str)
+                    except Exception:
+                        pass
+
+                hazards_detected.append({
+                    "hazard_id": rh.id,
+                    "hazard_type": rh.hazard_type,
+                    "source_layer": "road_hazard",
+                    "status": rh.status,
+                    "observed_at": rh.observed_at,
+                    "source": rh.source,
+                    "confidence": rh.confidence,
+                    "match_type": match_type,
+                    "proximity_distance_meters": prox_dist,
+                    "intersection_details": inter_details,
+                    "notes": (
+                        f"Active road hazard of type '{rh.hazard_type}' directly intersects candidate route corridor."
+                        if is_direct
+                        else f"Active road hazard of type '{rh.hazard_type}' is located within {prox_dist}m buffer corridor (buffer={buffer_meters}m)."
+                    ),
+                })
+
+        # Screen flood extents if event_id is supplied
+        if event_id:
+            fe_q = db.query(FloodExtent).filter(FloodExtent.event_id == event_id, FloodExtent.geometry.isnot(None))
+            if window_start is not None:
+                fe_q = fe_q.filter(FloodExtent.observed_at >= window_start)
+            if window_end is not None:
+                fe_q = fe_q.filter(FloodExtent.observed_at <= window_end)
+            extents = fe_q.order_by(FloodExtent.observed_at.desc()).all()
+            total_extents_screened = len(extents)
+
+            for fe in extents:
+                fe_shp = geometry_to_shapely(fe.geometry)
+                if fe_shp is None or fe_shp.is_empty:
+                    continue
+
+                fe_m = shapely.ops.transform(transformer_to_m, fe_shp)
+                dist_m = float(route_m.distance(fe_m))
+                is_direct = (dist_m == 0.0) or route_shp.intersects(fe_shp)
+
+                if is_direct or (buffer_meters > 0.0 and dist_m <= buffer_meters):
+                    match_type = "direct_intersection" if is_direct else "proximity_warning"
+                    prox_dist = 0.0 if is_direct else round(dist_m, 1)
+                    inter_details = None
+                    if is_direct:
+                        try:
+                            inter_geom = route_shp.intersection(fe_shp)
+                            if not inter_geom.is_empty:
+                                inter_geojson_str = shapely.to_geojson(inter_geom)
+                                if inter_geojson_str:
+                                    inter_details = json.loads(inter_geojson_str)
+                        except Exception:
+                            pass
+
+                    hazards_detected.append({
+                        "hazard_id": fe.id,
+                        "hazard_type": "observed_flood_extent",
+                        "source_layer": "flood_extent",
+                        "status": "active_inundation",
+                        "observed_at": fe.observed_at,
+                        "source": f"Satellite {fe.method}",
+                        "confidence": fe.confidence,
+                        "match_type": match_type,
+                        "proximity_distance_meters": prox_dist,
+                        "intersection_details": inter_details,
+                        "notes": (
+                            f"Observed satellite flood extent ({fe.method}, area {fe.area_km2} km2) physically inundates route segment."
+                            if is_direct
+                            else f"Observed satellite flood extent ({fe.method}, area {fe.area_km2} km2) is within {prox_dist}m buffer corridor (buffer={buffer_meters}m)."
+                        ),
+                    })
+
+    total_screened = total_road_hazards_screened + total_extents_screened
+
+    # Determine assessment and route status
+    limitations: List[str] = [
+        "Demonstration decision-support prototype only: route hazard assessment does NOT command emergency deployments or guarantee alternative paths.",
+        "Always follow official directives from emergency authorities.",
+        "NEVER classify an unverified route as safe; absence of recorded hazards does NOT guarantee road passability or structural stability.",
+    ]
+
+    if total_screened == 0:
+        route_status = "not_evaluated"
+        assessment_status = "NOT_EVALUATED"
+        limitations.append(
+            "No active road hazard or flood extent records available within event temporal window for screening. Route safety cannot be assessed."
+        )
+    elif len(hazards_detected) > 0:
+        route_status = "hazards_detected"
+        assessment_status = "HAZARDS_INTERSECTED"
+        limitations.append(
+            f"Identified {len(hazards_detected)} hazard intersection(s) / proximity warning(s) along candidate corridor; route may be submerged, blocked, or impassable."
+        )
+    else:
+        route_status = "conditional"
+        assessment_status = "NO_KNOWN_INTERSECTIONS"
+        limitations.extend([
+            "No known intersections identified with available active data in the database.",
+            "NEVER infer that a candidate route is safe merely because no hazard intersection was found.",
+            "Unmapped localized flooding, damaged bridges, debris, or recent changes may exist.",
+        ])
+
+    if event_id and total_extents_screened == 0:
+        limitations.append(
+            f"No satellite flood extent records found for historical event '{event_id}'. Flood polygon screening could not be performed."
+        )
+    elif not event_id:
+        limitations.append(
+            "No historical event_id was specified; route was evaluated strictly against standalone road hazards without event flood extent polygons."
+        )
+
+    if event_id:
+        limitations.append(
+            "RoadHazard records lack a relational event_id foreign key; road hazards are scoped solely by temporal window matching (event.start_at - 24h through effective cutoff clamped to event.end_at). Temporal correlation alone cannot prove causal association with a single historical flood event."
+        )
+
+    if not is_postgres:
+        limitations.append(
+            "Evaluation performed via Shapely and pyproj metric projection fallback (PostGIS not detected on current connection)."
+        )
+
+    return {
+        "route_status": route_status,
+        "assessment_status": assessment_status,
+        "hazards_detected": hazards_detected,
+        "event_id": event_id,
+        "evaluation_time": eval_time,
+        "cutoff_time_applied": window_end if (cutoff_time is not None or (event_id and window_end is not None)) else None,
+        "total_hazards_screened": total_screened,
+        "hazards_intersected_count": len(hazards_detected),
+        "limitations": limitations,
+        "provenance": {
+            "spatial_engine": "PostGIS (native)" if is_postgres else "Shapely / pyproj (fallback)",
+            "road_hazards_screened": total_road_hazards_screened,
+            "flood_extents_screened": total_extents_screened,
+            "buffer_meters": buffer_meters,
+            "event_id": event_id,
+            "temporal_window_start": window_start.isoformat() if window_start else None,
+            "temporal_window_end": window_end.isoformat() if window_end else None,
+            "effective_cutoff_applied": window_end.isoformat() if window_end else None,
+            "raw_cutoff_requested": cutoff_time.isoformat() if cutoff_time else None,
+            "road_hazard_scoping_note": "Temporal correlation only; RoadHazard has no relational event_id foreign key.",
+            "evaluation_context": evaluation_context or {},
+        },
     }

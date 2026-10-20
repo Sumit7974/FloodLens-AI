@@ -1,70 +1,103 @@
 """Emergency facilities, shelters, hospitals, and route hazard assessment."""
-from typing import Any, Dict, List
-from fastapi import APIRouter, Depends, status
+from typing import Any, Dict, List, Optional
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
+from app.core.spatial import assess_route_spatial, facility_to_response_dict
 from app.database import get_db
 from app.models.asset import Facility
+from app.schemas.facility import (
+    HospitalListResponse,
+    RouteAssessRequest,
+    RouteAssessResponse,
+    ShelterListResponse,
+)
 
 router = APIRouter(tags=["Facilities & Routes"])
 
 
 @router.get(
     "/facilities/shelters",
+    response_model=ShelterListResponse,
     status_code=status.HTTP_200_OK,
-    summary="Get verified emergency shelter facilities",
+    summary="Get verified and demo emergency shelter facilities",
+    description="Retrieve map-ready shelter locations with GeoJSON Point coordinates, capacity, verification status, and data limitations.",
 )
-async def get_shelters(db: Session = Depends(get_db)) -> Dict[str, Any]:
-    """Retrieve shelter locations with verification status."""
-    shelters = db.query(Facility).filter(Facility.type == "shelter").all()
+async def get_shelters(
+    verification_status: Optional[str] = Query(
+        default=None,
+        description="Filter by verification state: verified, unverified, or demo_labeled",
+    ),
+    db: Session = Depends(get_db),
+) -> Dict[str, Any]:
+    """Retrieve shelter locations with map-ready coordinates and explicit verification status."""
+    query = db.query(Facility).filter(Facility.type == "shelter")
+    if verification_status:
+        query = query.filter(Facility.verification_status == verification_status)
+    shelters = query.order_by(Facility.name.asc()).all()
+
     return {
         "count": len(shelters),
-        "shelters": [
-            {
-                "id": s.id,
-                "name": s.name,
-                "verification_status": s.verification_status,
-                "capacity": s.capacity,
-                "contact_info": s.contact_info,
-            }
-            for s in shelters
-        ],
+        "shelters": [facility_to_response_dict(s) for s in shelters],
+        "data_notes": (
+            "Presence in database does NOT guarantee physical safety, structural integrity, "
+            "or active staffing. Emergency authorities make all operational shelter activation decisions."
+        ),
     }
 
 
 @router.get(
     "/facilities/hospitals",
+    response_model=HospitalListResponse,
     status_code=status.HTTP_200_OK,
-    summary="Get known hospital facilities",
+    summary="Get known hospital and health post facilities",
+    description="Retrieve hospital facilities with verification freshness, emergency contact info, and GeoJSON coordinates.",
 )
-async def get_hospitals(db: Session = Depends(get_db)) -> Dict[str, Any]:
-    """Retrieve hospital locations with status check freshness."""
-    hospitals = db.query(Facility).filter(Facility.type == "hospital").all()
+async def get_hospitals(
+    verification_status: Optional[str] = Query(
+        default=None,
+        description="Filter by verification state: verified, unverified, or demo_labeled",
+    ),
+    db: Session = Depends(get_db),
+) -> Dict[str, Any]:
+    """Retrieve hospital locations with status check freshness and data limitations."""
+    query = db.query(Facility).filter(Facility.type == "hospital")
+    if verification_status:
+        query = query.filter(Facility.verification_status == verification_status)
+    hospitals = query.order_by(Facility.name.asc()).all()
+
     return {
         "count": len(hospitals),
-        "hospitals": [
-            {
-                "id": h.id,
-                "name": h.name,
-                "verification_status": h.verification_status,
-                "contact_info": h.contact_info,
-            }
-            for h in hospitals
-        ],
+        "hospitals": [facility_to_response_dict(h) for h in hospitals],
+        "data_notes": (
+            "Facility operational readiness, flood impact, and bed availability must be "
+            "confirmed directly with public health authorities."
+        ),
     }
 
 
 @router.post(
     "/routes/assess",
+    response_model=RouteAssessResponse,
     status_code=status.HTTP_200_OK,
     summary="Assess candidate route against observed and predicted hazards",
+    description=(
+        "Performs spatial intersection screening between a candidate route LineString "
+        "and active road hazards and historical observed flood extent polygons. "
+        "Intended strictly for authority screening, NOT automated evacuation instructions."
+    ),
 )
-async def assess_route(route_request: Dict[str, Any]) -> Dict[str, Any]:
+async def assess_route(
+    route_request: RouteAssessRequest,
+    db: Session = Depends(get_db),
+) -> Dict[str, Any]:
     """Evaluate path coordinates against active road hazards and flood extents."""
-    return {
-        "route_status": "conditional",
-        "hazards_detected": [],
-        "limitations": [
-            "Demonstration prototype only: route guidance cannot guarantee safety",
-            "Always follow official directives from emergency authorities",
-        ],
-    }
+    effective_cutoff = route_request.cutoff_time if route_request.cutoff_time is not None else route_request.evaluation_time
+    result = assess_route_spatial(
+        db=db,
+        route_geojson=route_request.route,
+        event_id=route_request.event_id,
+        cutoff_time=effective_cutoff,
+        buffer_meters=route_request.buffer_meters,
+        evaluation_context=route_request.evaluation_context,
+    )
+    return result

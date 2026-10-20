@@ -259,3 +259,149 @@ def test_postgis_live_flood_extent_settlements_intersection(db_session: Session,
         except Exception:
             pass
 
+
+def test_postgis_live_candidate_route_hazard_screening(db_session: Session, is_postgres: bool):
+    """Test candidate route hazard screening against live PostGIS ST_Intersects and ST_DWithin."""
+    if not is_postgres:
+        pytest.skip("Live PostGIS queries require PostgreSQL with PostGIS extension")
+
+    from app.core.spatial import assess_route_spatial
+    from app.models.asset import RoadHazard
+    now = datetime.now(timezone.utc)
+    uid = uuid.uuid4().hex[:6]
+    rh_id = f"rh_pg_{uid}"
+    rh = RoadHazard(
+        id=rh_id,
+        hazard_type="submerged",
+        geometry="SRID=4326;LINESTRING(85.10 25.60, 85.20 25.60)",
+        status="active",
+        source="postgis_test",
+        observed_at=now,
+    )
+    db_session.add(rh)
+    db_session.commit()
+
+    try:
+        route_crossing = {
+            "type": "LineString",
+            "coordinates": [[85.15, 25.55], [85.15, 25.65]],
+        }
+        res = assess_route_spatial(db=db_session, route_geojson=route_crossing, buffer_meters=25.0)
+        assert res["assessment_status"] == "HAZARDS_INTERSECTED"
+        assert res["hazards_intersected_count"] >= 1
+        assert res["hazards_detected"][0]["match_type"] == "direct_intersection"
+        assert res["hazards_detected"][0]["proximity_distance_meters"] == 0.0
+        assert res["provenance"]["spatial_engine"] == "PostGIS (native)"
+    finally:
+        try:
+            db_session.rollback()
+            db_session.execute(text("DELETE FROM road_hazards WHERE id = :id"), {"id": rh_id})
+            db_session.commit()
+        except Exception:
+            pass
+
+
+def test_postgis_live_exposed_assets_inventory_completeness(db_session: Session, is_postgres: bool):
+    """Test get_exposed_assets_spatial on live PostGIS detects empty inventory vs completed zero exposure vs measured exposure."""
+    if not is_postgres:
+        pytest.skip("Live PostGIS queries require PostgreSQL with PostGIS extension")
+
+    from app.core.spatial import get_exposed_assets_spatial, to_wkt_element
+    from app.models.asset import Asset
+    from app.models.enums import OperationalMode
+    from app.models.flood_event import FloodEvent
+    from app.models.satellite import FloodExtent
+
+    now = datetime.now(timezone.utc)
+    uid = uuid.uuid4().hex[:6]
+    evt_id = f"evt_pg_ast_{uid}"
+    ext_id = f"ext_pg_ast_{uid}"
+    ast_far_id = f"ast_far_{uid}"
+    ast_near_id = f"ast_near_{uid}"
+
+    # 1. Clean existing assets to test empty inventory
+    db_session.query(Asset).delete()
+    db_session.commit()
+
+    # 2. Create event and flood extent in PostGIS via ORM
+    event = FloodEvent(
+        id=evt_id,
+        region_id="koshi",
+        name="PostGIS Asset Test Event",
+        start_at=now,
+        mode=OperationalMode.HISTORICAL_DEMO,
+        source_refs={},
+    )
+    db_session.add(event)
+
+    extent = FloodExtent(
+        id=ext_id,
+        event_id=evt_id,
+        observed_at=now,
+        method="MNDWI",
+        area_km2=25.0,
+        confidence=0.95,
+        source_scene_ids=[],
+        geometry=to_wkt_element({
+            "type": "MultiPolygon",
+            "coordinates": [[[[86.90, 26.50], [87.10, 26.50], [87.10, 26.70], [86.90, 26.70], [86.90, 26.50]]]],
+        }, expected_type="MULTIPOLYGON"),
+    )
+    db_session.add(extent)
+    db_session.commit()
+
+    try:
+        # A. Case 1: Empty asset inventory -> returns no_assets_available
+        res_empty = get_exposed_assets_spatial(db_session, extent)
+        assert res_empty["status"] == "no_assets_available"
+        assert res_empty["roads_exposed_km"] == 0.0
+        assert len(res_empty["exposed_assets"]) == 0
+
+        # B. Case 2: Usable asset exists, but is far away (Kathmandu 85.32, 27.71)
+        ast_far = Asset(
+            id=ast_far_id,
+            asset_type="road",
+            geometry=to_wkt_element({
+                "type": "LineString",
+                "coordinates": [[85.30, 27.70], [85.35, 27.70]],
+            }, expected_type="LINESTRING"),
+            metadata_json={"name": "Kathmandu Ring Road"},
+        )
+        db_session.add(ast_far)
+        db_session.commit()
+
+        # Valid inventory evaluated and zero intersected: status must be completed with 0.0 values
+        res_zero = get_exposed_assets_spatial(db_session, extent)
+        assert res_zero["status"] == "completed"
+        assert res_zero["roads_exposed_km"] == 0.0
+        assert len(res_zero["exposed_assets"]) == 0
+
+        # C. Case 3: Usable asset intersects extent (inside polygon 86.90-87.10, 26.50-26.70)
+        ast_near = Asset(
+            id=ast_near_id,
+            asset_type="road",
+            geometry=to_wkt_element({
+                "type": "LineString",
+                "coordinates": [[86.95, 26.55], [87.05, 26.65]],
+            }, expected_type="LINESTRING"),
+            metadata_json={"name": "Inundated Koshi Corridor"},
+        )
+        db_session.add(ast_near)
+        db_session.commit()
+
+        res_intersect = get_exposed_assets_spatial(db_session, extent)
+        assert res_intersect["status"] == "completed"
+        assert res_intersect["roads_exposed_km"] > 0.0
+        assert len(res_intersect["exposed_assets"]) == 1
+
+    finally:
+        try:
+            db_session.rollback()
+            db_session.query(Asset).filter(Asset.id.in_([ast_far_id, ast_near_id])).delete(synchronize_session=False)
+            db_session.query(FloodExtent).filter(FloodExtent.id == ext_id).delete(synchronize_session=False)
+            db_session.query(FloodEvent).filter(FloodEvent.id == evt_id).delete(synchronize_session=False)
+            db_session.commit()
+        except Exception:
+            pass
+
+
