@@ -525,11 +525,28 @@ def test_exposed_assets_and_flood_report(client: TestClient, authority_token: st
         headers={"Authorization": f"Bearer {authority_token}"},
     )
 
+    # Seed a mapped asset in inventory so a valid inventory is evaluated
+    from app.core.spatial import to_wkt_element
+    from app.models.asset import Asset
+    ast = Asset(
+        id=f"ast_{uuid.uuid4().hex[:6]}",
+        asset_type="road",
+        geometry=to_wkt_element(
+            {"type": "LineString", "coordinates": [[87.05, 26.55], [87.15, 26.55]]},
+            expected_type="LINESTRING",
+        ),
+        metadata_json={"name": "Koshi Highway"},
+    )
+    db_session.add(ast)
+    db_session.commit()
+
     # Check assets endpoint
     asset_res = client.get(f"/api/v1/flood-events/{evt_id}/assets")
     assert asset_res.status_code == status.HTTP_200_OK
     asset_data = asset_res.json()
     assert asset_data["status"] == "completed"
+    assert asset_data["roads_exposed_km"] > 0.0
+    assert len(asset_data["exposed_assets"]) == 1
 
     # Check report endpoint
     report_res = client.get(f"/api/v1/flood-events/{evt_id}/report")

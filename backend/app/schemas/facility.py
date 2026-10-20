@@ -66,6 +66,10 @@ class RouteAssessRequest(BaseModel):
         default=None,
         description="Observation cutoff timestamp; hazards observed after this time are excluded from historical screening",
     )
+    cutoff_time: Optional[datetime] = Field(
+        default=None,
+        description="Alternative alias for evaluation cutoff timestamp",
+    )
     buffer_meters: float = Field(
         default=25.0,
         ge=0.0,

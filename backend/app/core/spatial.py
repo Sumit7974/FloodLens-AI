@@ -477,6 +477,17 @@ def get_exposed_assets_spatial(
             "status": "no_extent_geometry",
         }
 
+    # Verify if usable mapped assets exist in inventory across the database
+    usable_assets_count = db.query(Asset).filter(Asset.geometry.isnot(None)).count()
+    if usable_assets_count == 0:
+        return {
+            "roads_exposed_km": 0.0,
+            "structures_exposed_count": 0,
+            "cropland_exposed_ha": 0.0,
+            "exposed_assets": [],
+            "status": "no_assets_available",
+        }
+
     is_postgres = False
     bind = db.get_bind()
     if bind is not None and getattr(bind.dialect, "name", None) == "postgresql":
@@ -659,18 +670,33 @@ def assess_route_spatial(
         raise ValueError(f"Route geometry must be LineString or MultiLineString, got {route_shp.geom_type}")
 
     # 2. Scope evaluation time window to historical event if event_id is provided
+    def _to_utc(dt: Optional[datetime]) -> Optional[datetime]:
+        if dt is None:
+            return None
+        if dt.tzinfo is None:
+            return dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(timezone.utc)
+
+    norm_cutoff = _to_utc(cutoff_time)
     window_start: Optional[datetime] = None
-    window_end: Optional[datetime] = cutoff_time
+    window_end: Optional[datetime] = norm_cutoff
 
     if event_id:
         event_obj = db.query(FloodEvent).filter(FloodEvent.id == event_id).first()
         if not event_obj:
             raise NotFoundError(message=f"Flood event '{event_id}' not found", code="EVENT_NOT_FOUND")
-        window_start = event_obj.start_at - timedelta(hours=24)
-        if cutoff_time is not None:
-            window_end = cutoff_time
-        elif event_obj.end_at is not None:
-            window_end = event_obj.end_at
+        evt_start = _to_utc(event_obj.start_at)
+        evt_end = _to_utc(event_obj.end_at)
+        if evt_start is not None:
+            window_start = evt_start - timedelta(hours=24)
+
+        if evt_end is not None:
+            if norm_cutoff is not None:
+                window_end = min(norm_cutoff, evt_end)
+            else:
+                window_end = evt_end
+        else:
+            window_end = norm_cutoff
 
     is_postgres = False
     bind = db.get_bind()
@@ -971,6 +997,11 @@ def assess_route_spatial(
             "No historical event_id was specified; route was evaluated strictly against standalone road hazards without event flood extent polygons."
         )
 
+    if event_id:
+        limitations.append(
+            "RoadHazard records lack a relational event_id foreign key; road hazards are scoped solely by temporal window matching (event.start_at - 24h through effective cutoff clamped to event.end_at). Temporal correlation alone cannot prove causal association with a single historical flood event."
+        )
+
     if not is_postgres:
         limitations.append(
             "Evaluation performed via Shapely and pyproj metric projection fallback (PostGIS not detected on current connection)."
@@ -982,7 +1013,7 @@ def assess_route_spatial(
         "hazards_detected": hazards_detected,
         "event_id": event_id,
         "evaluation_time": eval_time,
-        "cutoff_time_applied": cutoff_time,
+        "cutoff_time_applied": window_end if (cutoff_time is not None or (event_id and window_end is not None)) else None,
         "total_hazards_screened": total_screened,
         "hazards_intersected_count": len(hazards_detected),
         "limitations": limitations,
@@ -994,6 +1025,9 @@ def assess_route_spatial(
             "event_id": event_id,
             "temporal_window_start": window_start.isoformat() if window_start else None,
             "temporal_window_end": window_end.isoformat() if window_end else None,
+            "effective_cutoff_applied": window_end.isoformat() if window_end else None,
+            "raw_cutoff_requested": cutoff_time.isoformat() if cutoff_time else None,
+            "road_hazard_scoping_note": "Temporal correlation only; RoadHazard has no relational event_id foreign key.",
             "evaluation_context": evaluation_context or {},
         },
     }

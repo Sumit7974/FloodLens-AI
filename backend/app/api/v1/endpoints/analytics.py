@@ -123,6 +123,6 @@ async def start_training_job(
             "execution_environment": "offline_research_only",
             "available_models": ["baseline-v1", "era5-v1"],
             "requested_config": config,
-            "documentation": "Training workflows are managed offline via ml/src/train_models.py",
+            "documentation": "Training workflows are managed offline via ml/src/train_baseline.py",
         },
     )

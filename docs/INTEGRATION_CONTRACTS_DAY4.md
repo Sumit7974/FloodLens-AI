@@ -3,7 +3,7 @@
 **Author:** Member 1 (Backend & Integration Lead)  
 **Branch:** `feature/backend-day4`  
 **Target Consumers:** Member 3 (AI/ML Lead), Member 4 (Frontend/Android Lead), Member 2 (Satellite & GIS Lead)  
-**Status:** Verified via Integration Test Suite (98 tests passing, 0 regressions, 0 Pyrefly type errors)
+**Status:** Verified via Integration Test Suite (101 tests passing, 0 regressions, 0 Pyrefly type errors)
 
 ---
 
@@ -241,7 +241,7 @@ Truthfully lists verified baseline models and offline research benchmarks matchi
 - `era5-v1`: `type: "offline_benchmark"`, `status: "offline_research"` (Research benchmark model trained on open-access ERA5 reanalysis precipitation and GloFAS discharge proxy data; not validated against in-situ Nepal DHM gauge observations).
 
 ### 3.3 Training Jobs (`POST /api/v1/models/training-jobs`)
-Responds with **`501 Not Implemented`** (`code: "TRAINING_NOT_IMPLEMENTED"`). Model training is executed strictly offline via research scripts and notebooks (`ml/src/train_models.py`). No background online training executor is configured, preserving truthful API semantics without claiming phantom queue execution.
+Responds with **`501 Not Implemented`** (`code: "TRAINING_NOT_IMPLEMENTED"`). Model training is executed strictly offline via research scripts and notebooks (`ml/src/train_baseline.py`). No background online training executor is configured, preserving truthful API semantics without claiming phantom queue execution.
 
 ---
 

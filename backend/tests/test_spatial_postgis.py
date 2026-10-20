@@ -300,3 +300,97 @@ def test_postgis_live_candidate_route_hazard_screening(db_session: Session, is_p
         except Exception:
             pass
 
+
+def test_postgis_live_exposed_assets_inventory_completeness(db_session: Session, is_postgres: bool):
+    """Test get_exposed_assets_spatial on live PostGIS detects empty inventory vs completed zero exposure vs measured exposure."""
+    if not is_postgres:
+        pytest.skip("Live PostGIS queries require PostgreSQL with PostGIS extension")
+
+    from app.core.spatial import get_exposed_assets_spatial
+    from app.models.asset import Asset
+    from app.models.flood_event import FloodEvent
+    from app.models.satellite import FloodExtent
+
+    now = datetime.now(timezone.utc)
+    uid = uuid.uuid4().hex[:6]
+    evt_id = f"evt_pg_ast_{uid}"
+    ext_id = f"ext_pg_ast_{uid}"
+    ast_far_id = f"ast_far_{uid}"
+    ast_near_id = f"ast_near_{uid}"
+
+    # 1. Create event and flood extent in PostGIS
+    db_session.execute(
+        text("""
+            INSERT INTO flood_events (id, region_id, name, start_at, mode, created_at, updated_at)
+            VALUES (:id, 'koshi', 'PostGIS Asset Test Event', :now, 'historical_demo', :now, :now);
+        """),
+        {"id": evt_id, "now": now},
+    )
+    db_session.execute(
+        text("""
+            INSERT INTO flood_extents (id, event_id, observed_at, method, area_km2, confidence, geometry, created_at, updated_at)
+            VALUES (:id, :event_id, :now, 'MNDWI', 25.0, 0.95,
+                    ST_GeomFromText('POLYGON((86.90 26.50, 87.10 26.50, 87.10 26.70, 86.90 26.70, 86.90 26.50))', 4326),
+                    :now, :now);
+        """),
+        {"id": ext_id, "event_id": evt_id, "now": now},
+    )
+    # Clear any leftover assets from previous tests to guarantee empty inventory
+    db_session.execute(text("DELETE FROM assets;"))
+    db_session.commit()
+
+    try:
+        extent = db_session.query(FloodExtent).filter(FloodExtent.id == ext_id).one()
+
+        # A. Case 1: Empty asset inventory -> returns no_assets_available
+        res_empty = get_exposed_assets_spatial(db_session, extent)
+        assert res_empty["status"] == "no_assets_available"
+        assert res_empty["roads_exposed_km"] == 0.0
+        assert len(res_empty["exposed_assets"]) == 0
+
+        # B. Case 2: Usable asset exists, but is far away (Kathmandu 85.32, 27.71)
+        db_session.execute(
+            text("""
+                INSERT INTO assets (id, asset_type, geometry, metadata_json, created_at, updated_at)
+                VALUES (:id, 'road',
+                        ST_GeomFromText('LINESTRING(85.30 27.70, 85.35 27.70)', 4326),
+                        '{"name": "Kathmandu Ring Road"}', :now, :now);
+            """),
+            {"id": ast_far_id, "now": now},
+        )
+        db_session.commit()
+
+        # Valid inventory evaluated and zero intersected: status must be completed with 0.0 values
+        res_zero = get_exposed_assets_spatial(db_session, extent)
+        assert res_zero["status"] == "completed"
+        assert res_zero["roads_exposed_km"] == 0.0
+        assert len(res_zero["exposed_assets"]) == 0
+
+        # C. Case 3: Usable asset intersects extent (inside polygon 86.90-87.10, 26.50-26.70)
+        db_session.execute(
+            text("""
+                INSERT INTO assets (id, asset_type, geometry, metadata_json, created_at, updated_at)
+                VALUES (:id, 'road',
+                        ST_GeomFromText('LINESTRING(86.95 26.55, 87.05 26.65)', 4326),
+                        '{"name": "Inundated Koshi Corridor"}', :now, :now);
+            """),
+            {"id": ast_near_id, "now": now},
+        )
+        db_session.commit()
+
+        res_intersect = get_exposed_assets_spatial(db_session, extent)
+        assert res_intersect["status"] == "completed"
+        assert res_intersect["roads_exposed_km"] > 0.0
+        assert len(res_intersect["exposed_assets"]) == 1
+
+    finally:
+        try:
+            db_session.rollback()
+            db_session.execute(text("DELETE FROM assets WHERE id IN (:id1, :id2);"), {"id1": ast_far_id, "id2": ast_near_id})
+            db_session.execute(text("DELETE FROM flood_extents WHERE id = :id;"), {"id": ext_id})
+            db_session.execute(text("DELETE FROM flood_events WHERE id = :id;"), {"id": evt_id})
+            db_session.commit()
+        except Exception:
+            pass
+
+

@@ -91,11 +91,12 @@ async def assess_route(
     db: Session = Depends(get_db),
 ) -> Dict[str, Any]:
     """Evaluate path coordinates against active road hazards and flood extents."""
+    effective_cutoff = route_request.cutoff_time if route_request.cutoff_time is not None else route_request.evaluation_time
     result = assess_route_spatial(
         db=db,
         route_geojson=route_request.route,
         event_id=route_request.event_id,
-        cutoff_time=route_request.evaluation_time,
+        cutoff_time=effective_cutoff,
         buffer_meters=route_request.buffer_meters,
         evaluation_context=route_request.evaluation_context,
     )

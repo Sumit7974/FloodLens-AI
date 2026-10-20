@@ -900,7 +900,7 @@ def test_impact_report_flood_extent_without_geometry(client: TestClient, db_sess
 
 
 def test_impact_report_distinguishes_missing_geometry_from_measured_zero_exposure(client: TestClient, db_session: Session, authority_token: str):
-    """Distinguishes no_extent_geometry from measured zero exposure (completed with 0.0 metrics)."""
+    """Distinguishes no_extent_geometry, no_assets_available, and completed with zero exposure."""
     from app.models.asset import Asset
     # Create event
     evt_id = f"evt_assets_test_{uuid.uuid4().hex[:6]}"
@@ -932,19 +932,7 @@ def test_impact_report_distinguishes_missing_geometry_from_measured_zero_exposur
     assert resp_nogeom.status_code == status.HTTP_200_OK
     assert resp_nogeom.json()["status"] == "no_extent_geometry"
 
-    # 2. Add an asset far outside (86.00, 27.00)
-    far_asset = Asset(
-        id=f"ast_far_{uuid.uuid4().hex[:6]}",
-        asset_type="road",
-        geometry=to_wkt_element(
-            {"type": "LineString", "coordinates": [[86.00, 27.00], [86.05, 27.00]]},
-            expected_type="LINESTRING",
-        ),
-        metadata_json={"road_name": "Far Highway"},
-    )
-    db_session.add(far_asset)
-
-    # Now add an extent with valid geometry observed later (85.20 to 85.30)
+    # Add an extent with valid geometry observed later (85.20 to 85.30)
     ext_valid = FloodExtent(
         id=f"ext_valid_{uuid.uuid4().hex[:6]}",
         event_id=evt_id,
@@ -960,6 +948,27 @@ def test_impact_report_distinguishes_missing_geometry_from_measured_zero_exposur
     db_session.add(ext_valid)
     db_session.commit()
 
+    # 2. When no usable mapped assets exist in inventory -> returns no_assets_available
+    db_session.query(Asset).delete()
+    db_session.commit()
+
+    resp_empty = client.get(f"/api/v1/flood-events/{evt_id}/assets")
+    assert resp_empty.status_code == status.HTTP_200_OK
+    assert resp_empty.json()["status"] == "no_assets_available"
+
+    # 3. Add an asset far outside (86.00, 27.00)
+    far_asset = Asset(
+        id=f"ast_far_{uuid.uuid4().hex[:6]}",
+        asset_type="road",
+        geometry=to_wkt_element(
+            {"type": "LineString", "coordinates": [[86.00, 27.00], [86.05, 27.00]]},
+            expected_type="LINESTRING",
+        ),
+        metadata_json={"road_name": "Far Highway"},
+    )
+    db_session.add(far_asset)
+    db_session.commit()
+
     resp_measured = client.get(f"/api/v1/flood-events/{evt_id}/assets")
     assert resp_measured.status_code == status.HTTP_200_OK
     data_measured = resp_measured.json()
@@ -968,11 +977,31 @@ def test_impact_report_distinguishes_missing_geometry_from_measured_zero_exposur
     assert data_measured["roads_exposed_km"] == 0.0
     assert len(data_measured["exposed_assets"]) == 0
 
-    # Report status reflects summary_available
+    # Report status reflects summary_available with completed assets
     resp_rep = client.get(f"/api/v1/flood-events/{evt_id}/report")
     assert resp_rep.status_code == status.HTTP_200_OK
     assert resp_rep.json()["status"] == "summary_available"
     assert resp_rep.json()["assets_data_status"] == "completed"
+
+    # 4. Add an intersecting asset inside the extent (85.25, 27.05)
+    near_asset = Asset(
+        id=f"ast_near_{uuid.uuid4().hex[:6]}",
+        asset_type="road",
+        geometry=to_wkt_element(
+            {"type": "LineString", "coordinates": [[85.22, 27.05], [85.28, 27.05]]},
+            expected_type="LINESTRING",
+        ),
+        metadata_json={"road_name": "Submerged Highway"},
+    )
+    db_session.add(near_asset)
+    db_session.commit()
+
+    resp_intersecting = client.get(f"/api/v1/flood-events/{evt_id}/assets")
+    assert resp_intersecting.status_code == status.HTTP_200_OK
+    data_intersecting = resp_intersecting.json()
+    assert data_intersecting["status"] == "completed"
+    assert data_intersecting["roads_exposed_km"] > 0.0
+    assert len(data_intersecting["exposed_assets"]) == 1
 
 
 def test_route_assess_temporal_event_scoping_excludes_unrelated_hazards(client: TestClient, db_session: Session):
@@ -1124,3 +1153,157 @@ def test_route_assess_never_classifies_unverified_route_as_safe(client: TestClie
     assert "safe" not in data["route_status"].lower()
     assert any("NEVER infer that a candidate route is safe" in lim for lim in data["limitations"])
     assert any("NEVER classify an unverified route as safe" in lim for lim in data["limitations"])
+
+
+def test_route_assess_clamps_cutoff_to_event_end(client: TestClient, db_session: Session):
+    """Clamps effective cutoff to event.end_at and excludes post-event hazards even if requested cutoff is later."""
+    # Historical event: August 10, 2024 to August 12, 2024 12:00 UTC
+    evt_id = f"evt_clamp_{uuid.uuid4().hex[:6]}"
+    t_start = datetime(2024, 8, 10, 0, 0, tzinfo=timezone.utc)
+    t_end = datetime(2024, 8, 12, 12, 0, tzinfo=timezone.utc)
+    event = FloodEvent(
+        id=evt_id,
+        region_id="rautahat",
+        name="August 2024 Rautahat Bounded Event",
+        start_at=t_start,
+        end_at=t_end,
+        mode=OperationalMode.HISTORICAL_DEMO,
+    )
+    db_session.add(event)
+
+    # 1. Hazard observed DURING the event (Aug 11 10:00)
+    rh_during = RoadHazard(
+        id=f"rh_during_{uuid.uuid4().hex[:6]}",
+        hazard_type="submerged",
+        geometry=to_wkt_element(
+            {"type": "LineString", "coordinates": [[85.30, 27.00], [85.30, 27.10]]},
+            expected_type="LINESTRING",
+        ),
+        status="active",
+        observed_at=datetime(2024, 8, 11, 10, 0, tzinfo=timezone.utc),
+    )
+    # 2. Hazard observed AFTER the event ended (Aug 13 10:00 - 22h after t_end)
+    rh_post = RoadHazard(
+        id=f"rh_post_{uuid.uuid4().hex[:6]}",
+        hazard_type="bridge_closed",
+        geometry=to_wkt_element(
+            {"type": "LineString", "coordinates": [[85.30, 27.00], [85.30, 27.10]]},
+            expected_type="LINESTRING",
+        ),
+        status="active",
+        observed_at=datetime(2024, 8, 13, 10, 0, tzinfo=timezone.utc),
+    )
+    db_session.add_all([rh_during, rh_post])
+    db_session.commit()
+
+    candidate_route = {
+        "type": "LineString",
+        "coordinates": [[85.25, 27.05], [85.35, 27.05]],
+    }
+
+    # Request assessment with cutoff_time 3 days after event ended (Aug 15)
+    resp = client.post(
+        "/api/v1/routes/assess",
+        json={
+            "route": candidate_route,
+            "event_id": evt_id,
+            "cutoff_time": "2024-08-15T00:00:00Z",
+        },
+    )
+    assert resp.status_code == status.HTTP_200_OK
+    data = resp.json()
+
+    # Effective cutoff was clamped to event.end_at
+    assert data["cutoff_time_applied"].startswith("2024-08-12T12:00:00")
+    assert data["provenance"]["effective_cutoff_applied"].startswith("2024-08-12T12:00:00")
+    assert data["provenance"]["raw_cutoff_requested"].startswith("2024-08-15T00:00:00")
+
+    detected_ids = [h["hazard_id"] for h in data["hazards_detected"]]
+    assert rh_during.id in detected_ids
+    # Post-event hazard MUST NOT be included because cutoff was clamped to event.end_at
+    assert rh_post.id not in detected_ids
+
+    # Documented limitation must be present
+    assert any("RoadHazard records lack a relational event_id foreign key" in lim for lim in data["limitations"])
+
+
+def test_route_assess_overlapping_events_and_temporal_correlation_limitation(client: TestClient, db_session: Session):
+    """Verifies hazard matching across overlapping event temporal windows and documents non-relational linkage."""
+    # Event A: Aug 1 to Aug 8
+    evt_a_id = f"evt_a_{uuid.uuid4().hex[:6]}"
+    evt_a = FloodEvent(
+        id=evt_a_id,
+        region_id="sunsari",
+        name="Event A (Aug 1-8)",
+        start_at=datetime(2024, 8, 1, 0, 0, tzinfo=timezone.utc),
+        end_at=datetime(2024, 8, 8, 0, 0, tzinfo=timezone.utc),
+        mode=OperationalMode.HISTORICAL_DEMO,
+    )
+    # Event B: Aug 5 to Aug 12 (overlaps Event A between Aug 5 and Aug 8)
+    evt_b_id = f"evt_b_{uuid.uuid4().hex[:6]}"
+    evt_b = FloodEvent(
+        id=evt_b_id,
+        region_id="sunsari",
+        name="Event B (Aug 5-12)",
+        start_at=datetime(2024, 8, 5, 0, 0, tzinfo=timezone.utc),
+        end_at=datetime(2024, 8, 12, 0, 0, tzinfo=timezone.utc),
+        mode=OperationalMode.HISTORICAL_DEMO,
+    )
+    db_session.add_all([evt_a, evt_b])
+
+    # Hazard 1: In the overlap period (Aug 6)
+    rh_overlap = RoadHazard(
+        id=f"rh_ovl_{uuid.uuid4().hex[:6]}",
+        hazard_type="debris",
+        geometry=to_wkt_element(
+            {"type": "LineString", "coordinates": [[87.10, 26.60], [87.10, 26.70]]},
+            expected_type="LINESTRING",
+        ),
+        status="active",
+        observed_at=datetime(2024, 8, 6, 12, 0, tzinfo=timezone.utc),
+    )
+    # Hazard 2: In Event B only (Aug 10 - after Event A ended)
+    rh_b_only = RoadHazard(
+        id=f"rh_b_only_{uuid.uuid4().hex[:6]}",
+        hazard_type="submerged",
+        geometry=to_wkt_element(
+            {"type": "LineString", "coordinates": [[87.10, 26.60], [87.10, 26.70]]},
+            expected_type="LINESTRING",
+        ),
+        status="active",
+        observed_at=datetime(2024, 8, 10, 12, 0, tzinfo=timezone.utc),
+    )
+    db_session.add_all([rh_overlap, rh_b_only])
+    db_session.commit()
+
+    candidate_route = {
+        "type": "LineString",
+        "coordinates": [[87.05, 26.65], [87.15, 26.65]],
+    }
+
+    # 1. Screen against Event A: only rh_overlap is included (rh_b_only is after Event A ended)
+    resp_a = client.post(
+        "/api/v1/routes/assess",
+        json={"route": candidate_route, "event_id": evt_a_id},
+    )
+    assert resp_a.status_code == status.HTTP_200_OK
+    data_a = resp_a.json()
+    ids_a = [h["hazard_id"] for h in data_a["hazards_detected"]]
+    assert rh_overlap.id in ids_a
+    assert rh_b_only.id not in ids_a
+
+    # 2. Screen against Event B: BOTH hazards are included (both within Event B window)
+    resp_b = client.post(
+        "/api/v1/routes/assess",
+        json={"route": candidate_route, "event_id": evt_b_id},
+    )
+    assert resp_b.status_code == status.HTTP_200_OK
+    data_b = resp_b.json()
+    ids_b = [h["hazard_id"] for h in data_b["hazards_detected"]]
+    assert rh_overlap.id in ids_b
+    assert rh_b_only.id in ids_b
+
+    # Both responses document the non-relational linkage limitation
+    assert any("RoadHazard records lack a relational event_id foreign key" in lim for lim in data_a["limitations"])
+    assert any("RoadHazard records lack a relational event_id foreign key" in lim for lim in data_b["limitations"])
+
