@@ -74,9 +74,11 @@ class FloodRiskPredictor:
         horizons = self.metadata.get("horizons_hours", [1, 3, 6])
         for h in horizons:
             model_path = self.models_dir / f"baseline_rf_plus_{h}h_{self.model_version}.joblib"
+            if not model_path.exists():
+                model_path = self.models_dir / f"candidate_gbdt_plus_{h}h_{self.model_version}.joblib"
             if model_path.exists():
                 self.models[h] = joblib.load(model_path)
-                logger.info(f"Loaded baseline model for horizon +{h}h from {model_path}")
+                logger.info(f"Loaded model for horizon +{h}h from {model_path}")
             else:
                 logger.warning(f"Horizon +{h}h model artifact not found at {model_path}")
 
