@@ -69,7 +69,7 @@ export const WarningBulletins: React.FC<WarningBulletinsProps> = ({
               </span>
               <span className="text-[10px] font-mono text-emerald-300 flex items-center gap-1 uppercase font-bold bg-emerald-500/15 px-2 py-0.5 rounded border border-emerald-500/30">
                 <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                BROADCAST CONFIRMED
+                SIMULATED BROADCAST LOGGED
               </span>
             </div>
             <h4 className="font-display text-sm font-bold text-white mt-1.5 leading-snug tracking-wider uppercase">
@@ -135,7 +135,7 @@ export const WarningBulletins: React.FC<WarningBulletinsProps> = ({
             className="px-3 py-1.5 rounded-full bg-[#336099]/25 hover:bg-[#336099]/45 border border-[#336099]/60 text-[#7dd3fc] font-bold text-[10px] font-mono tracking-wider uppercase transition flex items-center gap-1.5 cursor-pointer"
           >
             <Send className="w-3 h-3" />
-            DISPATCH REVISION
+            DRAFT REVISION
           </button>
         </div>
       </div>

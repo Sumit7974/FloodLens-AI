@@ -10,11 +10,20 @@ import { Sidebar } from './components/Sidebar';
 import { ParticlesComponent } from './components/ui/particles-bg';
 import {
   BENCHMARK_SCENES,
+  BENCHMARK_SCENARIOS_DATA,
   MOCK_ACTIVE_ALERTS,
   MOCK_HELP_REQUESTS,
   MOCK_METRICS,
 } from './data/mockData';
-import type { Alert, BenchmarkScene, HelpRequest, MetricSummary, NavigationItemId } from './types';
+import { ApiService } from './services/apiService';
+import type {
+  Alert,
+  AuthorityHandoffStatus,
+  BenchmarkScene,
+  HelpRequest,
+  MetricSummary,
+  NavigationItemId,
+} from './types';
 
 export function App() {
   // Navigation State
@@ -30,6 +39,9 @@ export function App() {
 
   // Model Version State (Promotable via ModelAnalytics)
   const [deployedModelVersion, setDeployedModelVersion] = useState('FloodLens-LSTM-GNN v1.2');
+
+  // Backend Connection Health State
+  const [isBackendConnected, setIsBackendConnected] = useState(false);
 
   // Live Simulation State
   const [isLiveSimulation, setIsLiveSimulation] = useState(false);
@@ -51,14 +63,40 @@ export function App() {
     setTimeout(() => setToastMessage(null), 4000);
   };
 
-  // Realistic Simulation Presets
+  // Periodically check FastAPI backend health (fallback to cached benchmark data if offline)
+  useEffect(() => {
+    let isMounted = true;
+    const probe = async () => {
+      const ok = await ApiService.checkHealth();
+      if (isMounted) setIsBackendConnected(ok);
+    };
+    probe();
+    const interval = setInterval(probe, 25000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
+
+  // Multi-scenario benchmark switcher
+  const handleSelectScene = (scene: BenchmarkScene) => {
+    setCurrentScene(scene);
+    const scenarioData =
+      BENCHMARK_SCENARIOS_DATA[scene.id] || BENCHMARK_SCENARIOS_DATA['koshi-basin-primary'];
+    setMetrics(scenarioData.metrics);
+    setRequests(scenarioData.requests);
+    setAlerts(scenarioData.alerts);
+    showToast(`Switched active event benchmark to: ${scene.name}`);
+  };
+
+  // Anonymized Simulation Presets (Citizen privacy compliance)
   const simulationPresets = [
     {
-      name: 'Manoj Kumar Mandal',
+      name: 'Citizen M. Mandal',
       phone: '+977 981-7788990',
       location: 'Prakashpur, Ward 2 (River Reach)',
       coords: [26.712, 87.078] as [number, number],
-      landmark: 'Water entering ground floor shop, 4 souls stranded on second floor balcony',
+      landmark: 'Water entering ground floor shop, 4 souls sheltered on second floor balcony',
       category: 'TRAPPED' as const,
       urgency: 'CRITICAL' as const,
       score: 'Priority 1 - Flash Surge Inflow',
@@ -66,11 +104,11 @@ export function App() {
       people: 4,
     },
     {
-      name: 'Sunita Shrestha',
+      name: 'Citizen S. Shrestha',
       phone: '+977 980-4433221',
       location: 'Barahakshetra, Ward 4 Culvert',
       coords: [26.825, 87.135] as [number, number],
-      landmark: 'Culvert road connection submerged, pregnant mother in urgent need of evacuation boat',
+      landmark: 'Culvert road connection submerged, pregnant mother requiring high-ground evacuation',
       category: 'MEDICAL' as const,
       urgency: 'CRITICAL' as const,
       score: 'Priority 1 - Immediate Medical Extraction',
@@ -78,7 +116,7 @@ export function App() {
       people: 2,
     },
     {
-      name: 'Gopal Adhikari',
+      name: 'Citizen G. Adhikari',
       phone: '+977 984-6677889',
       location: 'Madhuban Village Sector 3',
       coords: [26.634, 87.032] as [number, number],
@@ -105,7 +143,9 @@ export function App() {
       category: preset.category,
       urgency: preset.urgency,
       urgency_score: preset.score,
-      status: 'OPEN',
+      status: 'LOCAL_LOGGED',
+      handoff_status: 'LOCAL_LOGGED',
+      authority_handoff_target: 'DEOC Sunsari (District Emergency Operations Center)',
       people_count: preset.people,
       location_name: preset.location,
       coordinates: preset.coords,
@@ -114,9 +154,19 @@ export function App() {
       battery_level: 45,
       estimated_water_depth: preset.depth,
       nearest_shelter: { name: 'Inaruwa Safe Hub', distance: '1.2 km' },
-      nearest_boat: { name: 'Unit Alpha-3 (APF Inflatable Boat)', distance: '1.8 km', eta: '14 mins' },
+      nearest_highground: {
+        name: 'Inaruwa Higher Secondary Safe Elevation',
+        distance: '1.2 km',
+        elevationMsl: 84,
+      },
+      report_elapsed_time: '1m elapsed',
+      authority_verification: 'Awaiting handoff transmission to DEOC Sunsari',
       activity_log: [
-        { timestamp: 'Just now', action: 'Distress beacon received via automated simulation', author: 'Live Stream' },
+        {
+          timestamp: 'Just now',
+          action: 'Distress beacon received via automated simulation',
+          author: 'Live Stream',
+        },
       ],
     };
 
@@ -133,7 +183,10 @@ export function App() {
       openRequests: {
         ...prev.openRequests,
         total: prev.openRequests.total + 1,
-        critical: preset.urgency === 'CRITICAL' ? prev.openRequests.critical + 1 : prev.openRequests.critical,
+        critical:
+          preset.urgency === 'CRITICAL'
+            ? prev.openRequests.critical + 1
+            : prev.openRequests.critical,
       },
       floodThreat: {
         ...prev.floodThreat,
@@ -142,7 +195,7 @@ export function App() {
       },
     }));
 
-    showToast(`🚨 LIVE SOS: ${preset.name} (${preset.location}) • River Stage +0.05m`);
+    showToast(`🚨 SIMULATED SOS: ${preset.name} (${preset.location}) • River Stage +0.05m`);
   };
 
   // Background timer for Live Simulation
@@ -156,61 +209,72 @@ export function App() {
     return () => clearInterval(interval);
   }, [isLiveSimulation]);
 
-  const handleAssignRequest = (requestId: string, unitName: string) => {
+  // Transmit standardized incident dossier to District Emergency Operation Center (DEOC)
+  const handleHandoffRequest = (
+    requestId: string,
+    authorityTarget: string = 'DEOC Sunsari'
+  ) => {
     setRequests((prev) =>
       prev.map((r) =>
         r.id === requestId
           ? {
-            ...r,
-            status: 'ASSIGNED',
-            assigned_unit: unitName,
-            activity_log: [
-              ...(r.activity_log || []),
-              {
-                timestamp: 'Just now',
-                action: `Assigned rescue team: ${unitName}`,
-                author: 'EOC Duty Officer',
-              },
-            ],
-          }
+              ...r,
+              status: 'TRANSMITTED_TO_DEOC',
+              handoff_status: 'TRANSMITTED_TO_DEOC',
+              authority_handoff_target: authorityTarget,
+              activity_log: [
+                ...(r.activity_log || []),
+                {
+                  timestamp: 'Just now',
+                  action: `Standardized incident packet transmitted to ${authorityTarget}`,
+                  author: 'EOC Duty Officer',
+                },
+              ],
+            }
           : r
       )
     );
-    showToast(`Dispatch Order Transmitted: ${unitName} assigned to #${requestId}`);
+    showToast(`Authority Handoff Transmitted: DEOC packet dispatched for ticket #${requestId}`);
   };
 
-  const handleUpdateRequestStatus = (requestId: string, status: any, assignedUnit?: string) => {
+  const handleUpdateRequestStatus = (
+    requestId: string,
+    status: AuthorityHandoffStatus,
+    authorityNote?: string
+  ) => {
     setRequests((prev) =>
       prev.map((r) => {
         if (r.id !== requestId) return r;
         return {
           ...r,
-          status,
-          ...(assignedUnit ? { assigned_unit: assignedUnit } : {}),
+          status: status as any,
+          handoff_status: status,
           activity_log: [
             ...(r.activity_log || []),
             {
               timestamp: 'Just now',
-              action: `Status updated to ${status}${assignedUnit ? ` (${assignedUnit})` : ''}`,
+              action: `Authority status updated to ${status}${authorityNote ? `: ${authorityNote}` : ''}`,
               author: 'EOC Duty Officer',
             },
           ],
         };
       })
     );
-    showToast(`Ticket #${requestId} updated to ${status}`);
+    showToast(`Ticket #${requestId} updated to ${status.replace(/_/g, ' ')}`);
   };
 
   const handleBroadcastAlert = (newAlert: Alert) => {
     setAlerts((prev) => [newAlert, ...prev]);
-    showToast(`Official emergency alert ${newAlert.code} dispatched across ${newAlert.channels.length} channels`);
+    showToast(
+      `Simulated Alert Record Logged: ${newAlert.code} registered in EOC simulation audit log`
+    );
   };
 
   const handleCancelAlert = (alertId: string) => {
     setAlerts((prev) =>
       prev.map((a) => (a.id === alertId ? { ...a, status: 'CANCELLED' } : a))
     );
-    showToast(`Alert #${alertId} has been superseded / cancelled`);
+    showToast(`Alert #${alertId} has been superseded / cancelled in audit log`);
   };
 
   const handleBroadcastRevision = (alertId: string) => {
@@ -232,18 +296,22 @@ export function App() {
       <Header
         benchmarkScenes={BENCHMARK_SCENES}
         currentScene={currentScene}
-        onSelectScene={(scene) => {
-          setCurrentScene(scene);
-          showToast(`Switched active event benchmark to: ${scene.name}`);
-        }}
+        onSelectScene={handleSelectScene}
         activeAlertCount={alerts.filter((a) => a.status === 'DISPATCHED').length}
-        pendingRescueCount={requests.filter((r) => r.status === 'OPEN').length}
+        openReportsCount={
+          requests.filter((r) => r.handoff_status === 'LOCAL_LOGGED' || r.status === 'LOCAL_LOGGED').length
+        }
         criticalZoneCount={3}
         lastUpdatedText="Updated 4m ago"
         isLiveSimulation={isLiveSimulation}
+        isBackendConnected={isBackendConnected}
         onToggleLiveSimulation={() => {
           setIsLiveSimulation(!isLiveSimulation);
-          showToast(!isLiveSimulation ? 'Live Simulation Stream activated (auto-events every 24s)' : 'Live Simulation Stream paused');
+          showToast(
+            !isLiveSimulation
+              ? 'Live Simulation Stream activated (auto-events every 24s)'
+              : 'Live Simulation Stream paused'
+          );
         }}
         onTriggerSimulationEvent={triggerSimulationEvent}
       />
@@ -254,21 +322,24 @@ export function App() {
         <Sidebar
           activeTab={activeTab}
           onSelectTab={setActiveTab}
-          openSosCount={requests.filter((r) => r.status === 'OPEN').length}
+          openSosCount={
+            requests.filter((r) => r.handoff_status === 'LOCAL_LOGGED' || r.status === 'LOCAL_LOGGED').length
+          }
           activeAlertCount={alerts.filter((a) => a.status === 'DISPATCHED').length}
         />
 
         {/* Primary Operational Content Area */}
         <main className="flex-1 overflow-y-auto p-4 lg:p-6 bg-transparent">
           <div className="max-w-7xl mx-auto space-y-4">
-            {/* View Switcher: All 6 Sidebar Views Fully Functional */}
+            {/* View Switcher: All 6 Operational Views Fully Functional */}
             {activeTab === 'command-overview' && (
               <CommandOverview
                 metrics={metrics}
                 benchmarkScene={currentScene}
                 requests={requests}
                 alerts={alerts}
-                onAssignRequest={handleAssignRequest}
+                onHandoffRequest={handleHandoffRequest}
+                onAssignRequest={handleHandoffRequest}
                 onBroadcastRevision={handleBroadcastRevision}
               />
             )}
@@ -288,7 +359,7 @@ export function App() {
               <SatelliteIntelligence
                 currentScene={currentScene}
                 onSendToResponseOps={() => {
-                  showToast('Satellite flood mask sent to Response Operations queue');
+                  showToast('Satellite flood mask sent to Incident Coordination queue');
                   setActiveTab('response-ops');
                 }}
               />
@@ -325,7 +396,7 @@ export function App() {
 
       {/* Interactive Action Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-5 right-5 z-50 px-5 py-2.5 rounded-full bg-[#0a0a0a] border border-white text-white text-xs font-mono tracking-wider uppercase flex items-center gap-2.5 animate-in slide-in-from-bottom-5">
+        <div className="fixed bottom-5 right-5 z-50 px-5 py-2.5 rounded-full bg-[#0a0a0a] border border-white text-white text-xs font-mono tracking-wider uppercase flex items-center gap-2.5 animate-in slide-in-from-bottom-5 shadow-[0_4px_24px_rgba(0,0,0,0.8)]">
           <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span>
           <span>{toastMessage}</span>
         </div>

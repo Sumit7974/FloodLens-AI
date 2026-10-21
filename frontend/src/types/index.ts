@@ -8,7 +8,15 @@ export type RequestCategory = 'TRAPPED' | 'MEDICAL' | 'EVACUATION' | 'FOOD_WATER
 
 export type UrgencyLevel = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
 
-export type AssistanceStatus = 'OPEN' | 'ASSIGNED' | 'EN_ROUTE' | 'RESOLVED';
+export type AuthorityHandoffStatus =
+  | 'LOCAL_LOGGED'
+  | 'TRANSMITTED_TO_DEOC'
+  | 'SIMULATED_AUTHORITY_ACK'
+  | 'ACKNOWLEDGED_BY_AUTHORITY'
+  | 'RESOLVED';
+
+// Backwards compatibility alias
+export type AssistanceStatus = AuthorityHandoffStatus | 'OPEN' | 'ASSIGNED' | 'EN_ROUTE';
 
 export type SensorStatus = 'NORMAL' | 'WARNING' | 'CRITICAL' | 'OFFLINE';
 
@@ -35,6 +43,8 @@ export interface Alert {
   safe_shelter?: string;
   read_rate?: number;
   reach_count?: number;
+  audit_hash?: string;
+  is_drill_simulation?: boolean;
 }
 
 export interface ActivityLogEntry {
@@ -51,18 +61,24 @@ export interface HelpRequest {
   category: RequestCategory;
   urgency: UrgencyLevel;
   urgency_score?: string;
-  status: AssistanceStatus;
+  status: AuthorityHandoffStatus;
   people_count: number;
   location_name: string;
   coordinates: [number, number]; // [lat, lng]
   landmark: string;
   notes: string;
-  assigned_unit?: string;
+  handoff_status?: AuthorityHandoffStatus;
+  authority_handoff_target?: string;
+  assigned_unit?: string; // Legacy alias for authority handoff target
+  authority_verification?: string;
+  report_elapsed_time?: string;
   battery_level?: number;
   estimated_water_depth?: string;
   photo_url?: string;
   nearest_shelter?: { name: string; distance: string };
-  nearest_boat?: { name: string; distance: string; eta: string };
+  nearest_highground?: { name: string; distance: string; elevationMsl?: number };
+  nearest_medical?: { name: string; distance: string; status?: string };
+  nearest_boat?: { name: string; distance: string; eta?: string }; // Legacy field
   activity_log?: ActivityLogEntry[];
 }
 
@@ -92,6 +108,12 @@ export interface BenchmarkScene {
   peak_discharge_m3s: number;
   satellite_pass: string;
   description: string;
+  center: [number, number]; // [lng, lat] for MapLibre
+  zoom: number;
+  pitch?: number;
+  bearing?: number;
+  bounds?: [[number, number], [number, number]]; // [[swLng, swLat], [neLng, neLat]]
+  hasSatelliteTruth?: boolean;
 }
 
 export interface MetricSummary {
@@ -107,17 +129,20 @@ export interface MetricSummary {
     settlementsCount: number;
     criticalZones: number;
     trend: string;
+    censusCalculationNote?: string;
   };
   openRequests: {
     total: number;
     critical: number;
-    assigned: number;
+    assigned: number; // Represents transmitted/acknowledged
+    transmittedToDeoc?: number;
   };
   sensorHealth: {
     reporting: number;
     total: number;
     status: string;
     latency: string;
+    modelStats?: string;
   };
 }
 

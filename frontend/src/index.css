@@ -73,9 +73,9 @@
 
 .font-micro {
   font-family: 'Barlow Semi Condensed', 'D-DIN', 'Arial Narrow', sans-serif;
-  font-size: 11px;
+  font-size: 12px;
   text-transform: uppercase;
-  letter-spacing: 0.96px;
+  letter-spacing: 1.1px;
   font-weight: 600;
 }
 

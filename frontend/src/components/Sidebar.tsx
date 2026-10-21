@@ -2,7 +2,7 @@ import React from 'react';
 import {
   BrainCircuit,
   LayoutDashboard,
-  LifeBuoy,
+  ShieldAlert,
   Satellite,
   Send,
   TrendingUp,
@@ -52,8 +52,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     {
       id: 'response-ops' as NavigationItemId,
-      label: 'Response Operations',
-      icon: LifeBuoy,
+      label: 'Incident Intelligence',
+      sublabel: 'Authority Coordination',
+      icon: ShieldAlert,
       color: 'text-emerald-400',
       activeBorder: 'border-emerald-400',
       activeBg: 'bg-gradient-to-r from-emerald-500/20 via-emerald-500/10 to-transparent',

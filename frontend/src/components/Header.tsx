@@ -2,16 +2,19 @@ import React, { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import type { BenchmarkScene } from '../types';
 import { FloodLensLogo } from './FloodLensLogo';
+import { DataStatusBadge } from './common/DataStatusBadge';
 
 interface HeaderProps {
   benchmarkScenes: BenchmarkScene[];
   currentScene: BenchmarkScene;
   onSelectScene: (scene: BenchmarkScene) => void;
   activeAlertCount: number;
-  pendingRescueCount: number;
+  openReportsCount?: number;
+  pendingRescueCount?: number;
   criticalZoneCount: number;
   lastUpdatedText: string;
   isLiveSimulation: boolean;
+  isBackendConnected?: boolean;
   onToggleLiveSimulation: () => void;
   onTriggerSimulationEvent: () => void;
 }
@@ -20,13 +23,16 @@ export const Header: React.FC<HeaderProps> = ({
   benchmarkScenes,
   currentScene,
   onSelectScene,
+  openReportsCount,
   pendingRescueCount,
   isLiveSimulation,
+  isBackendConnected = false,
   onTriggerSimulationEvent,
 }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const regionName = currentScene.region?.toUpperCase() || 'KOSHI BASIN';
+  const openCount = openReportsCount !== undefined ? openReportsCount : pendingRescueCount || 0;
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-[#1e293b]/90 bg-[#060d1b]/90 backdrop-blur-xl px-4 lg:px-6 py-2.5 shadow-[0_4px_20px_rgba(0,0,0,0.5)]">
@@ -91,10 +97,16 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Right Section: Luminous Status Strip & Vibrant Emergency Surge Button */}
-        <div className="flex items-center justify-between md:justify-end gap-3 lg:gap-5">
+        {/* Right Section: Luminous Status Strip & Safe Action Trigger */}
+        <div className="flex items-center justify-between md:justify-end gap-3 lg:gap-5 flex-wrap">
           {/* Status Indicators with Rich Color Accents */}
-          <div className="font-mono text-xs uppercase tracking-wider text-[#94a3b8] flex items-center gap-3">
+          <div className="font-mono text-xs uppercase tracking-wider text-[#94a3b8] flex items-center gap-2.5 flex-wrap">
+            <DataStatusBadge
+              status={isBackendConnected ? 'live' : 'cached'}
+              label={isBackendConnected ? 'LIVE BACKEND' : 'DEMO BENCHMARK'}
+              className="hidden lg:inline-flex"
+            />
+
             <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#10b981]/15 border border-[#10b981]/40 text-[#34d399] font-semibold text-[11px]">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
@@ -105,7 +117,7 @@ export const Header: React.FC<HeaderProps> = ({
 
             <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#ef4444]/15 border border-[#ef4444]/40 text-[#fca5a5] font-semibold text-[11px]">
               <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>
-              <span>{pendingRescueCount} ACTIVE RESCUE</span>
+              <span>{openCount} OPEN CITIZEN REPORTS</span>
             </span>
           </div>
 

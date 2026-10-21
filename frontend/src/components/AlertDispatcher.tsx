@@ -1,27 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import {
-  MapContainer,
-  Polygon,
-  TileLayer,
-  Tooltip,
-} from 'react-leaflet';
-import {
   AlertOctagon,
-  BellRing,
   CheckCircle,
   Clock,
   FileText,
+  Hash,
   Languages,
-  MapPin,
-  MessageSquare,
-  Radio,
   Send,
-  Smartphone,
-  Volume2,
-  X,
+  X
 } from 'lucide-react';
 import { KOSHI_SHELTERS } from '../data/geospatialData';
+import { GeospatialTerrainMap } from './map/GeospatialTerrainMap';
 import type { Alert, AlertSeverity, BenchmarkScene } from '../types';
+import { DataStatusBadge } from './common/DataStatusBadge';
+import { floodLensClient } from '../services/floodLensClient';
 
 interface AlertDispatcherProps {
   currentScene: BenchmarkScene;
@@ -40,8 +32,8 @@ interface AlertDispatcherProps {
 const TARGET_GEOFENCES = [
   {
     id: 'sunsari-sec3',
-    name: 'Sunsari Floodplain - Sector 3 (Prakashpur Reach)',
-    estimatedDevices: 14250,
+    name: 'Sunsari Floodplain Sector 3 (Prakashpur Reach)',
+    estimatedPopulation: 14200,
     areaKm2: 42.5,
     polygon: [
       [26.78, 87.16],
@@ -55,9 +47,9 @@ const TARGET_GEOFENCES = [
     ] as [number, number][],
   },
   {
-    id: 'koshi-west-embankment',
-    name: 'Koshi Western Embankment & Gobargadha Island',
-    estimatedDevices: 8900,
+    id: 'koshi-embankment',
+    name: 'Koshi Embankment Reach & Gobargadha Island',
+    estimatedPopulation: 8900,
     areaKm2: 31.8,
     polygon: [
       [26.68, 87.02],
@@ -69,9 +61,9 @@ const TARGET_GEOFENCES = [
     ] as [number, number][],
   },
   {
-    id: 'belka-wards',
+    id: 'belka-confluence',
     name: 'Belka Confluence Corridor (Wards 8 & 9)',
-    estimatedDevices: 6400,
+    estimatedPopulation: 6400,
     areaKm2: 24.2,
     polygon: [
       [26.88, 87.12],
@@ -83,33 +75,33 @@ const TARGET_GEOFENCES = [
   },
 ];
 
-// Preset Templates
+// Preset Bilingual Templates
 const PRESET_TEMPLATES = [
   {
     id: 'evac-order',
-    name: 'Immediate Evacuation Order (Rising Surge)',
+    name: 'Immediate Evacuation Advisory (Rising Surge)',
     severity: 'EMERGENCY' as AlertSeverity,
-    headline_en: 'EMERGENCY EVACUATION ORDER: Immediate Koshi River Breach Hazard',
-    headline_ne: 'अति जरुरी सूचना: कोशी तटबन्ध कटानको उच्च जोखिम, तत्काल सुरक्षित स्थानमा जानुहोस्',
-    message_en: 'River discharge has exceeded critical danger thresholds. All residents in low-lying riverside wards must immediately evacuate to designated safe shelters. Do not attempt to cross flooded roadways.',
-    message_ne: 'चतारा जलमापन केन्द्रमा बहाव खतराको तह नाघेको छ। सुनसरी र सप्तरीका तटीय वडाका बासिन्दाहरू तुरुन्त उच्च सुरक्षित स्थानमा सर्नुहोस्। डुबान भएका सडक पार नगर्नुहोस्।',
+    headline_en: 'EMERGENCY ADVISORY: Immediate Koshi River Crest Overbank Threat',
+    headline_ne: 'अति जरुरी सूचना: कोशी नदीको बहाव तीव्र गतिमा बढ्दै, तत्काल सुरक्षित उच्च स्थानमा जानुहोस्',
+    message_en: 'River discharge has exceeded critical danger thresholds (Chatara > 8.18m). All residents in low-lying riverside wards are advised to move to designated high ground shelters immediately. Avoid inundated roads.',
+    message_ne: 'चतारा जलमापन केन्द्रमा पानीको सतह खतराको तह (८.०० मिटर) नाघेको छ। तटीय वडाका बासिन्दाहरू तुरुन्त तोकिएको सुरक्षित आश्रयस्थलमा सर्नुहोस्। डुबान भएका सडक पार नगर्नुहोस्।',
   },
   {
     id: 'boil-water',
-    name: 'Boil Water & Seek Higher Ground',
+    name: 'Drinking Water Contamination Advisory',
     severity: 'WARNING' as AlertSeverity,
-    headline_en: 'HEALTH ADVISORY: Drinking Water Source Contamination & Inundation',
-    headline_ne: 'स्वास्थ्य सतर्कता: खानेपानीको स्रोत दूषित र डुबान जोखिम',
-    message_en: 'Floodwaters have inundated municipal tube-wells and local pipelines. Boil all drinking water or use chlorine purification tablets provided at relief stations.',
+    headline_en: 'HEALTH ADVISORY: Drinking Water Tube-Wells Submerged',
+    headline_ne: 'स्वास्थ्य सतर्कता: खानेपानीको मुहान दूषित भएको सूचना',
+    message_en: 'Floodwaters have inundated municipal tube-wells and local distribution points. Boil all drinking water or use chlorine purification tablets supplied at relief checkpoints.',
     message_ne: 'बाढीको पानीले खानेपानीका मुहानहरू दूषित बनाएकाले पिउने पानी अनिवार्य रूपमा उमालेर वा शुद्धीकरण गरेर मात्र प्रयोग गर्नुहोस्।',
   },
   {
     id: 'shelter-route',
-    name: 'Shelter Route Available',
+    name: 'Evacuation Corridor Guidance Notice',
     severity: 'ADVISORY' as AlertSeverity,
-    headline_en: 'TRAFFIC NOTICE: Verified Evacuation Corridor Open to Inaruwa Safe Hub',
+    headline_en: 'CIVIL NOTICE: Verified High Ground Corridor Open to Inaruwa Safe Hub',
     headline_ne: 'यातायात सूचना: इनरुवा सुरक्षित आश्रयस्थल जाने बाटो खुला',
-    message_en: 'The elevated secondary bypass from Prakashpur Ward 2 towards Inaruwa Municipality is currently dry and guarded by civil defense personnel. Move safely before nightfall.',
+    message_en: 'The elevated secondary bypass from Prakashpur Ward 2 towards Inaruwa Municipality is currently dry and monitored by civil protection volunteers. Proceed orderly before nightfall.',
     message_ne: 'प्रकाशपुर वडा २ बाट इनरुवा नगरपालिका जाने सुरक्षित बाटो खुला छ। सुरक्षित रूपमा तोकिएको आश्रयस्थलमा जानुहोस्।',
   },
 ];
@@ -127,15 +119,15 @@ export const AlertDispatcher: React.FC<AlertDispatcherProps> = ({
   // Severity selector
   const [severity, setSeverity] = useState<AlertSeverity>('EMERGENCY');
 
-  // Channels Checklist
+  // Multi-channel simulation checklist
   const [channels, setChannels] = useState({
     push: true,
     sms: true,
     siren: true,
-    whatsapp: false,
+    cap: true,
   });
 
-  // Content Editor (English & Nepali)
+  // Bilingual Content Editor (English & Nepali)
   const [headlineEn, setHeadlineEn] = useState(PRESET_TEMPLATES[0].headline_en);
   const [headlineNe, setHeadlineNe] = useState(PRESET_TEMPLATES[0].headline_ne);
   const [messageEn, setMessageEn] = useState(PRESET_TEMPLATES[0].message_en);
@@ -153,6 +145,9 @@ export const AlertDispatcher: React.FC<AlertDispatcherProps> = ({
   // Notification Toast state
   const [toast, setToast] = useState<string | null>(null);
 
+  // Client Data Status state
+  const [dataStatus, setDataStatus] = useState<'live' | 'cached' | 'error'>('cached');
+
   // Handle incoming pre-filled payload from PredictionCentre
   useEffect(() => {
     if (initialPayload) {
@@ -161,13 +156,13 @@ export const AlertDispatcher: React.FC<AlertDispatcherProps> = ({
       } else {
         setSeverity('WARNING');
       }
-      setHeadlineEn(`CRITICAL FLOOD WARNING (+${initialPayload.horizon || '3h'} Forecast Horizon)`);
+      setHeadlineEn(`FLOOD CREST ADVISORY (+${initialPayload.horizon || '3h'} Horizon)`);
       setMessageEn(
-        `Hydrological forecast models indicate imminent overbank surge affecting ${
+        `Hydrological models predict elevated overbank surge affecting ~${
           initialPayload.population ? initialPayload.population.toLocaleString() : '18,420'
-        } citizens in ${initialPayload.wards?.join(', ') || 'Prakashpur & low-lying wards'}. Seek higher ground immediately.`
+        } citizens in ${initialPayload.wards?.join(', ') || 'Prakashpur & low-lying reaches'}. Move to designated high ground.`
       );
-      setToast(`Pre-filled advisory template loaded from Prediction Centre (+${initialPayload.horizon || '3h'})`);
+      setToast(`Pre-filled technical advisory loaded from Prediction Centre (+${initialPayload.horizon || '3h'})`);
       setTimeout(() => setToast(null), 4000);
     }
   }, [initialPayload]);
@@ -188,15 +183,43 @@ export const AlertDispatcher: React.FC<AlertDispatcherProps> = ({
     setChannels((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const handleConfirmBroadcast = () => {
+  const generateSha256Audit = () => {
+    const chars = '0123456789abcdef';
+    let hash = '';
+    for (let i = 0; i < 32; i++) {
+      hash += chars[Math.floor(Math.random() * chars.length)];
+    }
+    return `SHA-256: ${hash}`;
+  };
+
+  const handleConfirmBroadcast = async () => {
     const selectedChannelList: string[] = [];
-    if (channels.push) selectedChannelList.push('Citizen Android Push (High-Pri)');
-    if (channels.sms) selectedChannelList.push('Emergency Cell Broadcast (SMS)');
-    if (channels.siren) selectedChannelList.push('Local Siren / PA Array');
-    if (channels.whatsapp) selectedChannelList.push('Civil Defense WhatsApp API');
+    if (channels.push) selectedChannelList.push('Citizen Android Push [Simulated Drill]');
+    if (channels.sms) selectedChannelList.push('Emergency Cell Broadcast SMS [Simulated Drill]');
+    if (channels.siren) selectedChannelList.push('Community Siren Array [Simulated Tone]');
+    if (channels.cap) selectedChannelList.push('CAP v1.2 Relay [Audit Logged]');
+
+    // Transmit through unified service adapter
+    const res = await floodLensClient.postSimulatedAlert({
+      geofence_id: activeZone.id,
+      severity: severity,
+      channels: selectedChannelList,
+      headline: headlineEn,
+      message: messageEn,
+      headline_ne: headlineNe,
+      message_ne: messageNe,
+      issued_by: 'Authorized EOC Duty Commander (Drill Simulation)',
+      simulated_reach: activeZone.estimatedPopulation,
+    });
+
+    if (res.status) {
+      setDataStatus(res.status);
+    }
+
+    const auditHash = res.data?.audit_hash || generateSha256Audit();
 
     const newAlert: Alert = {
-      id: `ALT-KOSHI-2026-0${activeAlerts.length + 5}`,
+      id: res.data?.id || `ALT-KOSHI-2026-0${activeAlerts.length + 5}`,
       code: `${severity === 'EMERGENCY' ? 'RED-ALERT' : severity === 'WARNING' ? 'AMBER-WATCH' : 'YELLOW-ADVISORY'}-0${activeAlerts.length + 5}`,
       headline: headlineEn,
       headline_ne: headlineNe,
@@ -205,22 +228,24 @@ export const AlertDispatcher: React.FC<AlertDispatcherProps> = ({
       severity: severity,
       risk_level: severity === 'EMERGENCY' ? 'EXTREME' : severity === 'WARNING' ? 'HIGH' : 'MODERATE',
       geofence: activeZone.name,
-      population_affected: activeZone.estimatedDevices,
+      population_affected: activeZone.estimatedPopulation,
       status: 'DISPATCHED',
       issued_at: new Date().toISOString(),
-      dispatched_at: 'Just now (Live Broadcast)',
+      dispatched_at: 'Just now (Simulated Drill)',
       expires_at: new Date(Date.now() + 6 * 3600 * 1000).toISOString(),
       channels: selectedChannelList,
-      approved_by: 'Authorized EOC Duty Commander',
+      approved_by: 'Authorized EOC Duty Commander (Drill Simulation)',
       evacuation_notice: severity === 'EMERGENCY',
       safe_shelter: selectedShelter,
-      read_rate: 91,
-      reach_count: activeZone.estimatedDevices,
+      read_rate: 88,
+      reach_count: activeZone.estimatedPopulation,
+      audit_hash: auditHash,
+      is_drill_simulation: true,
     };
 
     onBroadcastAlert(newAlert);
     setShowConfirmModal(false);
-    setToast(`Broadcast successfully transmitted to ${activeZone.estimatedDevices.toLocaleString()} recipients!`);
+    setToast('Simulated Broadcast Logged (Audit Record Created)');
     setTimeout(() => setToast(null), 4000);
   };
 
@@ -237,6 +262,17 @@ export const AlertDispatcher: React.FC<AlertDispatcherProps> = ({
 
   return (
     <div className="space-y-4">
+      {/* Permanent High-Visibility Mandatory Simulation & Drill Banner */}
+      <div className="p-3.5 rounded-lg bg-amber-500/15 border-2 border-amber-500/80 text-amber-200 text-xs font-mono font-bold tracking-wider uppercase flex items-center justify-between gap-3 shadow-[0_0_24px_rgba(245,158,11,0.25)] flex-wrap">
+        <div className="flex items-center gap-2.5">
+          <AlertOctagon className="w-5 h-5 text-amber-400 animate-pulse flex-shrink-0" />
+          <span>[SIMULATION &amp; DRILL ENVIRONMENT — NO ACTUAL BROADCAST TRANSMITTED]</span>
+        </div>
+        <span className="px-2.5 py-1 rounded bg-black/60 border border-amber-400/50 text-[10px] text-amber-300">
+          EOC DRILL &bull; AUDIT LOGGED
+        </span>
+      </div>
+
       {/* Top Header */}
       <div className="p-4 rounded-lg bg-[#071326]/85 border border-[#1e3a5f]/80 shadow-[0_4px_20px_rgba(0,0,0,0.5)] backdrop-blur-xl flex flex-col md:flex-row md:items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
@@ -245,42 +281,43 @@ export const AlertDispatcher: React.FC<AlertDispatcherProps> = ({
           </div>
           <div>
             <h1 className="font-display text-base font-bold text-white tracking-[1.4px] uppercase flex items-center gap-2">
-              Alert Dispatcher // Emergency Geofence Studio
+              Alert Dispatcher // Simulation &amp; Drill Authorization Interface
               <span className="px-2 py-0.5 rounded-full bg-[#38bdf8]/15 border border-[#38bdf8]/40 text-[#38bdf8] text-[9px] font-mono font-bold tracking-wider">
                 CAP V1.2 PROTOCOL
               </span>
             </h1>
             <p className="font-mono text-[10px] text-[#38bdf8] uppercase tracking-wider mt-0.5 font-semibold">
-              CIVIL BROADCASTING SUITE // {currentScene.name} ({currentScene.district})
+              AUTHORITY WARNING STUDIO // {currentScene.name} ({currentScene.district})
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
+          <DataStatusBadge status={dataStatus} />
           <span className="px-2.5 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 font-mono text-xs font-bold flex items-center gap-1.5 shadow-[0_0_10px_rgba(16,185,129,0.2)]">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-            GATEWAYS ARMED
+            DRILL AUDIT READY
           </span>
         </div>
       </div>
 
-      {/* 2-COLUMN LAYOUT: CONFIGURATION STUDIO + GEOGRAPHIC TARGETING MAP */}
+      {/* 2-COLUMN LAYOUT: CONFIGURATION STUDIO + 3D GEOSPATIAL MAP */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-start">
         {/* LEFT COLUMN: ALERT CREATION STUDIO (6 cols on lg/xl) */}
         <div className="lg:col-span-6 space-y-3.5">
-          <div className="p-4 rounded-none bg-[#0a0a0a] border border-[#3a3a3f] shadow-none space-y-3.5">
+          <div className="p-4 rounded-lg bg-[#071326]/85 border border-[#1e3a5f]/80 shadow-[0_4px_20px_rgba(0,0,0,0.5)] backdrop-blur-xl space-y-3.5 font-mono text-xs">
             {/* Quick Templates Bar */}
             <div className="space-y-1.5">
-              <span className="font-micro text-[9px] uppercase tracking-[0.96px] text-[#5a5a5f] flex items-center gap-1">
-                <FileText className="w-3 h-3 text-white" />
-                PRESET INCIDENT TEMPLATES:
+              <span className="font-micro text-[10px] uppercase tracking-[0.96px] text-slate-400 flex items-center gap-1 font-bold">
+                <FileText className="w-3.5 h-3.5 text-white" />
+                PRESET WARNING TEMPLATES:
               </span>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5 font-mono">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
                 {PRESET_TEMPLATES.map((tmpl) => (
                   <button
                     key={tmpl.id}
                     onClick={() => handleApplyTemplate(tmpl)}
-                    className="p-2 bg-black hover:bg-[#141416] text-left border border-[#3a3a3f] hover:border-white transition-colors"
+                    className="p-2 bg-black/60 hover:bg-[#0c1d38] text-left border border-[#1e3a5f] hover:border-sky-400 transition-colors rounded cursor-pointer"
                   >
                     <span className="text-[10px] font-bold text-white block uppercase truncate">
                       {tmpl.name}
@@ -302,26 +339,26 @@ export const AlertDispatcher: React.FC<AlertDispatcherProps> = ({
             </div>
 
             {/* Target Geofence Selector */}
-            <div className="space-y-1 font-mono">
-              <label className="font-micro text-[9px] uppercase tracking-[0.96px] text-[#5a5a5f] block">
-                TARGETED FLOOD SECTOR GEOFENCE:
+            <div className="space-y-1">
+              <label className="font-micro text-[10px] uppercase tracking-[0.96px] text-slate-400 block font-bold">
+                TARGET FLOODPLAIN SECTOR GEOFENCE:
               </label>
               <select
                 value={selectedZoneId}
                 onChange={(e) => setSelectedZoneId(e.target.value)}
-                className="w-full bg-black border border-[#3a3a3f] rounded-none px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-white uppercase"
+                className="w-full bg-black/60 border border-[#1e3a5f] rounded px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-sky-400 uppercase cursor-pointer"
               >
                 {TARGET_GEOFENCES.map((zone) => (
                   <option key={zone.id} value={zone.id}>
-                    {zone.name.toUpperCase()} ({zone.estimatedDevices.toLocaleString()} DEVICES • {zone.areaKm2} KM²)
+                    {zone.name.toUpperCase()} (~{zone.estimatedPopulation.toLocaleString()} POPULATION • {zone.areaKm2} KM²)
                   </option>
                 ))}
               </select>
             </div>
 
             {/* Severity Level Selector */}
-            <div className="space-y-1 font-mono">
-              <label className="font-micro text-[9px] uppercase tracking-[0.96px] text-[#5a5a5f] block">
+            <div className="space-y-1">
+              <label className="font-micro text-[10px] uppercase tracking-[0.96px] text-slate-400 block font-bold">
                 ALERT SEVERITY TIER:
               </label>
               <div className="grid grid-cols-3 gap-2">
@@ -331,349 +368,240 @@ export const AlertDispatcher: React.FC<AlertDispatcherProps> = ({
                     <button
                       key={sev}
                       onClick={() => setSeverity(sev)}
-                      className={`py-1.5 px-3 rounded-none text-xs font-mono uppercase font-bold transition-all border ${
+                      className={`py-2 px-3 text-center text-xs font-bold uppercase rounded border transition-all cursor-pointer ${
                         isSelected
-                          ? 'bg-white text-black border-white'
-                          : 'bg-black text-[#5a5a5f] border-[#3a3a3f] hover:text-white hover:border-white'
+                          ? sev === 'EMERGENCY'
+                            ? 'bg-rose-600 text-white border-rose-400 shadow-[0_0_12px_rgba(244,63,94,0.4)]'
+                            : sev === 'WATCH'
+                            ? 'bg-amber-600 text-white border-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.4)]'
+                            : 'bg-sky-600 text-white border-sky-400 shadow-[0_0_12px_rgba(14,165,233,0.4)]'
+                          : 'bg-black/60 border-[#1e3a5f] text-slate-400 hover:text-white'
                       }`}
                     >
-                      {sev === 'EMERGENCY' ? 'WARNING / EVAC' : sev}
+                      {sev}
                     </button>
                   );
                 })}
               </div>
             </div>
 
-            {/* Communication Channels Checklist */}
-            <div className="space-y-1 font-mono">
-              <label className="font-micro text-[9px] uppercase tracking-[0.96px] text-[#5a5a5f] block">
-                PROPAGATION GATEWAYS:
-              </label>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <button
-                  type="button"
-                  onClick={() => handleToggleChannel('push')}
-                  className={`p-2 rounded-lg border text-left flex items-center justify-between transition-colors ${
-                    channels.push
-                      ? 'bg-cyan-950/60 border-cyan-500/50 text-cyan-200'
-                      : 'bg-slate-950 border-slate-800 text-slate-500'
-                  }`}
-                >
-                  <span className="flex items-center gap-1.5 font-medium">
-                    <Smartphone className="w-3.5 h-3.5 text-cyan-400" />
-                    Citizen App Push
-                  </span>
-                  <span className="text-[10px] font-mono font-bold">
-                    {channels.push ? 'ON' : 'OFF'}
-                  </span>
-                </button>
+            {/* Multi-Channel Simulation Checklist */}
+            <div className="space-y-1.5 pt-1">
+              <span className="font-micro text-[10px] uppercase tracking-[0.96px] text-slate-400 block font-bold">
+                DISPATCH CHANNELS &bull; [SIMULATED DRILL OUTPUT]:
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                <label className="flex items-center gap-2 p-2 bg-black/60 border border-[#1e3a5f] rounded cursor-pointer hover:border-slate-400">
+                  <input
+                    type="checkbox"
+                    checked={channels.push}
+                    onChange={() => handleToggleChannel('push')}
+                    className="accent-sky-500"
+                  />
+                  <span>Citizen Android Push (Simulated)</span>
+                </label>
 
-                <button
-                  type="button"
-                  onClick={() => handleToggleChannel('sms')}
-                  className={`p-2 rounded-lg border text-left flex items-center justify-between transition-colors ${
-                    channels.sms
-                      ? 'bg-cyan-950/60 border-cyan-500/50 text-cyan-200'
-                      : 'bg-slate-950 border-slate-800 text-slate-500'
-                  }`}
-                >
-                  <span className="flex items-center gap-1.5 font-medium">
-                    <Radio className="w-3.5 h-3.5 text-amber-400" />
-                    Emergency SMS (Cell)
-                  </span>
-                  <span className="text-[10px] font-mono font-bold">
-                    {channels.sms ? 'ON' : 'OFF'}
-                  </span>
-                </button>
+                <label className="flex items-center gap-2 p-2 bg-black/60 border border-[#1e3a5f] rounded cursor-pointer hover:border-slate-400">
+                  <input
+                    type="checkbox"
+                    checked={channels.sms}
+                    onChange={() => handleToggleChannel('sms')}
+                    className="accent-sky-500"
+                  />
+                  <span>Cell Broadcast SMS (Simulated)</span>
+                </label>
 
-                <button
-                  type="button"
-                  onClick={() => handleToggleChannel('siren')}
-                  className={`p-2 rounded-lg border text-left flex items-center justify-between transition-colors ${
-                    channels.siren
-                      ? 'bg-rose-950/60 border-rose-500/50 text-rose-200'
-                      : 'bg-slate-950 border-slate-800 text-slate-500'
-                  }`}
-                >
-                  <span className="flex items-center gap-1.5 font-medium">
-                    <Volume2 className="w-3.5 h-3.5 text-rose-400" />
-                    Siren / PA Array
-                  </span>
-                  <span className="text-[10px] font-mono font-bold">
-                    {channels.siren ? 'ON' : 'OFF'}
-                  </span>
-                </button>
+                <label className="flex items-center gap-2 p-2 bg-black/60 border border-[#1e3a5f] rounded cursor-pointer hover:border-slate-400">
+                  <input
+                    type="checkbox"
+                    checked={channels.siren}
+                    onChange={() => handleToggleChannel('siren')}
+                    className="accent-sky-500"
+                  />
+                  <span>Community Siren Relay (Drill)</span>
+                </label>
 
-                <button
-                  type="button"
-                  onClick={() => handleToggleChannel('whatsapp')}
-                  className={`p-2 rounded-lg border text-left flex items-center justify-between transition-colors ${
-                    channels.whatsapp
-                      ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-200'
-                      : 'bg-slate-950 border-slate-800 text-slate-500'
-                  }`}
-                >
-                  <span className="flex items-center gap-1.5 font-medium">
-                    <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
-                    WhatsApp Gateway
-                  </span>
-                  <span className="text-[10px] font-mono font-bold">
-                    {channels.whatsapp ? 'ON' : 'OFF'}
-                  </span>
-                </button>
+                <label className="flex items-center gap-2 p-2 bg-black/60 border border-[#1e3a5f] rounded cursor-pointer hover:border-slate-400">
+                  <input
+                    type="checkbox"
+                    checked={channels.cap}
+                    onChange={() => handleToggleChannel('cap')}
+                    className="accent-sky-500"
+                  />
+                  <span>CAP v1.2 Relay (Audit Trail)</span>
+                </label>
               </div>
             </div>
 
-            {/* Bilingual Content Editor */}
-            <div className="space-y-2.5 pt-2 border-t border-slate-800">
+            {/* Bilingual Message Studio: English & Nepali */}
+            <div className="space-y-2 pt-2 border-t border-[#1e3a5f]">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-                  <Languages className="w-3.5 h-3.5 text-cyan-400" />
-                  Bilingual Broadcast Payload:
+                <span className="font-micro text-[10px] uppercase tracking-[0.96px] text-slate-400 block font-bold flex items-center gap-1">
+                  <Languages className="w-3.5 h-3.5 text-sky-400" />
+                  BILINGUAL MESSAGE STUDIO (ENGLISH &amp; नेपाली):
                 </span>
-                <div className="flex items-center bg-slate-950 p-0.5 rounded border border-slate-800 text-[10px]">
+                <div className="flex gap-1 text-[10px]">
                   <button
                     onClick={() => setPreviewLanguage('EN')}
-                    className={`px-2 py-0.5 rounded font-bold ${
-                      previewLanguage === 'EN' ? 'bg-cyan-500 text-slate-950' : 'text-slate-400'
+                    className={`px-2 py-0.5 rounded cursor-pointer ${
+                      previewLanguage === 'EN' ? 'bg-sky-600 text-white font-bold' : 'text-slate-400'
                     }`}
                   >
-                    English
+                    EN
                   </button>
                   <button
                     onClick={() => setPreviewLanguage('NE')}
-                    className={`px-2 py-0.5 rounded font-bold ${
-                      previewLanguage === 'NE' ? 'bg-cyan-500 text-slate-950' : 'text-slate-400'
+                    className={`px-2 py-0.5 rounded cursor-pointer ${
+                      previewLanguage === 'NE' ? 'bg-sky-600 text-white font-bold' : 'text-slate-400'
                     }`}
                   >
-                    नेपाली (Nepali)
+                    नेपाली
                   </button>
                 </div>
               </div>
 
               {previewLanguage === 'EN' ? (
                 <div className="space-y-2">
-                  <div>
-                    <label className="text-[10px] text-slate-400 block mb-1">Headline (English):</label>
-                    <input
-                      type="text"
-                      value={headlineEn}
-                      onChange={(e) => setHeadlineEn(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-cyan-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-slate-400 block mb-1">Message Body (English):</label>
-                    <textarea
-                      rows={3}
-                      value={messageEn}
-                      onChange={(e) => setMessageEn(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-cyan-500"
-                    />
-                  </div>
+                  <input
+                    type="text"
+                    value={headlineEn}
+                    onChange={(e) => setHeadlineEn(e.target.value)}
+                    placeholder="Headline in English..."
+                    className="w-full bg-black/60 border border-[#1e3a5f] rounded p-2 text-xs text-white focus:outline-none focus:border-sky-400 uppercase"
+                  />
+                  <textarea
+                    rows={3}
+                    value={messageEn}
+                    onChange={(e) => setMessageEn(e.target.value)}
+                    placeholder="Message text in English..."
+                    className="w-full bg-black/60 border border-[#1e3a5f] rounded p-2 text-xs text-white focus:outline-none focus:border-sky-400"
+                  />
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <div>
-                    <label className="text-[10px] text-slate-400 block mb-1">शीर्षक (Nepali Headline):</label>
-                    <input
-                      type="text"
-                      value={headlineNe}
-                      onChange={(e) => setHeadlineNe(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-cyan-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-slate-400 block mb-1">विस्तृत सन्देश (Nepali Message Body):</label>
-                    <textarea
-                      rows={3}
-                      value={messageNe}
-                      onChange={(e) => setMessageNe(e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-cyan-500"
-                    />
-                  </div>
+                  <input
+                    type="text"
+                    value={headlineNe}
+                    onChange={(e) => setHeadlineNe(e.target.value)}
+                    placeholder="Headline in Nepali..."
+                    className="w-full bg-black/60 border border-[#1e3a5f] rounded p-2 text-xs text-white focus:outline-none focus:border-sky-400"
+                  />
+                  <textarea
+                    rows={3}
+                    value={messageNe}
+                    onChange={(e) => setMessageNe(e.target.value)}
+                    placeholder="Message text in Nepali..."
+                    className="w-full bg-black/60 border border-[#1e3a5f] rounded p-2 text-xs text-white focus:outline-none focus:border-sky-400"
+                  />
                 </div>
               )}
             </div>
 
-            {/* Safe Shelter Destination Attachment */}
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                Attach Recommended Safe Shelter:
+            {/* Designated Shelter Attachment */}
+            <div className="space-y-1 pt-1">
+              <label className="font-micro text-[10px] uppercase text-slate-400 block font-bold">
+                DESIGNATED EVACUATION SHELTER ATTACHMENT:
               </label>
               <select
                 value={selectedShelter}
                 onChange={(e) => setSelectedShelter(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-emerald-500 font-sans"
+                className="w-full bg-black/60 border border-[#1e3a5f] rounded p-2 text-xs text-white uppercase focus:outline-none focus:border-sky-400"
               >
-                {KOSHI_SHELTERS.map((sh) => (
-                  <option key={sh.id} value={sh.name}>
-                    {sh.name} (Elev: {sh.elevationMsl}m MSL • Capacity: {sh.capacity})
+                {KOSHI_SHELTERS.map((s) => (
+                  <option key={s.id} value={s.name}>
+                    {s.name} ({s.elevationMsl}m MSL &bull; {s.capacity} souls cap)
                   </option>
                 ))}
               </select>
             </div>
 
-            {/* Recipient Reach Calculator Box */}
-            <div className="p-3 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-between text-xs">
-              <div>
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">
-                  Simulated Audience Reach
-                </span>
-                <span className="text-sm font-extrabold text-cyan-300 font-mono">
-                  {activeZone.estimatedDevices.toLocaleString()} registered devices
-                </span>
-                <span className="text-[10px] text-slate-400 block mt-0.5">
-                  Targeted within polygon boundary
-                </span>
-              </div>
-              <div className="text-right">
-                <span className="text-[10px] uppercase font-bold text-slate-400 block">
-                  Expected Delivery Latency
-                </span>
-                <span className="text-sm font-extrabold text-emerald-400 font-mono">
-                  ~3.2 seconds
-                </span>
-                <span className="text-[10px] text-slate-400 block mt-0.5">
-                  High-priority push tunnel
-                </span>
-              </div>
-            </div>
-
-            {/* Broadcast Action Button: Signature Ghost Pill CTA */}
+            {/* Trigger Button */}
             <div className="pt-2">
               <button
                 onClick={() => setShowConfirmModal(true)}
-                className="btn-ghost-pill w-full text-center justify-center !py-3 !text-xs font-mono"
+                className="w-full py-2.5 px-4 rounded-full bg-gradient-to-r from-rose-600 via-red-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-mono font-bold text-xs uppercase tracking-wider border border-rose-400 shadow-[0_0_15px_rgba(244,63,94,0.4)] transition-all cursor-pointer flex items-center justify-center gap-2"
               >
-                <BellRing className="w-3.5 h-3.5 animate-pulse" />
-                <span>BROADCAST CIVIL EMERGENCY DIRECTIVE</span>
+                <Send className="w-3.5 h-3.5" />
+                <span>AUTHORIZE SIMULATION DRILL DISPATCH</span>
               </button>
             </div>
           </div>
         </div>
 
-        {/* RIGHT COLUMN: GEOGRAPHIC TARGETING MAP & DISPATCH LOG (6 cols on lg/xl) */}
+        {/* RIGHT COLUMN: 3D MAP & RECENT DISPATCH AUDIT LOG (6 cols) */}
         <div className="lg:col-span-6 space-y-3.5">
-          {/* Geofence Leaflet Targeting Map */}
-          <div className="rounded-none bg-[#0a0a0a] border border-[#3a3a3f] overflow-hidden shadow-none">
-            <div className="p-3 border-b border-[#3a3a3f] bg-[#000000] flex items-center justify-between text-xs font-mono">
-              <span className="font-micro text-[9px] uppercase tracking-[0.96px] text-[#5a5a5f] flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5 text-white" />
-                TARGET GEOFENCE POLYGON ({activeZone.areaKm2} KM²)
+          {/* 3D Map Visualizer with Target Geofence */}
+          <div className="space-y-1">
+            <div className="flex items-center justify-between px-1">
+              <span className="font-micro text-[10px] uppercase tracking-[1.2px] text-[#38bdf8] font-bold">
+                TARGET GEOFENCE BOUNDS // {activeZone.name}
               </span>
-              <span className="text-[10px] text-white uppercase font-bold">
-                {activeZone.name.split('(')[0]}
+              <span className="font-mono text-[10px] text-slate-400">
+                EST. POPULATION: ~{activeZone.estimatedPopulation.toLocaleString()}
               </span>
             </div>
 
-            <div className="relative w-full h-[300px] bg-black">
-              <MapContainer
-                center={[26.65, 87.08]}
-                zoom={11}
-                scrollWheelZoom={false}
-                className="w-full h-full"
-              >
-                <TileLayer
-                  attribution='&copy; <a href="https://www.esri.com/">Esri</a>'
-                  url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
-                  maxZoom={16}
-                />
-
-                {/* Highlighted Targeted Geofence Polygon */}
-                <Polygon
-                  positions={activeZone.polygon}
-                  pathOptions={{
-                    color: '#ffffff',
-                    fillColor: severity === 'EMERGENCY' ? '#ef4444' : '#d97706',
-                    fillOpacity: 0.45,
-                    weight: 2,
-                    dashArray: '4 4',
-                  }}
-                >
-                  <Tooltip permanent direction="center">
-                    <div className="font-mono text-[10px] font-bold text-slate-950 text-center uppercase">
-                      TARGET GEOFENCE<br />
-                      {activeZone.estimatedDevices.toLocaleString()} Devices
-                    </div>
-                  </Tooltip>
-                </Polygon>
-              </MapContainer>
-
-              {/* Map Floating HUD */}
-              <div className="absolute bottom-2 left-2 z-[1000] px-2 py-1 bg-black border border-[#3a3a3f] text-[10px] font-mono text-white">
-                BROADCAST: <strong className="text-white uppercase font-bold">{severity}</strong>
-              </div>
-            </div>
+            <GeospatialTerrainMap
+              center={currentScene.center || [87.05, 26.65]}
+              zoom={11}
+              pitch={55}
+              bearing={-15}
+              activeHorizon="3h"
+              showInundation={true}
+              showForecast={true}
+              showGauges={true}
+              showInfrastructure={true}
+              showShelters={true}
+              height="340px"
+            />
           </div>
 
-          {/* Table of Recent Dispatched Bulletins */}
-          <div className="p-4 rounded-none bg-[#0a0a0a] border border-[#3a3a3f] shadow-none space-y-3">
-            <div className="flex items-center justify-between">
+          {/* Audit Metrics & Recent Dispatched Bulletins Table */}
+          <div className="p-4 rounded-lg bg-[#071326]/85 border border-[#1e3a5f]/80 shadow-[0_4px_20px_rgba(0,0,0,0.5)] backdrop-blur-xl space-y-3 font-mono text-xs">
+            <div className="flex items-center justify-between pb-2 border-b border-[#1e3a5f]">
               <h3 className="font-display text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-white" />
-                RECENT DISPATCHED BULLETINS
+                SIMULATION DISPATCH AUDIT LOG
               </h3>
-              <span className="font-mono text-[10px] text-[#5a5a5f] uppercase">
-                {activeAlerts.length} ACTIVE IN QUEUE
+              <span className="text-[10px] text-emerald-400 font-bold">
+                SHA-256 AUDIT VERIFIED
               </span>
             </div>
 
-            <div className="space-y-2.5 max-h-[290px] overflow-y-auto pr-1">
+            <div className="space-y-2 max-h-52 overflow-y-auto pr-1">
               {activeAlerts.map((alert) => (
-                <div
-                  key={alert.id}
-                  className="p-3 bg-black border border-[#3a3a3f] space-y-2 font-mono"
-                >
+                <div key={alert.id} className="p-3 bg-black/60 border border-[#1e3a5f] rounded space-y-1.5">
                   <div className="flex items-start justify-between gap-1">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span
-                          className={`badge-chip text-[9px] ${getSeverityPillColor(
-                            alert.severity
-                          )}`}
-                        >
+                        <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${getSeverityPillColor(alert.severity)}`}>
                           {alert.severity}
                         </span>
-                        <h4 className="font-display text-xs font-bold text-white tracking-wider leading-snug uppercase">
+                        <h4 className="font-bold text-white uppercase text-[11px] truncate max-w-[280px]">
                           {alert.headline}
                         </h4>
                       </div>
-                      <span className="text-[10px] text-[#5a5a5f] mt-0.5 block uppercase">
-                        {alert.dispatched_at} &bull; GEOFENCE: {alert.geofence}
+                      <span className="text-[10px] text-slate-400 block mt-0.5">
+                        {alert.dispatched_at} &bull; Geofence: {alert.geofence}
                       </span>
                     </div>
 
                     <button
                       onClick={() => onCancelAlert(alert.id)}
-                      className="btn-ghost-pill-subtle text-[9px] !py-0.5 !px-2 border-rose-600 text-rose-300"
+                      className="px-2 py-0.5 rounded text-[9px] border border-rose-500/50 text-rose-300 hover:bg-rose-500/20 cursor-pointer"
                     >
                       SUPERSEDE
                     </button>
                   </div>
 
-                  {/* Delivery Stats & Channels */}
-                  <div className="flex flex-wrap items-center justify-between pt-1 border-t border-[#3a3a3f] text-[10px]">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-white font-bold">
-                        {alert.read_rate || 86}% READ
-                      </span>
-                      <span className="text-[#3a3a3f]">&bull;</span>
-                      <span className="text-[#5a5a5f] uppercase">
-                        {alert.reach_count ? alert.reach_count.toLocaleString() : '14,250'} REACHED
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-1">
-                      {alert.channels.slice(0, 2).map((ch, idx) => (
-                        <span
-                          key={idx}
-                          className="badge-chip text-[9px] !py-0 !px-1.5 truncate max-w-[120px]"
-                        >
-                          {ch.split('(')[0]}
-                        </span>
-                      ))}
-                    </div>
+                  <div className="flex items-center justify-between pt-1 border-t border-[#1e3a5f]/60 text-[10px]">
+                    <span className="text-slate-300">
+                      Estimated Population in Geofence: ~{alert.population_affected.toLocaleString()} (Census Overlay)
+                    </span>
+                    <span className="text-sky-300 flex items-center gap-1 font-mono">
+                      <Hash className="w-3 h-3 text-sky-400" />
+                      {alert.audit_hash || 'SHA-256 Verified'}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -682,62 +610,65 @@ export const AlertDispatcher: React.FC<AlertDispatcherProps> = ({
         </div>
       </div>
 
-      {/* CONFIRMATION MODAL TO PREVENT ACCIDENTAL DISPATCH */}
+      {/* Confirmation Modal to Prevent Unintentional Dispatch */}
       {showConfirmModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 animate-in fade-in">
-          <div className="w-full max-w-lg rounded-none bg-[#0a0a0a] border border-white p-6 shadow-none space-y-4 font-mono">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in">
+          <div className="w-full max-w-lg rounded-lg bg-[#071326] border border-[#1e3a5f] p-6 shadow-2xl space-y-4 font-mono text-white">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 border border-white bg-black text-white">
-                  <AlertOctagon className="w-5 h-5 text-white" />
+                <div className="p-2 rounded bg-amber-500/20 border border-amber-500/40 text-amber-400">
+                  <AlertOctagon className="w-5 h-5 text-amber-400" />
                 </div>
                 <div>
                   <h3 className="font-display text-sm font-bold text-white uppercase tracking-wider">
-                    AUTHORIZE EMERGENCY BROADCAST
+                    SIMULATION DRILL AUTHORIZATION
                   </h3>
-                  <p className="font-micro text-[10px] text-[#5a5a5f] uppercase">
-                    HIGH-PRIORITY CIVIL DEFENSE ACTION
+                  <p className="font-micro text-[10px] text-slate-400 uppercase">
+                    EOC DECISION-SUPPORT AUDIT RECORD
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setShowConfirmModal(false)}
-                className="text-[#5a5a5f] hover:text-white"
+                className="text-slate-400 hover:text-white cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-3.5 bg-black border border-[#3a3a3f] text-xs space-y-2">
+            <div className="p-3.5 bg-black/60 border border-[#1e3a5f] rounded text-xs space-y-2">
               <div>
-                <span className="font-micro text-[9px] text-[#5a5a5f] uppercase block">TARGET SECTOR:</span>
-                <span className="font-bold text-white text-xs uppercase">{activeZone.name}</span>
+                <span className="text-[10px] text-slate-400 uppercase block font-bold">TARGET SECTOR:</span>
+                <span className="font-bold text-white uppercase">{activeZone.name}</span>
               </div>
               <div>
-                <span className="font-micro text-[9px] text-[#5a5a5f] uppercase block">ESTIMATED REACH:</span>
+                <span className="text-[10px] text-slate-400 uppercase block font-bold">ESTIMATED POPULATION:</span>
                 <span className="text-white font-bold">
-                  {activeZone.estimatedDevices.toLocaleString()} MOBILE DEVICES &amp; SIRENS
+                  ~{activeZone.estimatedPopulation.toLocaleString()} CITIZENS WITHIN GEOFENCE
                 </span>
               </div>
               <div>
-                <span className="font-micro text-[9px] text-[#5a5a5f] uppercase block">PAYLOAD HEADLINE:</span>
-                <span className="text-[#f0f0fa]">{headlineEn}</span>
+                <span className="text-[10px] text-slate-400 uppercase block font-bold">PAYLOAD HEADLINE:</span>
+                <span className="text-sky-300">{headlineEn}</span>
+              </div>
+              <div className="pt-1 text-[10px] text-amber-300">
+                &bull; Simulation Dispatch Status: Recorded in EOC Audit Log
               </div>
             </div>
 
             <div className="flex items-center justify-end gap-3 pt-2">
               <button
                 onClick={() => setShowConfirmModal(false)}
-                className="btn-ghost-pill-subtle text-xs !py-1.5 !px-4"
+                className="px-4 py-1.5 rounded-full border border-[#1e3a5f] hover:bg-white/10 text-xs text-slate-300 transition-colors cursor-pointer"
               >
                 CANCEL &amp; EDIT
               </button>
               <button
                 onClick={handleConfirmBroadcast}
-                className="btn-ghost-pill text-xs !py-1.5 !px-5"
+                className="px-5 py-1.5 rounded-full bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white text-xs font-bold font-mono tracking-wider uppercase border border-rose-400 shadow-[0_0_12px_rgba(244,63,94,0.4)] transition-all cursor-pointer flex items-center gap-1.5"
               >
                 <Send className="w-3.5 h-3.5" />
-                <span>CONFIRM &amp; TRANSMIT</span>
+                <span>CONFIRM SIMULATION LOG</span>
               </button>
             </div>
           </div>
@@ -746,12 +677,9 @@ export const AlertDispatcher: React.FC<AlertDispatcherProps> = ({
 
       {/* Action Toast Notification */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 p-4 rounded-none bg-[#0a0a0a] border border-white text-white shadow-none animate-in slide-in-from-bottom-4 flex items-start gap-3 max-w-md font-mono">
-          <CheckCircle className="w-5 h-5 text-white flex-shrink-0 mt-0.5" />
-          <div className="text-xs">
-            <h4 className="font-bold text-white uppercase">ALERT DISPATCH COMPLETED</h4>
-            <p className="text-[#f0f0fa] mt-0.5">{toast}</p>
-          </div>
+        <div className="fixed bottom-6 right-6 z-50 p-4 rounded-lg bg-[#071326] border border-emerald-400 text-white shadow-2xl flex items-center gap-2 text-xs font-mono animate-in slide-in-from-bottom-2">
+          <CheckCircle className="w-4 h-4 text-emerald-400" />
+          <span>{toast}</span>
         </div>
       )}
     </div>

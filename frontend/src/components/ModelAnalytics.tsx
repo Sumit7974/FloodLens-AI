@@ -1,25 +1,20 @@
-import React, { useState } from 'react';
-import {
-  MapContainer,
-  Polygon,
-  TileLayer,
-  Tooltip,
-} from 'react-leaflet';
+import React, { useState, useEffect } from 'react';
 import {
   AlertCircle,
-  AlertOctagon,
-  AlertTriangle,
   BrainCircuit,
   Check,
   CheckCircle,
-  CheckCircle2,
   Download,
   GitCommit,
   Layers,
+  LineChart,
   RefreshCw,
   Rocket,
   Sparkles,
 } from 'lucide-react';
+import { GeospatialTerrainMap } from './map/GeospatialTerrainMap';
+import { DataStatusBadge } from './common/DataStatusBadge';
+import { floodLensClient } from '../services/floodLensClient';
 import type { BenchmarkScene } from '../types';
 
 interface ModelAnalyticsProps {
@@ -36,19 +31,32 @@ export const ModelAnalytics: React.FC<ModelAnalyticsProps> = ({
   // Candidate vs Production view toggle
   const [selectedModel, setSelectedModel] = useState<'prod' | 'candidate'>('candidate');
 
-  // Benchmark dataset selector
-  const [datasetBenchmark, setDatasetBenchmark] = useState('koshi-2026-surge');
-
   // Layer toggles on map
   const [layers, setLayers] = useState({
-    predicted: true,
-    observed: true,
-    falseNegative: true,
+    truePositive: true,
     falsePositive: true,
+    falseNegative: true,
   });
 
   // Retraining Pipeline simulation state
   const [retrainingState, setRetrainingState] = useState<'READY' | 'RUNNING' | 'COMPLETE'>('COMPLETE');
+
+  // Client API / Mock Adapter State
+  const [evalStatus, setEvalStatus] = useState<'live' | 'cached' | 'error'>('cached');
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadEval = async () => {
+      const res = await floodLensClient.getModelEvaluation(currentScene.id);
+      if (isMounted) {
+        setEvalStatus(res.status);
+      }
+    };
+    loadEval();
+    return () => {
+      isMounted = false;
+    };
+  }, [currentScene.id]);
 
   // Confirmation modal for model deployment
   const [showDeployModal, setShowDeployModal] = useState(false);
@@ -67,17 +75,17 @@ export const ModelAnalytics: React.FC<ModelAnalyticsProps> = ({
 
   const handleTriggerRetraining = () => {
     setRetrainingState('RUNNING');
-    notify('INITIATED OFFLINE GRADIENT UPDATES & 10-FOLD CV...');
+    notify('Ingesting validation splits & running 10-fold cross validation...');
     setTimeout(() => {
       setRetrainingState('COMPLETE');
-      notify('RETRAINING COMPLETE: CANDIDATE MODEL v1.3-RC READY (82.4% IOU)');
-    }, 2500);
+      notify('Cross-validation complete: Candidate model v1.3-RC ready (82.4% IoU)');
+    }, 2000);
   };
 
   const handleConfirmDeploy = () => {
     onDeployModel('FloodLens-LSTM-GNN v1.3-RC');
     setShowDeployModal(false);
-    notify('MODEL v1.3-RC PROMOTED TO ACTIVE PRODUCTION CHECKPOINT');
+    notify('Model v1.3-RC promoted: Updated local inference parameters in backend container');
   };
 
   const handleExportReport = () => {
@@ -86,7 +94,10 @@ export const ModelAnalytics: React.FC<ModelAnalyticsProps> = ({
       evaluationTimestamp: new Date().toISOString(),
       productionModel: deployedModelVersion,
       candidateModel: 'FloodLens-LSTM-GNN v1.3-RC',
-      metrics: {
+      mathematical_metrics: {
+        iou_formula: 'IoU = |P ∩ G| / |P ∪ G|',
+        precision_formula: 'Precision = |P ∩ G| / |P|',
+        recall_formula: 'Recall = |P ∩ G| / |G|',
         iou_production: '73.1%',
         iou_candidate: '82.4%',
         iou_gain: '+9.3%',
@@ -102,6 +113,7 @@ export const ModelAnalytics: React.FC<ModelAnalyticsProps> = ({
         'Localized micro-topography culvert blockage in Ward 7',
       ],
       datasetSensors: 'Sentinel-1 SAR + Sentinel-2 NDWI + 12 Telemetry Gauges',
+      note: 'Parameters evaluated on 2017-2024 Terai monsoon validation splits. Deployment updates local inference weights in the backend container.',
     };
 
     const blob = new Blob([JSON.stringify(reportData, null, 2)], {
@@ -116,62 +128,23 @@ export const ModelAnalytics: React.FC<ModelAnalyticsProps> = ({
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    notify('MODEL EVALUATION & RETRAINING AUDIT REPORT DOWNLOADED (JSON)');
+    notify('Model evaluation & retraining audit report downloaded (JSON)');
   };
 
-  // Polygon layers for Spatial Comparison Map
-  // 1. Original Predicted Extent (+6h Forecast)
-  const predictedPolygon: [number, number][] = [
-    [26.90, 87.17],
-    [26.85, 87.23],
-    [26.78, 87.21],
-    [26.70, 87.18],
-    [26.62, 87.14],
-    [26.54, 87.09],
-    [26.46, 87.01],
-    [26.44, 86.89],
-    [26.51, 86.84],
-    [26.64, 86.88],
-    [26.73, 86.93],
-    [26.82, 87.00],
-    [26.90, 87.08],
-  ];
-
-  // 2. Actual Observed Flood Extent (Ground Truth from Satellite)
-  const observedPolygon: [number, number][] = [
-    [26.88, 87.16],
-    [26.84, 87.21],
-    [26.76, 87.19],
-    [26.68, 87.16],
-    [26.60, 87.11],
-    [26.52, 87.05],
-    [26.47, 86.99],
-    [26.48, 86.92],
-    [26.55, 86.89],
-    [26.66, 86.91],
-    [26.74, 86.95],
-    [26.83, 87.02],
-    [26.88, 87.10],
-  ];
-
-  // 3. False Negative (Missed Flood Zone near Spur 12+400)
-  const falseNegativePolygon: [number, number][] = [
-    [26.61, 87.05],
-    [26.57, 87.08],
-    [26.52, 87.04],
-    [26.55, 86.99],
-  ];
-
-  // 4. False Positive (Over-predicted Dry Area in East Highlands)
-  const falsePositivePolygon: [number, number][] = [
-    [26.79, 87.20],
-    [26.83, 87.23],
-    [26.86, 87.22],
-    [26.81, 87.18],
+  // Precision-Recall Curve points for 2026 Koshi Basin verification dataset
+  const precisionRecallCurve = [
+    { threshold: 0.1, recall: 0.98, precision: 0.65 },
+    { threshold: 0.2, recall: 0.95, precision: 0.74 },
+    { threshold: 0.3, recall: 0.93, precision: 0.81 },
+    { threshold: 0.4, recall: 0.91, precision: 0.85 },
+    { threshold: 0.5, recall: 0.89, precision: 0.88 }, // Operational point
+    { threshold: 0.6, recall: 0.84, precision: 0.91 },
+    { threshold: 0.7, recall: 0.78, precision: 0.94 },
+    { threshold: 0.8, recall: 0.68, precision: 0.97 },
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 font-mono">
       {/* 1. TOP HEADER & MODEL VERSION CONTROLS */}
       <div className="p-4 rounded-lg bg-[#071326]/85 border border-[#1e3a5f]/80 shadow-[0_4px_20px_rgba(0,0,0,0.5)] backdrop-blur-xl space-y-3.5">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
@@ -181,15 +154,16 @@ export const ModelAnalytics: React.FC<ModelAnalyticsProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="font-display text-lg font-bold text-white uppercase tracking-wider">
-                  Model Analytics &amp; Closed-Loop AI Retraining
+                <h1 className="font-display text-base font-bold text-white uppercase tracking-wider">
+                  Model Analytics &amp; Spatial Verification Engine
                 </h1>
-                <span className="px-2 py-0.5 rounded-full bg-indigo-500/15 border border-indigo-500/40 text-indigo-300 text-[9px] font-mono font-bold tracking-wider">
-                  EVIDENCE-BASED AUDIT
+                <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/15 border border-indigo-500/40 text-indigo-300 text-[10px] font-mono font-bold tracking-wider">
+                  [HISTORICAL BENCHMARK EVALUATION — 2026 KOSHI SURGE]
                 </span>
+                <DataStatusBadge status={evalStatus} />
               </div>
               <p className="font-mono text-xs text-[#38bdf8] uppercase tracking-wide mt-0.5 font-semibold">
-                Ground-truth spatial alignment &bull; IoU evaluation &bull; Continuous checkpoint deployment
+                Ground-truth spatial alignment &bull; IoU evaluation &bull; Offline parameter promotion
               </p>
             </div>
           </div>
@@ -200,19 +174,19 @@ export const ModelAnalytics: React.FC<ModelAnalyticsProps> = ({
               onClick={() => setSelectedModel('prod')}
               className={`flex items-center gap-1.5 px-3 py-1 rounded-full font-bold uppercase tracking-wider transition-colors cursor-pointer ${
                 selectedModel === 'prod'
-                  ? 'bg-gradient-to-r from-sky-600 to-blue-600 text-white font-display shadow-[0_0_10px_rgba(14,165,233,0.4)]'
+                  ? 'bg-gradient-to-r from-sky-600 to-blue-600 text-white shadow-[0_0_10px_rgba(14,165,233,0.4)]'
                   : 'text-[#94a3b8] hover:text-white'
               }`}
             >
               <GitCommit className="w-3.5 h-3.5 text-sky-300" />
-              <span>PRODUCTION ({deployedModelVersion.split(' ')[1] || 'v1.2'})</span>
+              <span>ACTIVE PRODUCTION ({deployedModelVersion.split(' ')[1] || 'v1.2'})</span>
             </button>
 
             <button
               onClick={() => setSelectedModel('candidate')}
               className={`flex items-center gap-1.5 px-3 py-1 rounded-full font-bold uppercase tracking-wider transition-colors cursor-pointer ${
                 selectedModel === 'candidate'
-                  ? 'bg-gradient-to-r from-[#e86e25] to-[#f97316] text-white font-display shadow-[0_0_10px_rgba(232,110,37,0.4)]'
+                  ? 'bg-gradient-to-r from-[#e86e25] to-[#f97316] text-white shadow-[0_0_10px_rgba(232,110,37,0.4)]'
                   : 'text-[#94a3b8] hover:text-white'
               }`}
             >
@@ -221,459 +195,280 @@ export const ModelAnalytics: React.FC<ModelAnalyticsProps> = ({
             </button>
           </div>
         </div>
-
-        {/* Dataset Benchmark Selector & Calibration Badge */}
-        <div className="flex flex-wrap items-center justify-between gap-2.5 pt-3 border-t border-[#3a3a3f] text-xs">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="font-micro uppercase tracking-wider text-[#888890]">
-              Evaluation Dataset:
-            </span>
-            <select
-              value={datasetBenchmark}
-              onChange={(e) => setDatasetBenchmark(e.target.value)}
-              className="bg-black border border-[#3a3a3f] px-3 py-1 text-xs text-white uppercase tracking-wide focus:border-white focus:outline-none font-mono"
-            >
-              <option value="koshi-2026-surge">
-                {currentScene.name} &bull; {currentScene.region} (Ground Truth Calibrated)
-              </option>
-              <option value="koshi-monsoon-2024">
-                Koshi Monsoon Replay - July 2024 (Historical Calibrated)
-              </option>
-              <option value="narayani-flash-2025">
-                Gandaki / Narayani Flash Surge (Cross-Basin Transfer Test)
-              </option>
-            </select>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <div className="badge-chip border-white text-white">
-              <CheckCircle2 className="w-3 h-3 text-white" />
-              <span>OBSERVED GROUND TRUTH CALIBRATED // SENTINEL-1 SAR + SENTINEL-2 NDWI</span>
-            </div>
-          </div>
-        </div>
       </div>
 
-      {/* 2. TOP METRICS MATRIX (5 Cards - Pure Monochrome Surfaces) */}
+      {/* 2. FORMAL MATHEMATICAL EVALUATION METRICS STRIP */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        {/* Metric 1: IoU */}
-        <div className="p-3.5 bg-[#0a0a0a] border border-[#3a3a3f] space-y-1">
-          <span className="font-micro uppercase tracking-wider text-[#888890] block">
+        {/* Metric 1: Intersection over Union */}
+        <div className="p-3.5 bg-[#071326]/85 border border-[#1e3a5f] rounded-lg space-y-1">
+          <span className="text-[10px] uppercase tracking-wider text-slate-400 block font-bold">
             Intersection Over Union (IoU)
           </span>
-          <div className="font-display text-3xl font-bold text-white tracking-wider flex items-baseline gap-1.5">
-            82.4%
-            <span className="font-mono text-xs text-white">+9.3%</span>
+          <div className="font-display text-2xl lg:text-3xl font-bold text-white tracking-wider flex items-baseline gap-1">
+            <span>{selectedModel === 'candidate' ? '82.4%' : '73.1%'}</span>
+            <span className="text-[11px] text-emerald-400 font-normal">
+              {selectedModel === 'candidate' ? '+9.3%' : 'baseline'}
+            </span>
           </div>
-          <p className="font-mono text-[10px] text-[#888890] uppercase">Baseline v1.2: 73.1%</p>
+          <p className="text-[10px] text-sky-300 font-mono">IoU = |P ∩ G| / |P ∪ G|</p>
         </div>
 
-        {/* Metric 2: Precision */}
-        <div className="p-3.5 bg-[#0a0a0a] border border-[#3a3a3f] space-y-1">
-          <span className="font-micro uppercase tracking-wider text-[#888890] block">
+        {/* Metric 2: Spatial Precision */}
+        <div className="p-3.5 bg-[#071326]/85 border border-[#1e3a5f] rounded-lg space-y-1">
+          <span className="text-[10px] uppercase tracking-wider text-slate-400 block font-bold">
             Spatial Precision
           </span>
-          <div className="font-display text-3xl font-bold text-white tracking-wider">
-            87.6%
+          <div className="font-display text-2xl lg:text-3xl font-bold text-white tracking-wider">
+            {selectedModel === 'candidate' ? '87.6%' : '78.2%'}
           </div>
-          <p className="font-mono text-[10px] text-[#888890] uppercase">Low false alarms</p>
+          <p className="text-[10px] text-slate-400 uppercase font-mono">Precision = |P ∩ G| / |P|</p>
         </div>
 
-        {/* Metric 3: Recall */}
-        <div className="p-3.5 bg-[#0a0a0a] border border-[#3a3a3f] space-y-1">
-          <span className="font-micro uppercase tracking-wider text-[#888890] block">
+        {/* Metric 3: Spatial Recall */}
+        <div className="p-3.5 bg-[#071326]/85 border border-[#1e3a5f] rounded-lg space-y-1">
+          <span className="text-[10px] uppercase tracking-wider text-slate-400 block font-bold">
             Spatial Recall
           </span>
-          <div className="font-display text-3xl font-bold text-white tracking-wider">
-            89.1%
+          <div className="font-display text-2xl lg:text-3xl font-bold text-white tracking-wider">
+            {selectedModel === 'candidate' ? '89.1%' : '79.5%'}
           </div>
-          <p className="font-mono text-[10px] text-[#888890] uppercase">High flood detection</p>
+          <p className="text-[10px] text-slate-400 uppercase font-mono">Recall = |P ∩ G| / |G|</p>
         </div>
 
-        {/* Metric 4: False Alarm Area */}
-        <div className="p-3.5 bg-[#0a0a0a] border border-[#3a3a3f] space-y-1">
-          <span className="font-micro uppercase tracking-wider text-[#888890] block">
-            False Alarm Area
+        {/* Metric 4: False Positive Area */}
+        <div className="p-3.5 bg-[#071326]/85 border border-[#1e3a5f] rounded-lg space-y-1">
+          <span className="text-[10px] uppercase tracking-wider text-slate-400 block font-bold">
+            False Positive Area (FP)
           </span>
-          <div className="font-display text-3xl font-bold text-white tracking-wider">
-            4.8 <span className="text-xs font-normal text-[#888890]">KM²</span>
+          <div className="font-display text-2xl lg:text-3xl font-bold text-amber-300 tracking-wider">
+            4.8 <span className="text-xs font-normal text-slate-400">KM²</span>
           </div>
-          <p className="font-mono text-[10px] text-[#888890] uppercase">Over-predicted dry land</p>
+          <p className="text-[10px] text-slate-400 uppercase">Over-predicted dry land</p>
         </div>
 
-        {/* Metric 5: Missed Inundation */}
-        <div className="p-3.5 bg-[#0a0a0a] border border-[#3a3a3f] space-y-1 col-span-2 md:col-span-1">
-          <span className="font-micro uppercase tracking-wider text-[#888890] block">
-            Missed Inundation
+        {/* Metric 5: False Negative Area */}
+        <div className="p-3.5 bg-[#071326]/85 border border-[#1e3a5f] rounded-lg space-y-1 col-span-2 md:col-span-1">
+          <span className="text-[10px] uppercase tracking-wider text-slate-400 block font-bold">
+            False Negative Area (FN)
           </span>
-          <div className="font-display text-3xl font-bold text-white tracking-wider">
-            5.6 <span className="text-xs font-normal text-[#888890]">KM²</span>
+          <div className="font-display text-2xl lg:text-3xl font-bold text-rose-400 tracking-wider">
+            5.6 <span className="text-xs font-normal text-slate-400">KM²</span>
           </div>
-          <p className="font-mono text-[10px] text-[#888890] uppercase">Under-predicted fringe</p>
+          <p className="text-[10px] text-slate-400 uppercase">Missed inundation fringe</p>
         </div>
       </div>
 
-      {/* 3. MAIN 2-COLUMN LAYOUT: SPATIAL MAP VS RETRAINING ENGINE */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-        {/* LEFT COLUMN: PREDICTION VS OBSERVED SPATIAL COMPARISON MAP (7 cols on lg/xl) */}
-        <div className="lg:col-span-7 flex flex-col bg-[#0a0a0a] border border-[#3a3a3f] overflow-hidden">
-          {/* Map Controls & Layer Toggles Bar */}
-          <div className="p-3 border-b border-[#3a3a3f] bg-black flex flex-wrap items-center justify-between gap-2 text-xs">
-            <span className="font-micro uppercase tracking-wider text-[#888890] flex items-center gap-1.5">
+      {/* 3. MAIN 2-COLUMN LAYOUT: SPATIAL MAP VS RETRAINING PIPELINE */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-start">
+        {/* LEFT COLUMN: 3D SPATIAL VERIFICATION MAP (7 cols on lg/xl) */}
+        <div className="lg:col-span-7 flex flex-col space-y-2">
+          {/* Spatial Layer Toggles */}
+          <div className="p-3 rounded-lg bg-[#071326]/85 border border-[#1e3a5f]/80 flex flex-wrap items-center justify-between gap-2 text-xs">
+            <span className="text-[10px] uppercase text-slate-400 font-bold flex items-center gap-1.5">
               <Layers className="w-3.5 h-3.5 text-white" />
-              Spatial Layers:
+              Spatial Verification Layers:
             </span>
 
             <div className="flex flex-wrap items-center gap-1.5">
-              {/* Predicted Layer */}
               <button
-                onClick={() => toggleLayer('predicted')}
-                className={`btn-ghost-pill-subtle text-[11px] py-1 px-2.5 flex items-center gap-1.5 ${
-                  layers.predicted
-                    ? 'border-white text-white bg-white/10'
-                    : 'text-[#888890]'
+                onClick={() => toggleLayer('truePositive')}
+                className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-bold flex items-center gap-1.5 border cursor-pointer ${
+                  layers.truePositive
+                    ? 'bg-cyan-500/20 border-cyan-400 text-cyan-200'
+                    : 'bg-black/40 border-[#1e3a5f] text-slate-400'
                 }`}
               >
-                <span className="w-2.5 h-0.5 bg-yellow-400 border-b border-dashed border-white"></span>
-                <span>PREDICTED (+6H)</span>
+                <span className="w-2 h-2 rounded-full bg-cyan-400"></span>
+                <span>TRUE POSITIVE (MATCH)</span>
               </button>
 
-              {/* Observed Satellite */}
-              <button
-                onClick={() => toggleLayer('observed')}
-                className={`btn-ghost-pill-subtle text-[11px] py-1 px-2.5 flex items-center gap-1.5 ${
-                  layers.observed
-                    ? 'border-white text-white bg-white/10'
-                    : 'text-[#888890]'
-                }`}
-              >
-                <span className="w-2.5 h-2.5 rounded-full bg-cyan-500 border border-cyan-400"></span>
-                <span>OBSERVED (SAR)</span>
-              </button>
-
-              {/* Missed Flood Zone (False Negative) */}
-              <button
-                onClick={() => toggleLayer('falseNegative')}
-                className={`btn-ghost-pill-subtle text-[11px] py-1 px-2.5 flex items-center gap-1.5 ${
-                  layers.falseNegative
-                    ? 'border-white text-white bg-white/10'
-                    : 'text-[#888890]'
-                }`}
-              >
-                <span className="w-2.5 h-2.5 rounded-full bg-rose-600 border border-rose-400"></span>
-                <span>MISSED (FN)</span>
-              </button>
-
-              {/* False Positive (Over-predicted) */}
               <button
                 onClick={() => toggleLayer('falsePositive')}
-                className={`btn-ghost-pill-subtle text-[11px] py-1 px-2.5 flex items-center gap-1.5 ${
+                className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-bold flex items-center gap-1.5 border cursor-pointer ${
                   layers.falsePositive
-                    ? 'border-white text-white bg-white/10'
-                    : 'text-[#888890]'
+                    ? 'bg-amber-500/20 border-amber-400 text-amber-200'
+                    : 'bg-black/40 border-[#1e3a5f] text-slate-400'
                 }`}
               >
-                <span className="w-2.5 h-2.5 rounded-full bg-amber-600 border border-amber-400"></span>
-                <span>OVER-PREDICTED (FP)</span>
+                <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+                <span>FALSE POSITIVE (OVER-PREDICTED)</span>
+              </button>
+
+              <button
+                onClick={() => toggleLayer('falseNegative')}
+                className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-bold flex items-center gap-1.5 border cursor-pointer ${
+                  layers.falseNegative
+                    ? 'bg-rose-500/20 border-rose-400 text-rose-200'
+                    : 'bg-black/40 border-[#1e3a5f] text-slate-400'
+                }`}
+              >
+                <span className="w-2 h-2 rounded-full bg-rose-400"></span>
+                <span>FALSE NEGATIVE (MISSED)</span>
               </button>
             </div>
           </div>
 
-          {/* Leaflet Spatial Comparison Map Canvas */}
-          <div className="relative w-full h-[500px] bg-black">
-            <MapContainer
-              center={[26.68, 87.08]}
-              zoom={10}
-              scrollWheelZoom={true}
-              className="w-full h-full"
-            >
-              <TileLayer
-                attribution='&copy; <a href="https://www.esri.com/">Esri</a>'
-                url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
-                maxZoom={16}
-              />
-
-              {/* 1. Original Predicted Extent (+6h Forecast) - Yellow Dashed Border */}
-              {layers.predicted && (
-                <Polygon
-                  positions={predictedPolygon}
-                  pathOptions={{
-                    color: '#eab308',
-                    fillColor: '#ca8a04',
-                    fillOpacity: 0.15,
-                    weight: 2,
-                    dashArray: '6 6',
-                  }}
-                >
-                  <Tooltip sticky>
-                    <div className="p-1 font-mono text-xs">
-                      <strong className="text-yellow-400 font-bold block uppercase">Original Predicted Boundary</strong>
-                      <span className="text-[10px] text-slate-700">LSTM-GNN BASELINE (+6H HORIZON)</span>
-                    </div>
-                  </Tooltip>
-                </Polygon>
-              )}
-
-              {/* 2. Actual Observed Flood Extent from Satellite - Cyan Filled Mask */}
-              {layers.observed && (
-                <Polygon
-                  positions={observedPolygon}
-                  pathOptions={{
-                    color: '#06b6d4',
-                    fillColor: '#0891b2',
-                    fillOpacity: 0.45,
-                    weight: 1.5,
-                  }}
-                >
-                  <Tooltip sticky>
-                    <div className="p-1 font-mono text-xs">
-                      <strong className="text-cyan-700 font-bold block uppercase">Observed Satellite Extent</strong>
-                      <span className="text-[10px] text-slate-700">SENTINEL-1 SAR + SENTINEL-2 GROUND TRUTH</span>
-                    </div>
-                  </Tooltip>
-                </Polygon>
-              )}
-
-              {/* 3. False Negative: Missed Inundation Zone (Red Hatched) */}
-              {layers.falseNegative && (
-                <Polygon
-                  positions={falseNegativePolygon}
-                  pathOptions={{
-                    color: '#ef4444',
-                    fillColor: '#dc2626',
-                    fillOpacity: 0.7,
-                    weight: 2,
-                  }}
-                >
-                  <Tooltip sticky>
-                    <div className="p-1 font-mono text-xs">
-                      <strong className="text-rose-700 font-bold block uppercase">Missed Flood Zone (False Negative)</strong>
-                      <span className="text-[10px] text-slate-700">AREA: 5.6 KM² &bull; EMBANKMENT BREACH SPILLWAY</span>
-                    </div>
-                  </Tooltip>
-                </Polygon>
-              )}
-
-              {/* 4. False Positive: False Alarm Zone (Orange Dashed) */}
-              {layers.falsePositive && (
-                <Polygon
-                  positions={falsePositivePolygon}
-                  pathOptions={{
-                    color: '#f97316',
-                    fillColor: '#ea580c',
-                    fillOpacity: 0.65,
-                    weight: 2,
-                    dashArray: '4 4',
-                  }}
-                >
-                  <Tooltip sticky>
-                    <div className="p-1 font-mono text-xs">
-                      <strong className="text-amber-700 font-bold block uppercase">False Alarm (False Positive)</strong>
-                      <span className="text-[10px] text-slate-700">AREA: 4.8 KM² &bull; ELEVATED LEVEE REMAINED DRY</span>
-                    </div>
-                  </Tooltip>
-                </Polygon>
-              )}
-            </MapContainer>
-
-            {/* Tactical Legend Floating HUD */}
-            <div className="absolute bottom-3 left-3 z-[1000] p-3 bg-black/95 border border-[#3a3a3f] text-[10px] space-y-1.5 shadow-none">
-              <span className="font-micro uppercase tracking-wider text-[#888890] block -mb-0.5">
-                Evaluation Overlay
-              </span>
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-2 bg-cyan-500/70 border border-cyan-400"></span>
-                <span className="font-mono text-[#f0f0fa] uppercase">Match (True Positive: 82.4% IoU)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-2 bg-rose-600 border border-rose-400"></span>
-                <span className="font-mono text-[#f0f0fa] uppercase">Missed Inundation (FN: 5.6 km²)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-2 bg-amber-600 border border-amber-400"></span>
-                <span className="font-mono text-[#f0f0fa] uppercase">Over-predicted (FP: 4.8 km²)</span>
-              </div>
-            </div>
-          </div>
+          {/* 3D Map Component */}
+          <GeospatialTerrainMap
+            center={currentScene.center || [87.05, 26.65]}
+            zoom={11}
+            pitch={55}
+            bearing={-15}
+            activeHorizon="3h"
+            showInundation={layers.truePositive}
+            showForecast={layers.falsePositive}
+            showGauges={true}
+            showInfrastructure={true}
+            showShelters={true}
+            height="520px"
+          />
         </div>
 
-        {/* RIGHT COLUMN: ERROR ANALYSIS & RETRAINING ENGINE (5 cols on lg/xl) */}
-        <div className="lg:col-span-5 space-y-4">
-          {/* Spatial Error Diagnostic Card */}
-          <div className="p-4 bg-[#0a0a0a] border border-[#3a3a3f] space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="font-display text-sm font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-                <AlertCircle className="w-4 h-4 text-white" />
-                Root-Cause Spatial Error Diagnostics
+        {/* RIGHT COLUMN: PRECISION-RECALL CURVE & CANDIDATE MODEL PIPELINE (5 cols) */}
+        <div className="lg:col-span-5 space-y-3.5">
+          {/* Precision-Recall Curve Chart */}
+          <div className="p-4 rounded-lg bg-[#071326]/85 border border-[#1e3a5f]/80 shadow-[0_4px_20px_rgba(0,0,0,0.5)] backdrop-blur-xl space-y-2.5 text-xs">
+            <div className="flex items-center justify-between pb-1.5 border-b border-[#1e3a5f]">
+              <h3 className="font-display text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                <LineChart className="w-4 h-4 text-sky-400" />
+                PRECISION-RECALL CURVE (2026 KOSHI VALIDATION)
               </h3>
-              <span className="font-mono text-[10px] text-[#888890] uppercase">
-                2 DISCREPANCIES
-              </span>
+              <span className="text-[10px] text-sky-300 font-mono">AUC: 0.912</span>
             </div>
 
-            <div className="space-y-2 text-xs">
-              <div className="p-3 bg-black border border-[#3a3a3f] space-y-1">
-                <div className="flex items-center gap-1.5 font-bold uppercase text-white font-display text-xs">
-                  <AlertOctagon className="w-3.5 h-3.5 text-white" />
-                  <span>Embankment Breach at Spur km 12+400</span>
-                </div>
-                <p className="text-[11px] text-[#a0a0aa] leading-snug">
-                  Baseline 1D hydrodynamic model failed to account for levee overtopping breach, causing 5.6 km² of under-predicted inundation across Prakashpur lowlands.
-                </p>
-                <span className="font-mono text-[10px] text-white block pt-0.5 uppercase">
-                  Fix: Coupled shallow-water 2D mesh with breach trigger.
-                </span>
+            {/* Simulated Coordinate Graph */}
+            <div className="p-2.5 bg-black/60 rounded border border-[#1e3a5f] space-y-2">
+              <div className="h-28 flex items-end justify-between gap-1 pt-2 pb-1 border-b border-l border-slate-700 px-2">
+                {precisionRecallCurve.map((pt, idx) => {
+                  const h = Math.round(pt.precision * 100);
+                  const isOpt = pt.threshold === 0.5;
+                  return (
+                    <div key={idx} className="flex flex-col items-center gap-1 h-full justify-end flex-1">
+                      <span className="text-[8px] text-slate-400">{Math.round(pt.precision * 100)}%</span>
+                      <div
+                        className={`w-full rounded-xs transition-all ${
+                          isOpt ? 'bg-sky-400 shadow-[0_0_8px_#38bdf8]' : 'bg-[#1e3a5f]'
+                        }`}
+                        style={{ height: `${h}%` }}
+                      />
+                      <span className={`text-[8px] ${isOpt ? 'text-sky-300 font-bold' : 'text-slate-400'}`}>
+                        {pt.recall.toFixed(2)}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
-
-              <div className="p-3 bg-black border border-[#3a3a3f] space-y-1">
-                <div className="flex items-center gap-1.5 font-bold uppercase text-white font-display text-xs">
-                  <AlertTriangle className="w-3.5 h-3.5 text-white" />
-                  <span>Micro-Topography Culvert Blockage in Ward 7</span>
-                </div>
-                <p className="text-[11px] text-[#a0a0aa] leading-snug">
-                  Unmodeled road embankment culvert obstruction prevented backflow drainage, causing 4.8 km² false alarm discrepancy.
-                </p>
-                <span className="font-mono text-white text-[10px] block pt-0.5 uppercase">
-                  Fix: Ingested high-resolution 5m DEM micro-drainage layer.
-                </span>
+              <div className="flex justify-between text-[10px] text-slate-400 px-2">
+                <span>RECALL &rarr;</span>
+                <span className="text-sky-400 font-bold">&bull; Optimal Threshold: 0.50 (Recall 0.89 / Prec 0.88)</span>
               </div>
             </div>
           </div>
 
-          {/* Retraining Pipeline Stepper Card */}
-          <div className="p-4 bg-[#0a0a0a] border border-[#3a3a3f] space-y-3.5">
-            <div className="flex items-center justify-between">
+          {/* Candidate Model Pipeline & Ethical Guardrail Disclaimer */}
+          <div className="p-4 rounded-lg bg-[#071326]/85 border border-[#1e3a5f]/80 shadow-[0_4px_20px_rgba(0,0,0,0.5)] backdrop-blur-xl space-y-3 text-xs">
+            <div className="flex items-center justify-between pb-2 border-b border-[#1e3a5f]">
               <div>
-                <span className="font-micro uppercase tracking-wider text-[#888890] flex items-center gap-1">
-                  <BrainCircuit className="w-3.5 h-3.5 text-white" />
-                  Automated Closed-Loop Pipeline
+                <span className="text-[10px] text-slate-400 uppercase block font-bold">
+                  Candidate Model Pipeline
                 </span>
-                <h3 className="font-display text-sm font-bold text-white uppercase tracking-wider mt-0.5">
-                  Candidate Retraining: v1.3-RC Checkpoint
+                <h3 className="font-bold text-white text-sm uppercase">
+                  FloodLens-LSTM-GNN v1.3-RC
                 </h3>
               </div>
 
               <button
                 onClick={handleTriggerRetraining}
                 disabled={retrainingState === 'RUNNING'}
-                className="btn-ghost-pill-subtle text-[11px] py-1 px-3 flex items-center gap-1.5"
+                className="px-2.5 py-1 rounded bg-black/60 border border-[#1e3a5f] text-slate-300 hover:text-white text-[10px] flex items-center gap-1 cursor-pointer"
               >
                 <RefreshCw className={`w-3 h-3 ${retrainingState === 'RUNNING' ? 'animate-spin' : ''}`} />
-                <span>{retrainingState === 'RUNNING' ? 'TRAINING...' : 'RE-RUN RETRAIN'}</span>
+                <span>{retrainingState === 'RUNNING' ? 'EVALUATING...' : 'CROSS-VALIDATE'}</span>
               </button>
             </div>
 
-            {/* Stepper Status Indicators */}
-            <div className="grid grid-cols-5 gap-1.5 text-[9px] font-mono text-center pt-1 uppercase">
-              <div className="p-1.5 border border-[#3a3a3f] bg-black text-[#888890]">
-                1. INGEST
-              </div>
-              <div className="p-1.5 border border-[#3a3a3f] bg-black text-[#888890]">
-                2. RE-WEIGHT
-              </div>
-              <div className="p-1.5 border border-[#3a3a3f] bg-black text-[#888890]">
-                3. GRADIENTS
-              </div>
-              <div className="p-1.5 border border-[#3a3a3f] bg-black text-[#888890]">
-                4. 10-FOLD CV
-              </div>
-              <div className="p-1.5 border border-white bg-black text-white font-bold">
-                5. READY
-              </div>
+            {/* Parameter Scope Note */}
+            <div className="p-3 bg-black/60 border border-amber-500/40 rounded text-[11px] text-amber-200/90 leading-relaxed">
+              <strong className="text-amber-300 block mb-1 flex items-center gap-1">
+                <AlertCircle className="w-3.5 h-3.5" />
+                Inference Weight Parameter Update:
+              </strong>
+              Clicking &ldquo;Promote Candidate Model&rdquo; updates local inference weighting parameters in the backend container based on evaluated validation splits (not fictitious real-time self-training).
             </div>
 
-            {/* Comparative Metric Bars (Baseline vs Candidate) */}
-            <div className="space-y-2.5 pt-2 border-t border-[#3a3a3f] text-xs">
-              {/* Metric 1: Inundation IoU */}
-              <div className="space-y-1">
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="font-micro uppercase tracking-wider text-[#888890]">Inundation IoU:</span>
-                  <span className="font-mono text-white font-bold">
-                    73.1% &rarr; 82.4% (+9.3%)
-                  </span>
-                </div>
-                <div className="w-full h-1.5 bg-black border border-[#3a3a3f] overflow-hidden flex">
-                  <div className="bg-[#5a5a5f] h-full" style={{ width: '73.1%' }}></div>
-                  <div className="bg-white h-full" style={{ width: '9.3%' }}></div>
-                </div>
-              </div>
+            {/* Stepper Status Indicators */}
+            <div className="grid grid-cols-5 gap-1 text-[9px] font-mono text-center uppercase">
+              <div className="p-1 rounded bg-black/60 border border-slate-700 text-slate-400">1. Ingest</div>
+              <div className="p-1 rounded bg-black/60 border border-slate-700 text-slate-400">2. Re-weight</div>
+              <div className="p-1 rounded bg-black/60 border border-slate-700 text-slate-400">3. Gradients</div>
+              <div className="p-1 rounded bg-black/60 border border-slate-700 text-slate-400">4. 10-Fold CV</div>
+              <div className="p-1 rounded bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 font-bold">5. Ready</div>
+            </div>
 
-              {/* Metric 2: Peak Crest Arrival Error */}
-              <div className="space-y-1">
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="font-micro uppercase tracking-wider text-[#888890]">Peak Arrival Error:</span>
-                  <span className="font-mono text-white font-bold">
-                    &plusmn;45m &rarr; &plusmn;12m
-                  </span>
-                </div>
-                <div className="w-full h-1.5 bg-black border border-[#3a3a3f] overflow-hidden flex">
-                  <div className="bg-white h-full" style={{ width: '78%' }}></div>
-                </div>
+            {/* Comparative Gains */}
+            <div className="space-y-1.5 pt-1 text-[11px]">
+              <div className="flex justify-between">
+                <span className="text-slate-400">Inundation IoU Gain:</span>
+                <span className="text-emerald-300 font-bold">73.1% &rarr; 82.4% (+9.3%)</span>
               </div>
-
-              {/* Metric 3: Breach Sensitivity */}
-              <div className="space-y-1">
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="font-micro uppercase tracking-wider text-[#888890]">Breach Sensitivity:</span>
-                  <span className="font-mono text-white font-bold">
-                    61% &rarr; 91% (+30%)
-                  </span>
-                </div>
-                <div className="w-full h-1.5 bg-black border border-[#3a3a3f] overflow-hidden flex">
-                  <div className="bg-[#5a5a5f] h-full" style={{ width: '61%' }}></div>
-                  <div className="bg-white h-full" style={{ width: '30%' }}></div>
-                </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Peak Crest Arrival Error:</span>
+                <span className="text-emerald-300 font-bold">&plusmn;45m &rarr; &plusmn;12m</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Breach Sensitivity:</span>
+                <span className="text-emerald-300 font-bold">61% &rarr; 91% (+30%)</span>
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="pt-3 border-t border-[#3a3a3f] space-y-2">
+            <div className="pt-2 border-t border-[#1e3a5f] space-y-2">
               <button
                 onClick={() => setShowDeployModal(true)}
-                className="btn-ghost-pill w-full flex items-center justify-center gap-2 py-2 text-xs"
+                className="w-full py-2 px-3 rounded-full bg-gradient-to-r from-[#e86e25] to-[#f97316] hover:from-[#d15d18] hover:to-[#ea580c] text-white font-bold text-xs uppercase tracking-wider border border-[#ff9d5c] shadow-[0_0_12px_rgba(232,110,37,0.4)] transition-all cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <Rocket className="w-3.5 h-3.5" />
-                <span>Deploy Candidate Model (v1.3-RC) to Production</span>
+                <span>PROMOTE CANDIDATE MODEL (v1.3-RC)</span>
               </button>
 
               <button
                 onClick={handleExportReport}
-                className="btn-ghost-pill-subtle w-full flex items-center justify-center gap-2 py-2 text-xs"
+                className="w-full py-2 px-3 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold text-xs uppercase tracking-wider border border-slate-700 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
               >
                 <Download className="w-3.5 h-3.5" />
-                <span>Export Full Verification Report (JSON Audit)</span>
+                <span>EXPORT VERIFICATION REPORT (JSON)</span>
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* CONFIRMATION MODAL TO DEPLOY CANDIDATE MODEL */}
+      {/* Confirmation Modal */}
       {showDeployModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90">
-          <div className="w-full max-w-md bg-[#0a0a0a] border border-white p-6 space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in">
+          <div className="w-full max-w-md bg-[#071326] border border-[#1e3a5f] rounded-lg p-6 space-y-4 font-mono text-white">
             <div className="flex items-center gap-3">
-              <div className="p-2 border border-white bg-black text-white">
-                <Rocket className="w-5 h-5 text-white" />
+              <div className="p-2 border border-sky-400 bg-sky-500/20 text-sky-300 rounded">
+                <Rocket className="w-5 h-5" />
               </div>
               <div>
                 <h3 className="font-display text-sm font-bold text-white uppercase tracking-wider">
                   Promote Candidate Checkpoint
                 </h3>
-                <p className="font-mono text-xs text-[#888890] uppercase">
+                <p className="text-xs text-sky-400">
                   FloodLens-LSTM-GNN v1.3-RC
                 </p>
               </div>
             </div>
 
-            <div className="p-3.5 bg-black border border-[#3a3a3f] text-xs space-y-1.5 text-[#a0a0aa]">
+            <div className="p-3.5 bg-black/60 border border-[#1e3a5f] rounded text-xs space-y-1.5 text-slate-300">
               <p>
-                Promoting this candidate will update the operational multi-horizon inference engine across the <strong className="text-white">Prediction Centre</strong> and <strong className="text-white">Command Overview</strong>.
+                Promoting this candidate updates the local inference weighting parameters in the backend container for the <strong className="text-white">Prediction Centre</strong> and <strong className="text-white">Command Overview</strong>.
               </p>
-              <div className="font-mono text-white font-bold pt-1">
+              <div className="text-emerald-300 font-bold pt-1">
                 &bull; Verified IoU Gain: +9.3% (82.4% overall)
               </div>
-              <div className="font-mono text-white font-bold">
+              <div className="text-emerald-300 font-bold">
                 &bull; Embankment Breach Sensitivity: 91%
               </div>
             </div>
@@ -681,16 +476,16 @@ export const ModelAnalytics: React.FC<ModelAnalyticsProps> = ({
             <div className="flex items-center justify-end gap-3 pt-2">
               <button
                 onClick={() => setShowDeployModal(false)}
-                className="btn-ghost-pill-subtle text-xs px-4 py-2"
+                className="px-4 py-1.5 rounded-full border border-[#1e3a5f] hover:bg-white/10 text-xs text-slate-300 cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirmDeploy}
-                className="btn-ghost-pill text-xs px-4 py-2 flex items-center gap-1.5"
+                className="px-4 py-1.5 rounded-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold uppercase tracking-wider border border-emerald-400 transition-all cursor-pointer flex items-center gap-1.5"
               >
                 <Check className="w-3.5 h-3.5" />
-                <span>Confirm Deployment</span>
+                <span>Confirm Weight Update</span>
               </button>
             </div>
           </div>
@@ -699,15 +494,14 @@ export const ModelAnalytics: React.FC<ModelAnalyticsProps> = ({
 
       {/* Action Toast Feedback */}
       {toast && (
-        <div className="fixed bottom-6 right-6 z-50 p-4 bg-black border border-white text-white flex items-start gap-3 max-w-md shadow-none animate-in fade-in">
-          <CheckCircle className="w-5 h-5 text-white flex-shrink-0 mt-0.5" />
+        <div className="fixed bottom-6 right-6 z-50 p-4 bg-[#071326] border border-sky-400 text-white rounded-lg flex items-start gap-3 max-w-md shadow-xl animate-in fade-in">
+          <CheckCircle className="w-5 h-5 text-sky-400 flex-shrink-0 mt-0.5" />
           <div className="text-xs">
-            <h4 className="font-display text-xs font-bold uppercase tracking-wider text-white">Model Engine Telemetry</h4>
-            <p className="font-mono text-xs text-[#a0a0aa] mt-0.5">{toast}</p>
+            <h4 className="font-bold uppercase tracking-wider text-white">Model Engine Status</h4>
+            <p className="text-slate-300 mt-0.5">{toast}</p>
           </div>
         </div>
       )}
     </div>
   );
 };
-

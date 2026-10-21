@@ -19,15 +19,12 @@ export const MetricCards: React.FC<MetricCardsProps> = ({ metrics }) => {
           <span className="w-2 h-2 rounded-full bg-[#e86e25] animate-ping"></span>
         </div>
         <div>
-          <h3 className="font-display text-3xl font-bold text-white tracking-wider uppercase flex items-baseline gap-2">
+          <h3 className="font-display text-2xl lg:text-3xl font-bold text-white tracking-wider uppercase flex items-baseline gap-2">
             <span>{metrics.floodThreat.level}</span>
-            <span className="text-xs px-2 py-0.5 rounded bg-[#e86e25]/25 border border-[#e86e25]/60 text-[#fed7aa] font-mono font-semibold">
-              HIGH
-            </span>
           </h3>
         </div>
-        <p className="font-mono text-[11px] text-[#fdba74] uppercase pt-2 border-t border-[#e86e25]/25 truncate">
-          Chatara &gt; 8.15m // {metrics.floodThreat.trendLabel.toUpperCase()}
+        <p className="font-mono text-[11px] text-[#fdba74] uppercase pt-2 border-t border-[#e86e25]/25 truncate" title={metrics.floodThreat.description}>
+          Chatara: 8.18m / Danger: 8.00m — Elevated
         </p>
       </div>
 
@@ -36,17 +33,17 @@ export const MetricCards: React.FC<MetricCardsProps> = ({ metrics }) => {
         <div className="flex items-center justify-between">
           <span className="font-micro text-[11px] uppercase tracking-[1.2px] text-[#38bdf8] font-bold flex items-center gap-1.5">
             <Users className="w-3.5 h-3.5 text-[#0ea5e9]" />
-            POPULATION AT RISK
+            EXPOSED POPULATION
           </span>
           <span className="w-2 h-2 rounded-full bg-[#0ea5e9]"></span>
         </div>
         <div>
-          <h3 className="font-display text-3xl font-bold text-white tracking-wider uppercase">
-            {metrics.populationAtRisk.total.toLocaleString()}
+          <h3 className="font-display text-2xl lg:text-3xl font-bold text-white tracking-wider uppercase">
+            ~{metrics.populationAtRisk.total.toLocaleString()}
           </h3>
         </div>
-        <p className="font-mono text-[11px] text-[#7dd3fc] uppercase pt-2 border-t border-[#0ea5e9]/25 truncate">
-          14 wards threatened // 3 critical reaches
+        <p className="font-mono text-[11px] text-[#7dd3fc] uppercase pt-2 border-t border-[#0ea5e9]/25 truncate" title="Calculated from overlay of DEM flood envelope onto ward settlement census">
+          DEM flood envelope overlay onto ward census
         </p>
       </div>
 
@@ -55,19 +52,19 @@ export const MetricCards: React.FC<MetricCardsProps> = ({ metrics }) => {
         <div className="flex items-center justify-between">
           <span className="font-micro text-[11px] uppercase tracking-[1.2px] text-[#fbbf24] font-bold flex items-center gap-1.5">
             <LifeBuoy className="w-3.5 h-3.5 text-[#f59e0b]" />
-            OPEN ASSISTANCE QUEUE
+            ASSISTANCE REPORTS
           </span>
           <span className="px-2 py-0.5 rounded-full bg-[#f59e0b]/20 border border-[#f59e0b]/50 text-[#fde68a] text-[10px] font-mono font-bold">
             ACTIVE
           </span>
         </div>
         <div>
-          <h3 className="font-display text-3xl font-bold text-white tracking-wider uppercase">
-            {metrics.openRequests.total} <span className="text-xs font-semibold text-[#fde68a]">QUEUED</span>
+          <h3 className="font-display text-2xl lg:text-3xl font-bold text-white tracking-wider uppercase">
+            {metrics.openRequests.total} <span className="text-xs font-semibold text-[#fde68a]">LOGGED</span>
           </h3>
         </div>
         <p className="font-mono text-[11px] text-[#fde68a] uppercase pt-2 border-t border-[#f59e0b]/25 truncate">
-          {metrics.openRequests.critical} critical // 7 extraction units
+          {metrics.openRequests.total} Reports Logged | {metrics.openRequests.critical} Critical Risk
         </p>
       </div>
 
@@ -76,20 +73,20 @@ export const MetricCards: React.FC<MetricCardsProps> = ({ metrics }) => {
         <div className="flex items-center justify-between">
           <span className="font-micro text-[11px] uppercase tracking-[1.2px] text-[#34d399] font-bold flex items-center gap-1.5">
             <Activity className="w-3.5 h-3.5 text-[#10b981]" />
-            TELEMETRY GAUGES
+            TELEMETRY UPLINK
           </span>
           <span className="px-2 py-0.5 rounded-full bg-[#10b981]/20 border border-[#10b981]/50 text-[#a7f3d0] text-[10px] font-mono font-bold flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-            LIVE
+            [DEMO BENCHMARK DATASET]
           </span>
         </div>
         <div>
-          <h3 className="font-display text-3xl font-bold text-white tracking-wider uppercase">
-            {metrics.sensorHealth.reporting}/{metrics.sensorHealth.total} <span className="text-xs font-semibold text-[#a7f3d0]">REPORTING</span>
+          <h3 className="font-display text-2xl lg:text-3xl font-bold text-white tracking-wider uppercase">
+            {metrics.sensorHealth.reporting}/{metrics.sensorHealth.total} <span className="text-xs font-semibold text-[#a7f3d0]">ONLINE</span>
           </h3>
         </div>
-        <p className="font-mono text-[11px] text-[#a7f3d0] uppercase pt-2 border-t border-[#10b981]/25 truncate">
-          All feeds nominal // 28ms latency
+        <p className="font-mono text-[11px] text-[#a7f3d0] uppercase pt-2 border-t border-[#10b981]/25 truncate" title="12/12 Gauges Online [LoRa/Gov Hydro]">
+          12/12 Gauges Online [LoRa/Gov Hydro]
         </p>
       </div>
     </div>
