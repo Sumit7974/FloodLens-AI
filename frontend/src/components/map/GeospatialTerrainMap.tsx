@@ -18,6 +18,7 @@ import {
   KOSHI_TELEMETRY_GAUGES,
 } from '../../data/geospatialData';
 import type { HelpRequest } from '../../types';
+import { DEMO_MODE, type ObservedExtentFeature } from '../../services/backendApi';
 
 export interface GeospatialTerrainMapProps {
   center?: [number, number]; // [lng, lat]
@@ -25,6 +26,7 @@ export interface GeospatialTerrainMapProps {
   pitch?: number;
   bearing?: number;
   activeHorizon?: 'Now' | '1h' | '3h' | '6h';
+  observedExtent?: ObservedExtentFeature | null;
   showInundation?: boolean;
   showForecast?: boolean;
   showGauges?: boolean;
@@ -137,6 +139,7 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
   pitch = 55,
   bearing = -15,
   activeHorizon = '3h',
+  observedExtent = null,
   showInundation = true,
   showForecast = true,
   showGauges = true,
@@ -334,14 +337,10 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
     if (!map.getSource('observed-inundation-src')) {
       map.addSource('observed-inundation-src', {
         type: 'geojson',
-        data: {
-          type: 'Feature',
-          properties: { name: 'Observed Sentinel Water Mask', areaKm2: 28.4 },
-          geometry: {
-            type: 'Polygon',
-            coordinates: [observedCoords],
-          },
-        },
+        data: DEMO_MODE ? {
+          type: 'Feature', properties: { name: 'Illustrative fixture only', areaKm2: 28.4 },
+          geometry: { type: 'Polygon', coordinates: [observedCoords] },
+        } : { type: 'FeatureCollection', features: [] },
       });
 
       map.addLayer({
@@ -378,14 +377,10 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
     if (!map.getSource('forecast-horizon-src')) {
       map.addSource('forecast-horizon-src', {
         type: 'geojson',
-        data: {
-          type: 'Feature',
-          properties: { horizon: activeHorizon },
-          geometry: {
-            type: 'Polygon',
-            coordinates: [activeCoords],
-          },
-        },
+        data: DEMO_MODE ? {
+          type: 'Feature', properties: { horizon: activeHorizon, source: 'illustrative' },
+          geometry: { type: 'Polygon', coordinates: [activeCoords] },
+        } : { type: 'FeatureCollection', features: [] },
       });
 
       map.addLayer({
@@ -414,7 +409,7 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
     if (!map.getSource('road-cuts-src')) {
       map.addSource('road-cuts-src', {
         type: 'geojson',
-        data: INFRASTRUCTURE_ROAD_CUTS,
+        data: DEMO_MODE ? INFRASTRUCTURE_ROAD_CUTS : { type: 'FeatureCollection', features: [] },
       });
 
       map.addLayer({
@@ -442,14 +437,7 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
           ? toGeoJsonCoords(HORIZON_FORECASTS['1h'].polygonCoords)
           : toGeoJsonCoords(HORIZON_FORECASTS[activeHorizon as '1h' | '3h' | '6h']?.polygonCoords || HORIZON_FORECASTS['3h'].polygonCoords);
 
-      src.setData({
-        type: 'Feature',
-        properties: { horizon: activeHorizon },
-        geometry: {
-          type: 'Polygon',
-          coordinates: [activeCoords],
-        },
-      });
+      src.setData(DEMO_MODE ? { type: 'Feature', properties: { horizon: activeHorizon, source: 'illustrative' }, geometry: { type: 'Polygon', coordinates: [activeCoords] } } : { type: 'FeatureCollection', features: [] });
 
       const horizonColor =
         activeHorizon === '6h' ? '#ef4444' : activeHorizon === '3h' ? '#f97316' : '#f59e0b';
@@ -463,30 +451,54 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
     }
   }, [activeHorizon, mapLoaded]);
 
+  // Real PostGIS event-linked extent replaces illustration in backend mode.
+  useEffect(() => {
+    if (DEMO_MODE || !mapLoaded) return;
+    const map = mapRef.current;
+    const source = map?.getSource('observed-inundation-src') as maplibregl.GeoJSONSource | undefined;
+    if (!source) return;
+    source.setData(observedExtent ? (observedExtent as any) : { type: 'FeatureCollection', features: [] });
+    if (!observedExtent?.geometry || !map) return;
+    const pairs: number[][] = [];
+    const walk = (node: unknown): void => {
+      if (!Array.isArray(node)) return;
+      if (node.length >= 2 && typeof node[0] === 'number' && typeof node[1] === 'number') {
+        const lon = node[0]; const lat = node[1];
+        if (Number.isFinite(lon) && Number.isFinite(lat) && Math.abs(lon) <= 180 && Math.abs(lat) <= 90) pairs.push([lon, lat]);
+        return;
+      }
+      node.forEach(walk);
+    };
+    walk(observedExtent.geometry.coordinates);
+    if (!pairs.length) return;
+    const lons = pairs.map(p => p[0]); const lats = pairs.map(p => p[1]);
+    map.fitBounds([[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]], { padding: 45, maxZoom: 12, duration: 900 });
+  }, [observedExtent, mapLoaded]);
+
   // Dynamic layer visibility, wipe opacity, and verification layer styles
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapLoaded) return;
 
     if (map.getLayer('observed-inundation-fill')) {
-      map.setLayoutProperty('observed-inundation-fill', 'visibility', showInundation ? 'visible' : 'none');
+      map.setLayoutProperty('observed-inundation-fill', 'visibility', showInundation && (DEMO_MODE || Boolean(observedExtent)) ? 'visible' : 'none');
       if (mode === 'satellite') {
         map.setPaintProperty('observed-inundation-fill', 'fill-opacity', (wipePosition / 100) * 0.55);
       }
     }
     if (map.getLayer('observed-inundation-stroke')) {
-      map.setLayoutProperty('observed-inundation-stroke', 'visibility', showInundation ? 'visible' : 'none');
+      map.setLayoutProperty('observed-inundation-stroke', 'visibility', showInundation && (DEMO_MODE || Boolean(observedExtent)) ? 'visible' : 'none');
     }
     if (map.getLayer('forecast-horizon-fill')) {
-      map.setLayoutProperty('forecast-horizon-fill', 'visibility', showForecast ? 'visible' : 'none');
+      map.setLayoutProperty('forecast-horizon-fill', 'visibility', DEMO_MODE && showForecast ? 'visible' : 'none');
     }
     if (map.getLayer('forecast-horizon-stroke')) {
-      map.setLayoutProperty('forecast-horizon-stroke', 'visibility', showForecast ? 'visible' : 'none');
+      map.setLayoutProperty('forecast-horizon-stroke', 'visibility', DEMO_MODE && showForecast ? 'visible' : 'none');
     }
     if (map.getLayer('road-cuts-lines')) {
-      map.setLayoutProperty('road-cuts-lines', 'visibility', showInfrastructure ? 'visible' : 'none');
+      map.setLayoutProperty('road-cuts-lines', 'visibility', DEMO_MODE && showInfrastructure ? 'visible' : 'none');
     }
-  }, [showInundation, showForecast, showInfrastructure, mode, wipePosition, verificationLayers, mapLoaded]);
+  }, [showInundation, showForecast, showInfrastructure, mode, wipePosition, verificationLayers, observedExtent, mapLoaded]);
 
   // Manage Interactive Markers (Gauges, Incidents, Shelters, Settlements)
   useEffect(() => {
@@ -498,7 +510,7 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
     markersRef.current = [];
 
     // 1. Gauges
-    if (showGauges) {
+    if (DEMO_MODE && showGauges) {
       KOSHI_TELEMETRY_GAUGES.forEach((gauge) => {
         const el = document.createElement('div');
         el.className = 'group cursor-pointer transform -translate-x-1/2 -translate-y-1/2 transition-transform hover:scale-110';
@@ -570,7 +582,7 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
             location: req.location_name,
             category: req.category,
             urgency: req.urgency,
-            depth: req.estimated_water_depth || '1.8m (Fast Current)',
+            depth: req.estimated_water_depth || 'Not measured',
             status: req.status || req.handoff_status,
             coords: [req.coordinates[1], req.coordinates[0]],
             peopleCount: req.people_count,
@@ -588,7 +600,7 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
     }
 
     // 3. Shelters & High Ground
-    if (showShelters) {
+    if (DEMO_MODE && showShelters) {
       KOSHI_SHELTERS.forEach((shelter) => {
         const el = document.createElement('div');
         el.className = 'cursor-pointer group transform -translate-x-1/2 -translate-y-1/2 hover:scale-110';
@@ -620,7 +632,7 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
     }
 
     // 4. Settlement Labels
-    KOSHI_SETTLEMENTS.forEach((settlement) => {
+    if (DEMO_MODE) KOSHI_SETTLEMENTS.forEach((settlement) => {
       const el = document.createElement('div');
       el.className = 'pointer-events-none transform -translate-x-1/2 -translate-y-1/2';
       el.innerHTML = `
@@ -779,7 +791,7 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
         <div className="inline-flex items-center gap-3 px-3 py-1.5 rounded-xl bg-zinc-950/80 border border-zinc-800/80 text-xs font-mono text-zinc-300 backdrop-blur-md pointer-events-auto shadow-sm">
           <div className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full bg-cyan-400 inline-block" />
-            <span className="text-[11px] text-zinc-300">OBSERVED INUNDATION</span>
+            <span className="text-[11px] text-zinc-300">{DEMO_MODE ? 'DEMO FLOOD MASK' : observedExtent ? 'BACKEND OBSERVED EXTENT' : 'NO OBSERVED EXTENT'}</span>
           </div>
 
           <span className="text-zinc-700 select-none">|</span>
@@ -792,7 +804,7 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
                   activeHorizon === '6h' ? '#ef4444' : activeHorizon === '3h' ? '#f97316' : '#f59e0b',
               }}
             />
-            <span className="text-[11px] text-zinc-300">+{activeHorizon} FORECAST</span>
+            <span className="text-[11px] text-zinc-300">+{activeHorizon} ILLUSTRATION</span>
           </div>
 
           <span className="text-zinc-700 select-none hidden sm:inline">|</span>
@@ -805,7 +817,7 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
 
         {/* Projection Spec */}
         <div className="px-3 py-1.5 rounded-xl bg-zinc-950/80 border border-zinc-800/80 text-[11px] font-mono text-zinc-400 backdrop-blur-md pointer-events-auto shadow-sm">
-          <span>EPSG:4326 // KOSHI DEM 30M RESOLUTION</span>
+          <span>{DEMO_MODE ? 'DEMO EPSG:4326 · TERRAIN BASEMAP' : 'BACKEND EPSG:4326 · NOT FOR NAVIGATION'}</span>
         </div>
       </div>
 
