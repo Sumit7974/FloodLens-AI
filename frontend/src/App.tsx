@@ -314,10 +314,16 @@ export function App() {
   };
 
   const handleCancelAlert = (alertId: string) => {
-    setAlerts((prev) =>
-      prev.map((a) => (a.id === alertId ? { ...a, status: 'CANCELLED' } : a))
-    );
-    showToast(`Alert #${alertId} has been superseded / cancelled in audit log`);
+    if (!DEMO_MODE) {
+      showToast('NOT SAVED: Backend alert cancellation endpoint is not implemented.');
+      return;
+    }
+    setAlerts(prev => prev.map(a => a.id === alertId ? { ...a, status: 'CANCELLED' } : a));
+    showToast(`LOCAL DEMO ONLY: Alert #${alertId} cancelled in browser fixtures.`);
+  };
+
+  const handleAlertUpdated = (updated: Alert) => {
+    setAlerts(prev => prev.map(a => a.id === updated.id ? updated : a));
   };
 
   const handleBroadcastRevision = (alertId: string) => {
@@ -429,6 +435,7 @@ export function App() {
                 activeAlerts={alerts}
                 onBroadcastAlert={handleBroadcastAlert}
                 onCancelAlert={handleCancelAlert}
+                onAlertUpdated={handleAlertUpdated}
                 initialPayload={prefilledAdvisory}
               />
             )}
