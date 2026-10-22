@@ -18,7 +18,7 @@ import {
   KOSHI_TELEMETRY_GAUGES,
 } from '../../data/geospatialData';
 import type { HelpRequest } from '../../types';
-import { DEMO_MODE, type ObservedExtentFeature } from '../../services/backendApi';
+import { DEMO_MODE, type ObservedExtentFeature, type FacilityItem } from '../../services/backendApi';
 
 export interface GeospatialTerrainMapProps {
   center?: [number, number]; // [lng, lat]
@@ -33,6 +33,9 @@ export interface GeospatialTerrainMapProps {
   showIncidents?: boolean;
   showInfrastructure?: boolean;
   showShelters?: boolean;
+  candidateRoute?: [number, number][]; // LineString [lng, lat]
+  facilities?: FacilityItem[];
+  onSelectFacility?: (facility: FacilityItem) => void;
   incidents?: HelpRequest[];
   selectedIncidentId?: string | null;
   onSelectIncident?: (id: string) => void;
@@ -146,6 +149,9 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
   showIncidents = true,
   showInfrastructure = true,
   showShelters = true,
+  candidateRoute = [],
+  facilities = [],
+  onSelectFacility,
   incidents = [],
   selectedIncidentId = null,
   onSelectIncident,
@@ -278,7 +284,7 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
           'horizon-color': '#091a32',
           'fog-color': '#040d1a',
         } as any);
-      } catch (e) {
+      } catch {
         // Soft fallback
       }
 
@@ -423,7 +429,75 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
         },
       });
     }
-  }, [activeHorizon]);
+
+    // 4. Candidate Route LineString Layer
+    if (!map.getSource('candidate-route-src')) {
+      const hasRoute = candidateRoute && candidateRoute.length >= 2;
+      map.addSource('candidate-route-src', {
+        type: 'geojson',
+        data: hasRoute
+          ? {
+              type: 'Feature',
+              properties: { name: 'Candidate Route' },
+              geometry: { type: 'LineString', coordinates: candidateRoute },
+            }
+          : { type: 'FeatureCollection', features: [] },
+      });
+
+      map.addLayer({
+        id: 'candidate-route-casing',
+        type: 'line',
+        source: 'candidate-route-src',
+        paint: {
+          'line-color': '#000000',
+          'line-width': 7,
+          'line-opacity': 0.75,
+        },
+      });
+
+      map.addLayer({
+        id: 'candidate-route-line',
+        type: 'line',
+        source: 'candidate-route-src',
+        paint: {
+          'line-color': '#f59e0b',
+          'line-width': 4,
+          'line-dasharray': [2, 1],
+        },
+      });
+    }
+  }, [activeHorizon, candidateRoute]);
+
+  // Update candidate route line dynamically
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapLoaded) return;
+
+    const src = map.getSource('candidate-route-src') as maplibregl.GeoJSONSource | undefined;
+    if (src) {
+      const hasRoute = candidateRoute && candidateRoute.length >= 2;
+      src.setData(
+        hasRoute
+          ? {
+              type: 'Feature',
+              properties: { name: 'Candidate Route' },
+              geometry: { type: 'LineString', coordinates: candidateRoute },
+            }
+          : { type: 'FeatureCollection', features: [] }
+      );
+      if (hasRoute) {
+        const lons = candidateRoute.map((p) => p[0]);
+        const lats = candidateRoute.map((p) => p[1]);
+        map.fitBounds(
+          [
+            [Math.min(...lons), Math.min(...lats)],
+            [Math.max(...lons), Math.max(...lats)],
+          ],
+          { padding: 50, maxZoom: 13, duration: 800 }
+        );
+      }
+    }
+  }, [candidateRoute, mapLoaded]);
 
   // Update horizon layer dynamically as activeHorizon changes
   useEffect(() => {
@@ -599,8 +673,51 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
       });
     }
 
-    // 3. Shelters & High Ground
-    if (DEMO_MODE && showShelters) {
+    // 3. Emergency Facilities (Shelters & Hospitals)
+    if (facilities && facilities.length > 0) {
+      facilities.forEach((fac) => {
+        if (fac.longitude == null || fac.latitude == null) return;
+        const el = document.createElement('div');
+        const isHospital = fac.type === 'hospital';
+        const isVerified = fac.verification_status === 'verified';
+        const isDemo = fac.verification_status === 'demo_labeled';
+        const color = isVerified ? 'bg-emerald-500' : isDemo ? 'bg-sky-500' : 'bg-rose-500';
+        const borderColor = isVerified ? 'border-emerald-300' : isDemo ? 'border-sky-300' : 'border-rose-300';
+        el.className = 'cursor-pointer group transform -translate-x-1/2 -translate-y-1/2 hover:scale-125 transition-transform z-20';
+        el.innerHTML = `
+          <div class="relative flex items-center justify-center">
+            <div class="w-6 h-6 rounded-full ${color} border-2 ${borderColor} flex items-center justify-center text-[10px] font-bold text-white shadow-lg">
+              ${isHospital ? 'H' : 'S'}
+            </div>
+            <div class="absolute left-7 bg-[#060e1d]/95 border border-[#1e3a5f] px-2 py-0.5 rounded text-[10px] font-mono font-bold text-white whitespace-nowrap shadow-md pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-30">
+              ${fac.name} (${fac.type})
+            </div>
+          </div>
+        `;
+
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          setActivePopupData({
+            type: 'FACILITY',
+            title: fac.name,
+            facilityType: fac.type,
+            verification: fac.verification_status,
+            capacity: fac.capacity ? `${fac.capacity} (${isHospital ? 'beds' : 'persons'})` : 'Unrecorded',
+            contact: fac.contact_info || 'None recorded',
+            source: fac.source || 'Database',
+            limitations: fac.limitations,
+            coords: [fac.longitude, fac.latitude],
+          });
+          if (onSelectFacility) onSelectFacility(fac);
+        });
+
+        const marker = new maplibregl.Marker({ element: el })
+          .setLngLat([fac.longitude, fac.latitude])
+          .addTo(map);
+
+        markersRef.current.push(marker);
+      });
+    } else if (DEMO_MODE && showShelters) {
       KOSHI_SHELTERS.forEach((shelter) => {
         const el = document.createElement('div');
         el.className = 'cursor-pointer group transform -translate-x-1/2 -translate-y-1/2 hover:scale-110';
@@ -648,7 +765,7 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
 
       markersRef.current.push(marker);
     });
-  }, [mapLoaded, showGauges, showIncidents, showShelters, incidents, selectedIncidentId, onSelectIncident, onSelectGauge]);
+  }, [mapLoaded, showGauges, showIncidents, showShelters, facilities, onSelectFacility, incidents, selectedIncidentId, onSelectIncident, onSelectGauge]);
 
   // Center on selected incident if provided
   useEffect(() => {
@@ -666,6 +783,8 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
   }, [selectedIncidentId, incidents, mapLoaded]);
 
   // Camera flyTo when center, zoom, pitch, or bearing change externally (e.g. benchmark scene selector)
+  const centerLng = center[0];
+  const centerLat = center[1];
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapLoaded) return;
@@ -677,7 +796,7 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
       duration: 1500,
       essential: true,
     });
-  }, [center[0], center[1], zoom, pitch, bearing, mapLoaded]);
+  }, [centerLng, centerLat, center, zoom, pitch, bearing, mapLoaded]);
 
   // Toggle 3D Terrain / 2D Ortho Mode
   const toggle3DMode = () => {
@@ -909,6 +1028,41 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
                 <div className="flex justify-between">
                   <span className="text-slate-400">Emergency Phone:</span>
                   <span className="text-slate-300">{activePopupData.contact}</span>
+                </div>
+              </>
+            )}
+
+            {activePopupData.type === 'FACILITY' && (
+              <>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Facility Type:</span>
+                  <span className="font-bold text-white capitalize">{activePopupData.facilityType}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400">Verification:</span>
+                  <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold uppercase ${
+                    activePopupData.verification === 'verified'
+                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                      : activePopupData.verification === 'demo_labeled'
+                      ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40'
+                      : 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                  }`}>
+                    {activePopupData.verification}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Recorded Capacity:</span>
+                  <span className="text-white font-bold">{activePopupData.capacity}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Contact liaison:</span>
+                  <span className="text-cyan-300 font-bold">{activePopupData.contact}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Source:</span>
+                  <span className="text-slate-300 truncate max-w-[130px]" title={activePopupData.source}>
+                    {activePopupData.source}
+                  </span>
                 </div>
               </>
             )}

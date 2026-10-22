@@ -9,6 +9,10 @@ import { ModelAnalytics } from './components/ModelAnalytics';
 import { PredictionCentre } from './components/PredictionCentre';
 import { ResponseOperations } from './components/ResponseOperations';
 import { SatelliteIntelligence } from './components/SatelliteIntelligence';
+import { EnvironmentalMonitoring } from './components/EnvironmentalMonitoring';
+import { EmergencyFacilities } from './components/EmergencyFacilities';
+import { RouteAssessment } from './components/RouteAssessment';
+import { HistoricalReports } from './components/HistoricalReports';
 import { Sidebar } from './components/Sidebar';
 import { ParticlesComponent } from './components/ui/particles-bg';
 import {
@@ -445,6 +449,22 @@ export function App() {
                 onDeployModel={handleDeployModel}
               />
             ) : <BackendAnalyticsPanel />)}
+
+            {activeTab === 'environmental-monitoring' && (
+              <EnvironmentalMonitoring currentScene={currentScene} />
+            )}
+
+            {activeTab === 'emergency-facilities' && (
+              <EmergencyFacilities currentScene={currentScene} />
+            )}
+
+            {activeTab === 'route-assessment' && (
+              <RouteAssessment currentScene={currentScene} />
+            )}
+
+            {activeTab === 'historical-reports' && (
+              <HistoricalReports currentScene={currentScene} />
+            )}
           </div>
         </main>
       </div>

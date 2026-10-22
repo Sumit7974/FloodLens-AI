@@ -152,7 +152,11 @@ export type NavigationItemId =
   | 'satellite-intel'
   | 'response-ops'
   | 'alert-dispatcher'
-  | 'model-analytics';
+  | 'model-analytics'
+  | 'environmental-monitoring'
+  | 'emergency-facilities'
+  | 'route-assessment'
+  | 'historical-reports';
 
 export interface NavigationItem {
   id: NavigationItemId;

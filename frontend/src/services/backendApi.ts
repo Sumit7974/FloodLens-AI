@@ -286,10 +286,214 @@ export interface GaugeMonitoringResponse {
   count: number;
 }
 
+export interface WeatherMonitoringResponse {
+  status: string;
+  providers: string[];
+  readings: unknown[];
+  note: string;
+}
+
+export interface DamNotice {
+  dam_name?: string;
+  river?: string;
+  scheduled_release_at?: string;
+  discharge_m3s?: number;
+  warning_level?: string;
+  verified?: boolean;
+  [key: string]: unknown;
+}
+
+export interface DamMonitoringResponse {
+  notices: DamNotice[];
+  verified_count: number;
+  note: string;
+}
+
 export async function getRiverGauges(eventId?: string): Promise<GaugeStationRecord[]> {
   const path = eventId ? `/monitoring/gauges?event_id=${encodeURIComponent(eventId)}` : '/monitoring/gauges';
   const response = await request<GaugeMonitoringResponse>(path);
   return response.stations || [];
+}
+
+export async function getRiverMonitoring(eventId?: string): Promise<GaugeMonitoringResponse> {
+  const path = eventId ? `/monitoring/rivers?event_id=${encodeURIComponent(eventId)}` : '/monitoring/rivers';
+  return request<GaugeMonitoringResponse>(path);
+}
+
+export async function getWeatherMonitoring(): Promise<WeatherMonitoringResponse> {
+  return request<WeatherMonitoringResponse>('/monitoring/weather');
+}
+
+export async function getDamMonitoring(): Promise<DamMonitoringResponse> {
+  return request<DamMonitoringResponse>('/monitoring/dams');
+}
+
+export interface FacilityItem {
+  id: string;
+  type: string;
+  name: string;
+  verification_status: 'verified' | 'unverified' | 'demo_labeled' | string;
+  capacity: number | null;
+  contact_info: string | null;
+  status_checked_at: string | null;
+  location: { type: 'Point'; coordinates: [number, number] } | null;
+  longitude: number | null;
+  latitude: number | null;
+  source: string | null;
+  details: Record<string, unknown>;
+  limitations: string[];
+}
+
+export interface ShelterListResponse {
+  count: number;
+  shelters: FacilityItem[];
+  data_notes?: string;
+}
+
+export interface HospitalListResponse {
+  count: number;
+  hospitals: FacilityItem[];
+  data_notes?: string;
+}
+
+export async function getShelters(verificationStatus?: string): Promise<ShelterListResponse> {
+  const path = verificationStatus
+    ? `/facilities/shelters?verification_status=${encodeURIComponent(verificationStatus)}`
+    : '/facilities/shelters';
+  return request<ShelterListResponse>(path);
+}
+
+export async function getHospitals(verificationStatus?: string): Promise<HospitalListResponse> {
+  const path = verificationStatus
+    ? `/facilities/hospitals?verification_status=${encodeURIComponent(verificationStatus)}`
+    : '/facilities/hospitals';
+  return request<HospitalListResponse>(path);
+}
+
+export interface RouteAssessRequest {
+  route: {
+    type: 'LineString';
+    coordinates: [number, number][];
+  };
+  event_id?: string;
+  evaluation_time?: string;
+  cutoff_time?: string;
+  buffer_meters?: number;
+  evaluation_context?: Record<string, unknown>;
+}
+
+export interface RouteHazardIntersection {
+  hazard_id: string;
+  hazard_type: string;
+  source_layer: string;
+  status: string;
+  observed_at: string;
+  source?: string;
+  confidence?: number;
+  match_type?: string;
+  proximity_distance_meters?: number;
+  intersection_details?: Record<string, unknown>;
+  notes?: string;
+}
+
+export interface RouteAssessResponse {
+  route_status: 'conditional' | 'hazards_detected' | 'no_known_hazards_detected' | 'not_evaluated' | 'incomplete_data' | string;
+  assessment_status: 'HAZARDS_INTERSECTED' | 'NO_KNOWN_INTERSECTIONS' | 'NOT_EVALUATED' | 'INCOMPLETE_DATA' | string;
+  hazards_detected: RouteHazardIntersection[];
+  event_id?: string | null;
+  evaluation_time: string;
+  cutoff_time_applied?: string | null;
+  total_hazards_screened: number;
+  hazards_intersected_count: number;
+  limitations: string[];
+  provenance: Record<string, unknown>;
+}
+
+export async function assessRoute(req: RouteAssessRequest): Promise<RouteAssessResponse> {
+  return request<RouteAssessResponse>('/routes/assess', {
+    method: 'POST',
+    body: JSON.stringify(req),
+  });
+}
+
+export interface FloodReportResponse {
+  event_id: string;
+  event_name: string;
+  region_id: string;
+  mode: string;
+  extent_observed_at: string | null;
+  extent_area_km2: number | null;
+  total_settlements_affected: number;
+  roads_exposed_km: number;
+  structures_exposed_count: number;
+  cropland_exposed_ha: number;
+  report_generated_at: string | null;
+  status: string;
+  settlements_evaluated: number;
+  settlements_data_status?: string;
+  assets_data_status?: string;
+  data_limitations: string[];
+  data_provenance?: Record<string, unknown>;
+}
+
+export async function getFloodReport(eventId: string): Promise<FloodReportResponse> {
+  return request<FloodReportResponse>(`/flood-events/${encodeURIComponent(eventId)}/report`);
+}
+
+export async function downloadFloodReportExport(eventId: string, format: 'json' | 'csv'): Promise<void> {
+  if (DEMO_MODE) {
+    const demoCsv = `event_id,event_name,region_id,mode,status,extent_observed_at,extent_area_km2,extent_method,settlements_evaluated,settlements_affected,roads_exposed_km,structures_exposed_count,cropland_exposed_ha,exported_at\n${eventId},Koshi Basin Surge,koshi-basin,historical_demo,summary_available,2026-10-18T05:00:00Z,46.8,Sentinel-1 SAR,12,3,18.4,142,320.5,${new Date().toISOString()}`;
+    const demoJson = JSON.stringify({
+      event_id: eventId,
+      event_name: 'Koshi Basin Surge (Historical Demo)',
+      region_id: 'koshi-basin',
+      mode: 'historical_demo',
+      status: 'summary_available',
+      extent_area_km2: 46.8,
+      total_settlements_affected: 3,
+      settlements_evaluated: 12,
+      roads_exposed_km: 18.4,
+      structures_exposed_count: 142,
+      cropland_exposed_ha: 320.5,
+      note: 'Demo mode export artifact. Backend is not currently attached.',
+    }, null, 2);
+
+    const blob = new Blob([format === 'csv' ? demoCsv : demoJson], {
+      type: format === 'csv' ? 'text/csv' : 'application/json',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `floodlens_impact_report_${eventId}.${format}`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    return;
+  }
+
+  const token = getAccessToken();
+  const headers = new Headers();
+  if (token) headers.set('Authorization', `Bearer ${token}`);
+  const res = await fetch(`${API_URL}/flood-events/${encodeURIComponent(eventId)}/report/export?format=${format}`, {
+    headers,
+  });
+  if (!res.ok) {
+    const errorBody = (await res.json().catch(() => ({}))) as { error?: { message?: string }; detail?: string };
+    throw new Error(errorBody.error?.message || errorBody.detail || `Export failed with HTTP ${res.status}`);
+  }
+  const blob = await res.blob();
+  const disposition = res.headers.get('Content-Disposition') || '';
+  const match = disposition.match(/filename="?([^"]+)"?/);
+  const filename = match ? match[1] : `floodlens_impact_report_${eventId}.${format}`;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 export async function getAssistanceQueue(): Promise<AssistanceRecord[]> {
