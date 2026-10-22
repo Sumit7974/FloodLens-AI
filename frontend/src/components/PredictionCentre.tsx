@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Circle,
   MapContainer,
@@ -91,6 +91,21 @@ const createInfraIcon = (risk: string) => {
   });
 };
 
+interface PersistedForecast {
+  forecast_id: string;
+  location_id: string;
+  issued_at: string;
+  mode: string;
+  model_version: string;
+  data_quality: string;
+  horizons: Array<{
+    hours: number;
+    risk_level: string;
+    calibrated_probability: number | null;
+  }>;
+  limitations: string[];
+}
+
 export const PredictionCentre: React.FC<PredictionCentreProps> = ({
   currentScene,
   onNavigateToDispatcher,
@@ -108,6 +123,40 @@ export const PredictionCentre: React.FC<PredictionCentreProps> = ({
 
   // Advisory Generated Toast/Modal State
   const [advisoryGenerated, setAdvisoryGenerated] = useState(false);
+
+  // Real backend persisted forecast state
+  const [persistedForecast, setPersistedForecast] = useState<PersistedForecast | null>(null);
+  const [isBackendConnected, setIsBackendConnected] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchLatest = async () => {
+      try {
+        const res = await fetch('http://127.0.0.1:8000/api/v1/predictions/latest?location_id=loc_barahachhetra_w2');
+        if (!res.ok) {
+          if (isMounted) setIsBackendConnected(false);
+          return;
+        }
+        const data: PersistedForecast = await res.json();
+        if (isMounted) {
+          setPersistedForecast(data);
+          setIsBackendConnected(true);
+        }
+      } catch {
+        if (isMounted) {
+          setIsBackendConnected(false);
+        }
+      }
+    };
+    void fetchLatest();
+    return () => {
+      isMounted = false;
+    };
+  }, [currentScene]);
+
+  const h1Risk = persistedForecast?.horizons.find((h) => h.hours === 1)?.risk_level.toUpperCase() || 'MODERATE';
+  const h3Risk = persistedForecast?.horizons.find((h) => h.hours === 3)?.risk_level.toUpperCase() || 'HIGH';
+  const h6Risk = persistedForecast?.horizons.find((h) => h.hours === 6)?.risk_level.toUpperCase() || 'SEVERE';
 
   const forecast = HORIZON_FORECASTS[horizon];
 
@@ -137,12 +186,16 @@ export const PredictionCentre: React.FC<PredictionCentreProps> = ({
               <div>
                 <h1 className="font-display text-base font-bold text-white tracking-[1.4px] uppercase flex items-center gap-2">
                   Prediction Centre — Multi-Horizon Hydrological Forecasting
-                  <span className="badge-chip text-[9px] font-mono">
-                    MODEL: FLOODLENS-LSTM-GNN V1.2
+                  <span className={`badge-chip text-[9px] font-mono ${isBackendConnected ? 'border-emerald-500/60 text-emerald-400' : ''}`}>
+                    {isBackendConnected && persistedForecast
+                      ? `MODEL: ${persistedForecast.model_version.toUpperCase()} (BACKEND PERSISTED)`
+                      : 'MODEL: FLOODLENS-LSTM-GNN V1.2 (DEMO)'}
                   </span>
                 </h1>
                 <p className="font-mono text-[10px] text-[#5a5a5f] uppercase tracking-wider mt-0.5">
-                  PHYSICS-INFORMED GRAPH NEURAL NETWORK // {currentScene.name} ({currentScene.district})
+                  {isBackendConnected && persistedForecast
+                    ? `ISSUED: ${new Date(persistedForecast.issued_at).toUTCString()} // MODE: ${persistedForecast.mode.toUpperCase()} // QUALITY: ${persistedForecast.data_quality.toUpperCase()}`
+                    : `PHYSICS-INFORMED GRAPH NEURAL NETWORK // ${currentScene.name} (${currentScene.district})`}
                 </p>
               </div>
             </div>
@@ -160,7 +213,7 @@ export const PredictionCentre: React.FC<PredictionCentreProps> = ({
             >
               <Clock className="w-3 h-3" />
               <span>+1 HOUR</span>
-              <span className="text-[9px] opacity-75">(MODERATE)</span>
+              <span className="text-[9px] opacity-75">({h1Risk})</span>
             </button>
 
             <button
@@ -173,7 +226,7 @@ export const PredictionCentre: React.FC<PredictionCentreProps> = ({
             >
               <Clock className="w-3 h-3" />
               <span>+3 HOURS</span>
-              <span className="text-[9px] opacity-75">(HIGH)</span>
+              <span className="text-[9px] opacity-75">({h3Risk})</span>
             </button>
 
             <button
@@ -186,7 +239,7 @@ export const PredictionCentre: React.FC<PredictionCentreProps> = ({
             >
               <AlertTriangle className="w-3 h-3" />
               <span>+6 HOURS</span>
-              <span className="text-[9px] opacity-75">(SEVERE)</span>
+              <span className="text-[9px] opacity-75">({h6Risk})</span>
             </button>
           </div>
         </div>
@@ -229,18 +282,39 @@ export const PredictionCentre: React.FC<PredictionCentreProps> = ({
             <p className="text-[9px] text-[#5a5a5f] uppercase">FLOW VELOCITY: 3.4 M/S</p>
           </div>
 
-          {/* Model Confidence */}
+          {/* Model Confidence / Risk status */}
           <div className="p-2.5 bg-black border border-[#3a3a3f] space-y-0.5">
             <span className="font-micro text-[9px] uppercase tracking-[0.96px] text-[#5a5a5f] flex items-center gap-1">
               <BrainCircuit className="w-3 h-3 text-white" />
-              CONFIDENCE INTERVAL
+              {isBackendConnected ? 'PREDICTED RISK TIER' : 'CONFIDENCE INTERVAL'}
             </span>
             <div className="font-bold text-sm text-white">
-              88.4% (TIER 1)
+              {isBackendConnected
+                ? `${horizon === '1h' ? h1Risk : horizon === '3h' ? h3Risk : h6Risk} (${persistedForecast?.data_quality.toUpperCase() || 'PARTIAL'})`
+                : '88.4% (TIER 1)'}
             </div>
-            <p className="text-[9px] text-[#5a5a5f] uppercase">RUN: 18 OCT 04:30 UTC • 1.2S</p>
+            <p className="text-[9px] text-[#5a5a5f] uppercase">
+              {isBackendConnected && persistedForecast
+                ? `LOC: ${persistedForecast.location_id}`
+                : 'RUN: 18 OCT 04:30 UTC • 1.2S'}
+            </p>
           </div>
         </div>
+
+        {/* Model Limitations Banner when backend connected */}
+        {persistedForecast && persistedForecast.limitations && persistedForecast.limitations.length > 0 && (
+          <div className="p-2.5 bg-black border border-amber-500/40 text-[10px] font-mono text-amber-300/90 space-y-1">
+            <div className="font-bold uppercase flex items-center gap-1.5 text-amber-200">
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              MODEL PROVENANCE & OPERATIONAL LIMITATIONS ({persistedForecast.model_version})
+            </div>
+            <ul className="list-disc list-inside space-y-0.5 text-[#d0d0d5]">
+              {persistedForecast.limitations.map((lim, idx) => (
+                <li key={idx}>{lim}</li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
 
       {/* 2. MAIN 2-COLUMN LAYOUT */}
