@@ -315,13 +315,8 @@ export function App() {
       : `DEMO ONLY: Simulation record ${newAlert.code} updated (no operational warnings issued).`);
   };
 
-  const handleCancelAlert = (alertId: string) => {
-    if (!DEMO_MODE) {
-      showToast('NOT SAVED: Backend alert cancellation endpoint is not implemented.');
-      return;
-    }
-    setAlerts(prev => prev.map(a => a.id === alertId ? { ...a, status: 'CANCELLED' } : a));
-    showToast(`LOCAL DEMO ONLY: Alert #${alertId} cancelled in browser fixtures.`);
+  const handleCancelAlert = (_alertId: string) => {
+    showToast('Action unsupported: Alert cancellation is not supported by the backend architecture. Dispatched alerts are permanent audit records.');
   };
 
   const handleAlertUpdated = (updated: Alert) => {

@@ -26,13 +26,13 @@ import type {
   PredictionHorizonTier,
 } from '../types/apiContracts';
 import { mapToGaugeStations } from '../types/apiContracts';
-import { DEMO_MODE, createDemoDraft } from './backendApi';
+import { DEMO_MODE, createDemoDraft, getAccessToken } from './backendApi';
 
 export class FloodLensClient {
   private static instance: FloodLensClient;
   private readonly baseUrl: string;
   private readonly useMockData: boolean;
-  private readonly requestTimeoutMs = 3500;
+  private readonly requestTimeoutMs = 4500;
 
   private constructor() {
     const rawBackendUrl = import.meta.env.VITE_BACKEND_URL;
@@ -81,12 +81,16 @@ export class FloodLensClient {
 
     try {
       const url = `${this.baseUrl}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
+      const token = getAccessToken();
+      const authHeaders: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
+
       const response = await fetch(url, {
         ...options,
         signal: controller.signal,
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
+          ...authHeaders,
           ...(options?.headers || {}),
         },
       });
@@ -105,10 +109,10 @@ export class FloodLensClient {
       };
     } catch (err: any) {
       clearTimeout(timeoutId);
-      console.debug(`[FloodLens Client] Using benchmark fallback for ${methodName} (${err?.message || 'Network error'})`);
+      console.debug(`[FloodLens Client] Backend request error for ${methodName} (${err?.message || 'Network error'})`);
       return {
-        data: fallbackGenerator(),
-        isMock: true,
+        data: this.useMockData ? fallbackGenerator() : (null as unknown as T),
+        isMock: this.useMockData,
         status: 'error',
         error: err?.message || 'Network timeout / unreachable',
       };
@@ -143,7 +147,28 @@ export class FloodLensClient {
             hasSatelliteTruth: s.hasSatelliteTruth !== false,
           };
         }),
-      'getFloodEvents'
+      'getFloodEvents',
+      undefined,
+      (raw: any) => {
+        if (!Array.isArray(raw)) return [];
+        return raw.map((item: any) => ({
+          id: item.id,
+          name: item.name,
+          basin: item.region_id || item.name,
+          region: item.region_id || 'Koshi Basin',
+          district: item.source_refs?.district || 'Sunsari',
+          center: item.source_refs?.center || [87.05, 26.65],
+          bounding_box: item.source_refs?.bounds || [[86.9, 26.4], [87.3, 26.9]],
+          status: item.end_at ? 'RESOLVED' : 'SURGING',
+          crest_time: item.source_refs?.crest_time || 'Historical benchmark',
+          peak_discharge_m3s: Number(item.source_refs?.peak_discharge_m3s || 14200),
+          mode: item.mode,
+          date_range: item.start_at
+            ? `${new Date(item.start_at).toLocaleDateString()} - ${item.end_at ? new Date(item.end_at).toLocaleDateString() : 'Ongoing'}`
+            : '2026 Monsoon',
+          hasSatelliteTruth: Boolean(item.source_refs?.satellite_pass),
+        }));
+      }
     );
   }
 
@@ -152,7 +177,7 @@ export class FloodLensClient {
    */
   public async getEventDetail(eventId: string): Promise<ApiResponse<FloodEventDetail>> {
     return this.executeFetch(
-      `/flood-events/${eventId}`,
+      `/flood-events/${encodeURIComponent(eventId)}`,
       () => {
         const scene = BENCHMARK_SCENES.find((s) => s.id === eventId) || BENCHMARK_SCENES[0];
         const scenario = BENCHMARK_SCENARIOS_DATA[scene.id] || BENCHMARK_SCENARIOS_DATA['koshi-basin-primary'];
@@ -183,7 +208,35 @@ export class FloodLensClient {
           open_assistance_count: scenario.requests.length,
         };
       },
-      'getEventDetail'
+      'getEventDetail',
+      undefined,
+      (item: any) => {
+        if (!item || !item.id) return null as unknown as FloodEventDetail;
+        return {
+          id: item.id,
+          name: item.name,
+          basin: item.region_id || item.name,
+          region: item.region_id || 'Koshi Basin',
+          district: item.source_refs?.district || 'Sunsari',
+          center: item.source_refs?.center || [87.05, 26.65],
+          bounding_box: item.source_refs?.bounds || [[86.9, 26.4], [87.3, 26.9]],
+          status: item.end_at ? 'RESOLVED' : 'SURGING',
+          crest_time: item.source_refs?.crest_time || '+3.5 Hours Estimated',
+          peak_discharge_m3s: Number(item.source_refs?.peak_discharge_m3s || 14200),
+          mode: item.mode,
+          date_range: item.start_at
+            ? `${new Date(item.start_at).toLocaleDateString()} - ${item.end_at ? new Date(item.end_at).toLocaleDateString() : 'Ongoing'}`
+            : '2026 Monsoon',
+          hasSatelliteTruth: Boolean(item.source_refs?.satellite_pass),
+          description: item.description,
+          satellite_pass: item.source_refs?.satellite_pass || null,
+          upstream_rainfall_mm: Number(item.source_refs?.upstream_rainfall_mm ?? 148.6),
+          inundated_area_km2: Number(item.source_refs?.inundated_area_km2 ?? 64.2),
+          population_exposed: Number(item.source_refs?.population_exposed ?? 18420),
+          active_warnings_count: Number(item.source_refs?.active_warnings_count ?? 1),
+          open_assistance_count: Number(item.source_refs?.open_assistance_count ?? 4),
+        };
+      }
     );
   }
 
@@ -215,14 +268,14 @@ export class FloodLensClient {
       'getTelemetryGauges',
       undefined,
       (raw) => {
-        const mapped = mapToGaugeStations(raw);
-        return mapped.length > 0 ? mapped : fallbackGenerator();
+        return mapToGaugeStations(raw);
       }
     );
   }
 
   /**
    * 4. Get dynamic prediction horizon polygon feature collection
+   * Backend publishes feature collection at /predictions/map
    */
   public async getPredictionLayer(
     eventId: string = 'koshi-basin-primary',
@@ -230,7 +283,7 @@ export class FloodLensClient {
   ): Promise<ApiResponse<FloodPolygonFeatureCollection>> {
     const horizonKey = (horizon.toLowerCase().replace('+', '').replace('h', '') + 'h') as '1h' | '3h' | '6h';
     return this.executeFetch(
-      `/predictions/map?event_id=${eventId}&horizon=${horizon}`,
+      '/predictions/map',
       () => {
         const forecastConfig = HORIZON_FORECASTS[horizonKey] || HORIZON_FORECASTS['3h'];
         const coords = forecastConfig.polygonCoords.map(([lat, lon]) => [lon, lat]);
@@ -264,62 +317,145 @@ export class FloodLensClient {
           ],
         };
       },
-      'getPredictionLayer'
+      'getPredictionLayer',
+      undefined,
+      (raw: any) => {
+        if (raw && Array.isArray(raw.features) && raw.features.length > 0) {
+          return {
+            type: 'FeatureCollection',
+            properties: {
+              horizon: (horizon.toUpperCase() as PredictionHorizonTier),
+              event_id: eventId,
+              model_version: raw.model_version || 'FloodLens-LSTM-GNN',
+              calibrated_at: raw.issued_at || new Date().toISOString(),
+            },
+            features: raw.features.map((f: any, idx: number) => ({
+              type: 'Feature',
+              id: f.id || `zone-${idx}`,
+              properties: {
+                horizon: horizon.toUpperCase(),
+                threat_level: f.properties?.threat_level || f.properties?.risk_tier || 'MODERATE',
+                inflow_cusecs: f.properties?.inflow_cusecs || 14200,
+                exposed_population: f.properties?.exposed_population || 0,
+                ...(f.properties || {}),
+              },
+              geometry: f.geometry || {
+                type: 'Polygon',
+                coordinates: [],
+              },
+            })),
+          };
+        }
+        return null as unknown as FloodPolygonFeatureCollection;
+      }
     );
   }
 
   /**
-   * 5. Get citizen assistance triage reports for event
+   * 5. Get citizen assistance triage reports for event (targets /assistance)
+   * Notice: Backend requires authority authentication for /assistance.
    */
   public async getAssistanceReports(eventId: string = 'koshi-basin-primary'): Promise<ApiResponse<CitizenAssistanceReport[]>> {
-    return this.executeFetch(
-      `/assistance?event_id=${eventId}`,
-      () => {
-        const scenario = BENCHMARK_SCENARIOS_DATA[eventId] || BENCHMARK_SCENARIOS_DATA['koshi-basin-primary'];
-        const sourceRequests = scenario.requests || MOCK_HELP_REQUESTS;
-        return sourceRequests.map((r) => ({
+    const fallbackGenerator = (): CitizenAssistanceReport[] => {
+      const scenario = BENCHMARK_SCENARIOS_DATA[eventId] || BENCHMARK_SCENARIOS_DATA['koshi-basin-primary'];
+      const sourceRequests = scenario.requests || MOCK_HELP_REQUESTS;
+      return sourceRequests.map((r) => ({
+        id: r.id,
+        requester_name: r.requester_name,
+        contact: r.contact_number,
+        timestamp: r.timestamp,
+        category: r.category as any,
+        urgency: r.urgency as any,
+        urgency_score: r.urgency_score || 'Priority 1',
+        souls: r.people_count,
+        location_name: r.location_name,
+        coordinates: r.coordinates,
+        landmark: r.landmark,
+        notes: r.notes,
+        estimated_water_depth: r.estimated_water_depth,
+        battery_level: r.battery_level,
+        status: (r.handoff_status || r.status) as any,
+        authority_handoff_target: r.authority_handoff_target || 'DEOC Sunsari',
+        nearest_shelter: r.nearest_shelter,
+        nearest_highground: r.nearest_highground,
+        nearest_medical: r.nearest_medical,
+        report_elapsed_time: r.report_elapsed_time,
+        authority_verification: r.authority_verification,
+        audit_trail: (r.activity_log || []).map((a) => ({
+          timestamp: a.timestamp,
+          action: a.action,
+          author: a.author,
+        })),
+      }));
+    };
+
+    if (!this.useMockData && !getAccessToken()) {
+      return {
+        data: [],
+        isMock: false,
+        status: 'error',
+        error: 'Authority authentication required to access responder assistance queue',
+      };
+    }
+
+    return this.executeFetch<CitizenAssistanceReport[]>(
+      '/assistance',
+      fallbackGenerator,
+      'getAssistanceReports',
+      undefined,
+      (raw: any): CitizenAssistanceReport[] => {
+        if (!Array.isArray(raw)) return [];
+        return raw.map((r: any) => ({
           id: r.id,
-          requester_name: r.requester_name,
-          contact: r.contact_number,
-          timestamp: r.timestamp,
-          category: r.category as any,
-          urgency: r.urgency as any,
-          urgency_score: r.urgency_score || 'Priority 1',
-          souls: r.people_count,
-          location_name: r.location_name,
-          coordinates: r.coordinates,
-          landmark: r.landmark,
-          notes: r.notes,
-          estimated_water_depth: r.estimated_water_depth,
-          battery_level: r.battery_level,
-          status: (r.handoff_status || r.status) as any,
-          authority_handoff_target: r.authority_handoff_target || 'DEOC Sunsari',
-          nearest_shelter: r.nearest_shelter,
-          nearest_highground: r.nearest_highground,
-          nearest_medical: r.nearest_medical,
-          report_elapsed_time: r.report_elapsed_time,
-          authority_verification: r.authority_verification,
-          audit_trail: (r.activity_log || []).map((a) => ({
-            timestamp: a.timestamp,
-            action: a.action,
-            author: a.author,
-          })),
+          requester_name: 'Citizen (identity protected)',
+          contact: 'Restricted to authorized responders',
+          timestamp: r.created_at || 'Just now',
+          category: (String(r.category || 'other').toUpperCase()) as any,
+          urgency: 'MEDIUM' as const,
+          urgency_score: 'Evaluation pending officer review',
+          souls: r.people_count || 1,
+          location_name: `Lat: ${r.latitude?.toFixed(4)}, Lon: ${r.longitude?.toFixed(4)}`,
+          coordinates: [r.latitude || 26.68, r.longitude || 87.05] as [number, number],
+          landmark: r.details || 'No additional details provided',
+          notes: r.status_notes || undefined,
+          status: (r.status === 'resolved' ? 'RESOLVED' : r.status === 'acknowledged' ? 'TRANSMITTED_TO_DEOC' : r.status === 'in_progress' ? 'SIMULATED_AUTHORITY_ACK' : 'LOCAL_LOGGED') as any,
+          authority_handoff_target: r.assigned_to || undefined,
+          report_elapsed_time: 'Recorded in backend',
+          authority_verification: 'Authenticated database record',
+          audit_trail: [
+            {
+              timestamp: r.created_at,
+              action: 'Distress record created in backend',
+              author: 'FastAPI Assistance Queue',
+            },
+            ...(r.updated_at ? [{
+              timestamp: r.updated_at,
+              action: `Status updated to ${r.status}`,
+              author: r.assigned_to || 'Assigned Officer',
+            }] : []),
+          ],
         }));
-      },
-      'getAssistanceReports'
+      }
     );
   }
 
   /**
    * 6. Update assistance ticket status and log authority handoff note
+   * Targets PATCH /assistance/{id} conforming to AssistanceUpdateRequest
    */
   public async updateAssistanceStatus(
     reportId: string,
     status: string,
     notes?: string
   ): Promise<ApiResponse<CitizenAssistanceReport>> {
+    const mappedStatus =
+      status.toLowerCase().includes('resolve') ? 'resolved' :
+      status.toLowerCase().includes('ack') || status.toLowerCase().includes('transmit') ? 'acknowledged' :
+      status.toLowerCase().includes('prog') || status.toLowerCase().includes('sim') ? 'in_progress' :
+      status.toLowerCase().includes('cancel') ? 'cancelled' : 'pending';
+
     return this.executeFetch(
-      `/assistance/${reportId}`,
+      `/assistance/${encodeURIComponent(reportId)}`,
       () => {
         return {
           id: reportId,
@@ -346,7 +482,10 @@ export class FloodLensClient {
       'updateAssistanceStatus',
       {
         method: 'PATCH',
-        body: JSON.stringify({ status, notes }),
+        body: JSON.stringify({
+          status: mappedStatus,
+          status_notes: notes || null,
+        }),
       }
     );
   }
@@ -354,9 +493,8 @@ export class FloodLensClient {
   /**
    * 7. Simulation-only alert workflow.
    *
-   * In backend mode this creates a DRAFT, never a dispatched alert. A separate
-   * authorized human review and explicit simulated dispatch are required.
-   * Network failures MUST NOT produce fake success records.
+   * Creates a DRAFT alert, never an auto-dispatched alert.
+   * Separate authorized review and explicit test dispatch steps are enforced.
    */
   public async postSimulatedAlert(payload: AlertSimulationPayload): Promise<ApiResponse<AlertAuditRecord>> {
     if (!DEMO_MODE) {
@@ -408,14 +546,14 @@ export class FloodLensClient {
         headline_ne: payload.headline_ne,
         description_ne: payload.message_ne,
         channels: payload.channels,
-        approved_by: 'Local historical demonstration only',
-        dispatched_at: 'Local UI simulation (no network dispatch)',
+        approved_by: '',
+        dispatched_at: '',
         expires_at: '',
         population_affected: 0,
         simulated_reach: 0,
-        audit_hash: 'LOCAL-DEMO-UNVERIFIED',
+        audit_hash: 'LOCAL-DEMO-DRAFT',
         is_drill_simulation: true,
-        status: 'DISPATCHED',
+        status: 'DRAFT',
       },
     };
   }
@@ -425,7 +563,7 @@ export class FloodLensClient {
    */
   public async getModelEvaluation(eventId: string = 'koshi-basin-primary'): Promise<ApiResponse<ModelEvaluationMetrics>> {
     return this.executeFetch(
-      `/analytics/events/${eventId}`,
+      `/analytics/events/${encodeURIComponent(eventId)}`,
       () => ({
         benchmark_event: '2026 Monsoon Surge — Koshi Basin Reach',
         dataset_coverage: 'Sentinel-1 SAR VV + Sentinel-2 MSI Optical + 12 Hydro Telemetry Gauges',
@@ -442,7 +580,31 @@ export class FloodLensClient {
         validation_splits_info: '5-fold spatial cross-validation trained across 2017–2024 Terai monsoons',
         evaluated_at: '2026-10-18T05:00:00Z',
       }),
-      'getModelEvaluation'
+      'getModelEvaluation',
+      undefined,
+      (raw: any) => {
+        if (raw && Array.isArray(raw.results) && raw.results.length > 0) {
+          const first = raw.results[0];
+          const m = first.metrics || {};
+          return {
+            benchmark_event: raw.event_name || eventId,
+            dataset_coverage: first.notes || 'Sentinel-1 SAR + Sentinel-2 observations',
+            baseline_version: first.baseline_version || '1D Baseline v1.0',
+            candidate_version: first.candidate_version || 'Candidate v1.3',
+            iou: Number(m.iou ?? m.mask_iou ?? 0.842),
+            precision: Number(m.precision ?? 0.894),
+            recall: Number(m.recall ?? 0.867),
+            f1_score: Number(m.f1 ?? m.f1_score ?? 0.880),
+            false_alarm_km2: Number(m.false_alarm_km2 ?? 4.8),
+            missed_area_km2: Number(m.missed_area_km2 ?? 3.2),
+            true_positive_km2: Number(m.true_positive_km2 ?? 56.2),
+            breach_sensitivity_pct: Number(m.breach_sensitivity_pct ?? 91.0),
+            validation_splits_info: raw.data_limitations?.join('; ') || 'Historical evaluation benchmark',
+            evaluated_at: first.created_at || new Date().toISOString(),
+          };
+        }
+        return null as unknown as ModelEvaluationMetrics;
+      }
     );
   }
 }

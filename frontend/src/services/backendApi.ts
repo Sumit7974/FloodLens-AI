@@ -155,15 +155,20 @@ let currentSession: AuthSession | null = null;
 export function getSession(): AuthSession | null {
   return currentSession;
 }
+export function getAccessToken(): string | null {
+  return accessToken;
+}
 export function clearSession(): void {
   accessToken = null;
   currentSession = null;
 }
 export class BackendRequestError extends Error {
   readonly status: number;
-  constructor(status: number, message: string) {
+  readonly code?: string;
+  constructor(status: number, message: string, code?: string) {
     super(message);
     this.status = status;
+    this.code = code;
     this.name = 'BackendRequestError';
   }
 }
@@ -179,9 +184,14 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   try {
     const response = await fetch(`${API_URL}${path}`, { ...init, headers, signal: abort.signal });
     if (!response.ok) {
-      const body = await response.json().catch(() => ({})) as { error?: { message?: string }; detail?: string };
+      const body = await response.json().catch(() => ({})) as {
+        error?: { message?: string; code?: string; details?: unknown };
+        detail?: string;
+      };
       if (response.status === 401) clearSession();
-      throw new BackendRequestError(response.status, body.error?.message || body.detail || `HTTP ${response.status}`);
+      const code = body.error?.code || (response.status === 401 ? 'UNAUTHORIZED' : response.status === 403 ? 'FORBIDDEN' : response.status === 404 ? 'NOT_FOUND' : response.status === 409 ? 'CONFLICT' : `HTTP_${response.status}`);
+      const message = body.error?.message || (typeof body.detail === 'string' ? body.detail : null) || `HTTP ${response.status}`;
+      throw new BackendRequestError(response.status, message, code);
     }
     return (await response.json()) as T;
   } finally {
@@ -252,6 +262,34 @@ export async function listResearchModels(): Promise<ModelResearchRecord[]> {
 
 export async function getEventEvaluations(eventId: string): Promise<EventEvaluations> {
   return request<EventEvaluations>(`/analytics/events/${encodeURIComponent(eventId)}`);
+}
+
+export interface GaugeStationRecord {
+  station_id: string;
+  name: string;
+  river: string;
+  coordinates: [number, number];
+  current_level: number;
+  warning_level: number;
+  danger_level: number;
+  discharge_rate: number;
+  trend: string;
+  last_reported_at: string;
+  battery_level?: number;
+  status: string;
+}
+
+export interface GaugeMonitoringResponse {
+  status: string;
+  stations: GaugeStationRecord[];
+  readings: unknown[];
+  count: number;
+}
+
+export async function getRiverGauges(eventId?: string): Promise<GaugeStationRecord[]> {
+  const path = eventId ? `/monitoring/gauges?event_id=${encodeURIComponent(eventId)}` : '/monitoring/gauges';
+  const response = await request<GaugeMonitoringResponse>(path);
+  return response.stations || [];
 }
 
 export async function getAssistanceQueue(): Promise<AssistanceRecord[]> {

@@ -113,7 +113,6 @@ export const AlertDispatcher: React.FC<AlertDispatcherProps> = ({
   currentScene,
   activeAlerts,
   onBroadcastAlert,
-  onCancelAlert,
   onAlertUpdated,
   initialPayload,
 }) => {
@@ -250,7 +249,23 @@ export const AlertDispatcher: React.FC<AlertDispatcherProps> = ({
   };
 
   const handleAdvanceAlert = async (alert: Alert) => {
-    if (DEMO_MODE || (alert.status !== 'DRAFT' && alert.status !== 'APPROVED')) return;
+    if (alert.status !== 'DRAFT' && alert.status !== 'APPROVED') return;
+
+    if (DEMO_MODE) {
+      const nextStatus = alert.status === 'DRAFT' ? 'APPROVED' : 'DISPATCHED';
+      const updated: Alert = {
+        ...alert,
+        status: nextStatus,
+        approved_by: alert.status === 'DRAFT' ? 'Authorized EOC Duty Commander (Drill Simulation)' : alert.approved_by,
+        dispatched_at: nextStatus === 'DISPATCHED' ? new Date().toISOString() : alert.dispatched_at,
+      };
+      onAlertUpdated?.(updated);
+      setToast(alert.status === 'DRAFT'
+        ? 'LOCAL DEMO ONLY: Alert draft approved in local simulation. Test dispatch requires separate step.'
+        : 'LOCAL DEMO ONLY: Simulated test dispatch recorded in local simulation (no network broadcast).');
+      return;
+    }
+
     setPendingAlertId(alert.id);
     try {
       const saved = alert.status === 'DRAFT'
@@ -605,13 +620,24 @@ export const AlertDispatcher: React.FC<AlertDispatcherProps> = ({
                     </div>
 
                     <button
-                      onClick={() => alert.status === 'DRAFT' || alert.status === 'APPROVED'
-                        ? void handleAdvanceAlert(alert)
-                        : DEMO_MODE ? onCancelAlert(alert.id) : undefined}
-                      disabled={pendingAlertId === alert.id || (!DEMO_MODE && alert.status !== 'DRAFT' && alert.status !== 'APPROVED')}
-                      className="px-2 py-0.5 rounded text-[9px] border border-sky-500/50 text-sky-300 hover:bg-sky-500/20 cursor-pointer disabled:opacity-40"
+                      onClick={() => {
+                        if (alert.status === 'DRAFT' || alert.status === 'APPROVED') {
+                          void handleAdvanceAlert(alert);
+                        } else {
+                          setToast('Action unsupported: Alert cancellation is not supported by the backend architecture. Issued CAP alerts are permanent audit records.');
+                        }
+                      }}
+                      disabled={pendingAlertId === alert.id || (alert.status !== 'DRAFT' && alert.status !== 'APPROVED')}
+                      title={alert.status === 'DISPATCHED' ? 'Backend alerts are permanent immutable audit records. Cancellation is unsupported.' : undefined}
+                      className="px-2 py-0.5 rounded text-[9px] border border-sky-500/50 text-sky-300 hover:bg-sky-500/20 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                     >
-                      {pendingAlertId === alert.id ? 'Saving…' : alert.status === 'DRAFT' ? 'APPROVE DEMO DRAFT' : alert.status === 'APPROVED' ? 'DISPATCH TEST ONLY' : DEMO_MODE ? 'CANCEL LOCAL DEMO' : 'READ ONLY'}
+                      {pendingAlertId === alert.id
+                        ? 'Saving…'
+                        : alert.status === 'DRAFT'
+                        ? 'APPROVE DEMO DRAFT'
+                        : alert.status === 'APPROVED'
+                        ? 'DISPATCH TEST ONLY'
+                        : 'DISPATCHED (IMMUTABLE)'}
                     </button>
                   </div>
 
