@@ -85,7 +85,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   ];
 
   return (
-    <aside className="w-full md:w-60 lg:w-64 flex-shrink-0 border-r border-[#1e293b]/90 bg-[#060d1b]/85 backdrop-blur-xl flex flex-col justify-between shadow-[4px_0_24px_rgba(0,0,0,0.5)]">
+    <aside className="w-full md:w-64 lg:w-72 flex-shrink-0 border-r border-[#1e293b]/90 bg-[#060d1b]/85 backdrop-blur-xl flex flex-col justify-between shadow-[4px_0_24px_rgba(0,0,0,0.5)]">
       {/* Top Nav Section */}
       <div className="p-3 space-y-3">
         {/* Navigation Category Label with Luminous Cyan Eyebrow */}
@@ -109,27 +109,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <button
                 key={item.id}
                 onClick={() => onSelectTab(item.id)}
-                className={`w-full group flex items-center justify-between px-3.5 py-3 text-left transition-all duration-200 rounded-md cursor-pointer ${
+                className={`w-full group flex items-center justify-between px-3 py-2.5 text-left transition-all duration-200 rounded-md cursor-pointer ${
                   isActive
                     ? `${item.activeBg} text-white border-l-2 ${item.activeBorder} ${item.glow}`
                     : 'text-[#94a3b8] hover:text-white hover:bg-[#0f1d36]/70 border-l-2 border-transparent hover:border-[#38bdf8]/50'
                 }`}
               >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className={`p-1.5 rounded transition-colors ${isActive ? 'bg-white/10' : 'group-hover:bg-white/5'}`}>
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className={`p-1 rounded shrink-0 transition-colors ${isActive ? 'bg-white/10' : 'group-hover:bg-white/5'}`}>
                     <Icon
-                      className={`w-4.5 h-4.5 transition-transform duration-200 group-hover:scale-110 ${
+                      className={`w-4 h-4 shrink-0 transition-transform duration-200 group-hover:scale-110 ${
                         isActive ? item.color : `${item.color} opacity-70 group-hover:opacity-100`
                       }`}
                     />
                   </div>
-                  <span className="font-display text-sm tracking-wide uppercase font-bold truncate">
+                  <span className="font-display text-xs tracking-wider uppercase font-bold whitespace-nowrap">
                     {item.label}
                   </span>
                 </div>
 
                 {item.badge && (
-                  <span className={`text-xs font-mono px-2 py-0.5 rounded-full font-bold shrink-0 ${item.badgeColor}`}>
+                  <span className={`text-[11px] font-mono px-2 py-0.5 rounded-full font-bold shrink-0 ml-2 ${item.badgeColor}`}>
                     {item.badge}
                   </span>
                 )}
