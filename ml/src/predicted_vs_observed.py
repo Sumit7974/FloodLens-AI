@@ -273,10 +273,12 @@ def run_predicted_vs_observed_analysis(
 
     # Locate dataset
     dpath = Path(data_path) if data_path else (root / "ml" / "data" / "processed" / "era5_glofas_labeled.csv")
-    if not dpath.exists():
-        dpath = root / "ml" / "data" / "processed" / "koshi_event_cleaned.csv"
-    if not dpath.exists():
-        raise FileNotFoundError(f"Neither reanalysis nor cleaned synthetic dataset found at {dpath}")
+    if not dpath.is_file():
+        raise FileNotFoundError(
+            f"Requested evaluation dataset unavailable: {dpath}. "
+            "Pass data_path explicitly for synthetic demonstrations; "
+            "never silently substitute synthetic results for historical validation."
+        )
 
     logger.info(f"Loading evaluation dataset from {dpath}")
     df = pd.read_csv(dpath)
@@ -305,11 +307,9 @@ def run_predicted_vs_observed_analysis(
     models_dir = root / "ml" / "models"
     from ml.src.predict import FloodRiskPredictor
 
-    predictor = None
-    try:
-        predictor = FloodRiskPredictor(models_dir=models_dir, model_version=model_version)
-    except Exception as e:
-        logger.warning(f"Could not initialize predictor for {model_version}: {e}. Evaluating dataset targets directly.")
+    predictor = FloodRiskPredictor(models_dir=models_dir, model_version=model_version)
+    if not all(h in predictor.models for h in (1, 3, 6)):
+        raise RuntimeError(f"Model {model_version} is missing a required multi-horizon artifact")
 
     horizons = [1, 3, 6]
     for h in horizons:
@@ -319,24 +319,15 @@ def run_predicted_vs_observed_analysis(
 
         y_true = test_df[target_col]
 
-        # Generate model predictions on test split instances
-        if predictor and h in predictor.models:
-            model = predictor.models[h]
-            # Build feature frame
-            num_cols = predictor.metadata.get("features", {}).get("numeric", [])
-            cat_cols = predictor.metadata.get("features", {}).get("categorical", [])
-            all_cols = num_cols + cat_cols
-            X_test = test_df[all_cols].copy()
-
-            # Predict
-            try:
-                preds = model.predict(X_test)
-                y_pred = pd.Series(preds, index=test_df.index)
-            except Exception as exc:
-                logger.warning(f"Error predicting test split with horizon +{h}h model: {exc}")
-                y_pred = y_true.copy()
-        else:
-            y_pred = y_true.copy()
+        # An inference failure is a hard evaluation error, never an excuse to
+        # copy true targets into predictions and falsely report perfect skill.
+        num_cols = predictor.metadata.get("features", {}).get("numeric", [])
+        cat_cols = predictor.metadata.get("features", {}).get("categorical", [])
+        X_test = test_df[num_cols + cat_cols].copy()
+        try:
+            y_pred = pd.Series(predictor.models[h].predict(X_test), index=test_df.index)
+        except Exception as exc:
+            raise RuntimeError(f"Model {model_version} failed at +{h}h; evaluation aborted") from exc
 
         # 1. Multiclass Evaluation
         res_multi = evaluate_multiclass_risk(
