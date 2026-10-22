@@ -44,6 +44,55 @@ export interface AlertRecord {
   target_channels: string[];
   created_at: string;
 }
+export interface FloodEventRecord {
+  id: string;
+  region_id: string;
+  name: string;
+  start_at: string;
+  end_at: string | null;
+  mode: 'historical_demo' | 'test' | 'live_observation' | 'model_estimate';
+  source_refs: Record<string, unknown>;
+  description: string | null;
+  created_at: string;
+}
+
+export type MappableGeometry = {
+  type: 'Polygon' | 'MultiPolygon';
+  coordinates: unknown;
+};
+
+export interface ObservedExtentFeature {
+  type: 'Feature';
+  id: string;
+  properties: {
+    event_id: string;
+    observed_at: string;
+    method: string;
+    area_km2: number;
+    confidence: number | null;
+    source_scene_ids: string[] | null;
+  };
+  geometry: MappableGeometry | null;
+}
+
+export interface SettlementExposureResponse {
+  event_id: string;
+  status: string;
+  total_settlements_evaluated: number;
+  total_settlements_affected: number;
+  affected_settlements: unknown[];
+  notes?: string | null;
+}
+
+export interface AssetExposureResponse {
+  event_id: string;
+  status: string;
+  roads_exposed_km: number;
+  structures_exposed_count: number;
+  cropland_exposed_ha: number;
+  exposed_assets: unknown[];
+}
+
 export type BackendEvent = {
   type: string;
   event_id?: string;
@@ -111,6 +160,37 @@ export function requireAuthority(): void {
   if (!accessToken || !currentSession || !['authority', 'admin'].includes(currentSession.role)) {
     throw new Error('Sign in with an existing authority/admin account to use backend actions.');
   }
+}
+
+/**
+ * Historical observations are always fetched from the backend's event-linked API.
+ * A response from a local GIS file or generated preview is never presented as a
+ * verified backend observation.
+ */
+export async function listHistoricalEvents(): Promise<FloodEventRecord[]> {
+  const events = await request<FloodEventRecord[]>('/flood-events');
+  return events.filter(event => event.mode === 'historical_demo' || event.mode === 'test');
+}
+
+export async function getObservedExtent(eventId: string): Promise<ObservedExtentFeature> {
+  const feature = await request<ObservedExtentFeature>(`/flood-events/${encodeURIComponent(eventId)}/extent/geojson`);
+  if (
+    feature.type !== 'Feature' ||
+    !feature.geometry ||
+    !['Polygon', 'MultiPolygon'].includes(feature.geometry.type) ||
+    !Array.isArray(feature.geometry.coordinates)
+  ) {
+    throw new Error('Backend flood extent does not have a valid Polygon/MultiPolygon GeoJSON geometry');
+  }
+  return feature;
+}
+
+export async function getSettlementExposure(eventId: string): Promise<SettlementExposureResponse> {
+  return request<SettlementExposureResponse>(`/flood-events/${encodeURIComponent(eventId)}/settlements`);
+}
+
+export async function getAssetExposure(eventId: string): Promise<AssetExposureResponse> {
+  return request<AssetExposureResponse>(`/flood-events/${encodeURIComponent(eventId)}/assets`);
 }
 
 export async function getAssistanceQueue(): Promise<AssistanceRecord[]> {
