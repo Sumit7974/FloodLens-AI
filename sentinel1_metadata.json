@@ -1,0 +1,134 @@
+{
+  "pipeline": "FloodLens AI - Sentinel-1 SAR Prototyping",
+  "study_region": "Koshi River Basin, Eastern Nepal",
+  "bounding_box": [
+    86.5,
+    26.2,
+    88.2,
+    27.8
+  ],
+  "pre_flood_scene": {
+    "id": "S1A_IW_GRDH_1SDV_20170730T001139_20170730T001204_017693_01DA0D",
+    "datetime": "2017-07-30T00:11:51.748545+00:00",
+    "relative_orbit": 121,
+    "orbit_state": "descending",
+    "polarizations": [
+      "VV",
+      "VH"
+    ],
+    "preview_url": "https://sentinel1euwest.blob.core.windows.net/s1-grd/GRD/2017/7/30/IW/DV/S1A_IW_GRDH_1SDV_20170730T001139_20170730T001204_017693_01DA0D_43CA/preview/quick-look.png?st=2026-10-19T10%3A00%3A09Z&se=2026-10-20T10%3A45%3A09Z&sp=rl&sv=2025-07-05&sr=c&skoid=9c8ff44a-6a2c-4dfb-b298-1c9212f64d9a&sktid=72f988bf-86f1-41af-91ab-2d7cd011db47&skt=2026-10-20T09%3A55%3A38Z&ske=2026-10-27T09%3A55%3A38Z&sks=b&skv=2025-07-05&sig=S3P05Lstyt2%2BCBZH3afvqmm6yyB9hLgox2GfweZ4UXo%3D"
+  },
+  "post_flood_scene": {
+    "id": "S1A_IW_GRDH_1SDV_20170823T001140_20170823T001205_018043_01E4B1",
+    "datetime": "2017-08-23T00:11:52.909662+00:00",
+    "relative_orbit": 121,
+    "orbit_state": "descending",
+    "polarizations": [
+      "VV",
+      "VH"
+    ],
+    "preview_url": "https://sentinel1euwest.blob.core.windows.net/s1-grd/GRD/2017/8/23/IW/DV/S1A_IW_GRDH_1SDV_20170823T001140_20170823T001205_018043_01E4B1_F51A/preview/quick-look.png?st=2026-10-19T10%3A00%3A09Z&se=2026-10-20T10%3A45%3A09Z&sp=rl&sv=2025-07-05&sr=c&skoid=9c8ff44a-6a2c-4dfb-b298-1c9212f64d9a&sktid=72f988bf-86f1-41af-91ab-2d7cd011db47&skt=2026-10-20T09%3A55%3A38Z&ske=2026-10-27T09%3A55%3A38Z&sks=b&skv=2025-07-05&sig=S3P05Lstyt2%2BCBZH3afvqmm6yyB9hLgox2GfweZ4UXo%3D"
+  },
+  "sar_change_detection_metrics": {
+    "drop_threshold_db": -2.5,
+    "flooded_pixel_count": 6122,
+    "flood_extent_percentage": 3.53,
+    "algorithm": "Log-Ratio Specular Backscatter Drop Thresholding",
+    "advantage": "All-weather cloud-penetrating radar capability during monsoonal storm events"
+  },
+  "catalog_scenes_available": [
+    {
+      "id": "S1A_IW_GRDH_1SDV_20170823T001140_20170823T001205_018043_01E4B1",
+      "datetime": "2017-08-23T00:11:52.909662+00:00",
+      "relative_orbit": 121,
+      "orbit_direction": "descending",
+      "polarizations": [
+        "VV",
+        "VH"
+      ],
+      "mode": "IW"
+    },
+    {
+      "id": "S1A_IW_GRDH_1SDV_20170823T001115_20170823T001140_018043_01E4B1",
+      "datetime": "2017-08-23T00:11:27.909791+00:00",
+      "relative_orbit": 121,
+      "orbit_direction": "descending",
+      "polarizations": [
+        "VV",
+        "VH"
+      ],
+      "mode": "IW"
+    },
+    {
+      "id": "S1A_IW_GRDH_1SDV_20170823T001050_20170823T001115_018043_01E4B1",
+      "datetime": "2017-08-23T00:11:02.909915+00:00",
+      "relative_orbit": 121,
+      "orbit_direction": "descending",
+      "polarizations": [
+        "VV",
+        "VH"
+      ],
+      "mode": "IW"
+    },
+    {
+      "id": "S1A_IW_GRDH_1SDV_20170820T122203_20170820T122228_018007_01E393",
+      "datetime": "2017-08-20T12:22:15.543700+00:00",
+      "relative_orbit": 85,
+      "orbit_direction": "ascending",
+      "polarizations": [
+        "VV",
+        "VH"
+      ],
+      "mode": "IW"
+    },
+    {
+      "id": "S1A_IW_GRDH_1SDV_20170820T122138_20170820T122203_018007_01E393",
+      "datetime": "2017-08-20T12:21:50.543804+00:00",
+      "relative_orbit": 85,
+      "orbit_direction": "ascending",
+      "polarizations": [
+        "VV",
+        "VH"
+      ],
+      "mode": "IW"
+    },
+    {
+      "id": "S1A_IW_GRDH_1SDV_20170820T122113_20170820T122138_018007_01E393",
+      "datetime": "2017-08-20T12:21:25.543907+00:00",
+      "relative_orbit": 85,
+      "orbit_direction": "ascending",
+      "polarizations": [
+        "VV",
+        "VH"
+      ],
+      "mode": "IW"
+    },
+    {
+      "id": "S1A_IW_GRDH_1SDV_20170818T000315_20170818T000340_017970_01E26E",
+      "datetime": "2017-08-18T00:03:27.903788+00:00",
+      "relative_orbit": 48,
+      "orbit_direction": "descending",
+      "polarizations": [
+        "VV",
+        "VH"
+      ],
+      "mode": "IW"
+    },
+    {
+      "id": "S1A_IW_GRDH_1SDV_20170818T000250_20170818T000315_017970_01E26E",
+      "datetime": "2017-08-18T00:03:02.903643+00:00",
+      "relative_orbit": 48,
+      "orbit_direction": "descending",
+      "polarizations": [
+        "VV",
+        "VH"
+      ],
+      "mode": "IW"
+    }
+  ],
+  "outputs": {
+    "comparison_figure": "C:\\Users\\Hp\\Documents\\FLOOD AI\\FloodLens-AI\\ml\\gis_processing\\downloads\\sentinel1_sar_flood_comparison.png",
+    "pre_thumbnail": "C:\\Users\\Hp\\Documents\\FLOOD AI\\FloodLens-AI\\ml\\gis_processing\\downloads\\sentinel1_pre_flood_thumbnail.png",
+    "post_thumbnail": "C:\\Users\\Hp\\Documents\\FLOOD AI\\FloodLens-AI\\ml\\gis_processing\\downloads\\sentinel1_post_flood_thumbnail.png"
+  }
+}

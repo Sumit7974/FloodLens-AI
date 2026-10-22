@@ -18,6 +18,14 @@ import joblib
 import numpy as np
 import pandas as pd
 
+# Compatibility alias for unpickling scikit-learn Cython loss functions across versions
+try:
+    import sys
+    import sklearn._loss._loss as _cy_loss
+    sys.modules.setdefault("_loss", _cy_loss)
+except (ImportError, AttributeError):
+    pass
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 

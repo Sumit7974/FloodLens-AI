@@ -1,0 +1,4366 @@
+{
+  "type": "FeatureCollection",
+  "name": "hazard_routes_optimized",
+  "crs": {
+    "type": "name",
+    "properties": {
+      "name": "urn:ogc:def:crs:OGC:1.3:CRS84"
+    }
+  },
+  "optimization_metadata": {
+    "algorithm": "Douglas-Peucker Simplification",
+    "tolerance_degrees": 5e-05,
+    "approx_ground_tolerance_m": 5.6,
+    "coordinate_precision_decimals": 5,
+    "preserve_topology": true,
+    "optimized_at": "2026-10-20T10:29:09.113007Z"
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "id": 1,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0001",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 999999,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "critical_bridge_submersion",
+        "flood_depth_est_m": 2.5,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": true,
+        "osm_id": 44843641,
+        "highway": "primary",
+        "name": "Unnamed Arterial Road",
+        "ref": "MDR",
+        "surface": "paved",
+        "bridge": "yes",
+        "length_m": 453.3,
+        "length_km": 0.453,
+        "navigation_instruction": "ROAD CLOSED: Unnamed Arterial Road (PRIMARY) is inundated by Koshi floodwaters at est. 2.5m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-1 Urgent"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.90573,
+            26.14385
+          ],
+          [
+            87.90993,
+            26.1423
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 2,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0002",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 999999,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "critical_bridge_submersion",
+        "flood_depth_est_m": 2.5,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": true,
+        "osm_id": 45308086,
+        "highway": "trunk",
+        "name": "Mahendra Highway",
+        "ref": "NH01",
+        "surface": "paved",
+        "bridge": "yes",
+        "length_m": 351.4,
+        "length_km": 0.351,
+        "navigation_instruction": "ROAD CLOSED: Mahendra Highway (TRUNK) is inundated by Koshi floodwaters at est. 2.5m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-1 Urgent"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.61586,
+            26.66327
+          ],
+          [
+            87.61262,
+            26.66453
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 3,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0003",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 999999,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "critical_bridge_submersion",
+        "flood_depth_est_m": 2.5,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": true,
+        "osm_id": 45308258,
+        "highway": "trunk",
+        "name": "Mahendra Highway",
+        "ref": "NH01",
+        "surface": "paved",
+        "bridge": "yes",
+        "length_m": 470.1,
+        "length_km": 0.47,
+        "navigation_instruction": "ROAD CLOSED: Mahendra Highway (TRUNK) is inundated by Koshi floodwaters at est. 2.5m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-1 Urgent"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.87447,
+            26.65587
+          ],
+          [
+            87.87,
+            26.65726
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 4,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0004",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 999999,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "critical_bridge_submersion",
+        "flood_depth_est_m": 2.5,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": true,
+        "osm_id": 234203137,
+        "highway": "primary",
+        "name": "Mechi Highway",
+        "ref": "NH02",
+        "surface": "paved",
+        "bridge": "yes",
+        "length_m": 62.2,
+        "length_km": 0.062,
+        "navigation_instruction": "ROAD CLOSED: Mechi Highway (PRIMARY) is inundated by Koshi floodwaters at est. 2.5m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-1 Urgent"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.92841,
+            26.88355
+          ],
+          [
+            87.92779,
+            26.88348
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 5,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0005",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 500000,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "roadway_inundation",
+        "flood_depth_est_m": 1.2,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": false,
+        "osm_id": 240345514,
+        "highway": "tertiary",
+        "name": "Unnamed Arterial Road",
+        "ref": "",
+        "surface": "paved",
+        "bridge": "no",
+        "length_m": 510.2,
+        "length_km": 0.51,
+        "navigation_instruction": "ROAD CLOSED: Unnamed Arterial Road (TERTIARY) is inundated by Koshi floodwaters at est. 1.2m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-2 Secondary"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.99612,
+            26.64953
+          ],
+          [
+            87.99627,
+            26.64892
+          ],
+          [
+            87.99618,
+            26.64757
+          ],
+          [
+            87.99625,
+            26.64612
+          ],
+          [
+            87.99607,
+            26.64496
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 6,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0006",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 999999,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "critical_bridge_submersion",
+        "flood_depth_est_m": 2.5,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": true,
+        "osm_id": 334452205,
+        "highway": "trunk",
+        "name": "Mahendra Highway",
+        "ref": "NH01",
+        "surface": "paved",
+        "bridge": "yes",
+        "length_m": 226.1,
+        "length_km": 0.226,
+        "navigation_instruction": "ROAD CLOSED: Mahendra Highway (TRUNK) is inundated by Koshi floodwaters at est. 2.5m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-1 Urgent"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.8766,
+            26.65518
+          ],
+          [
+            87.87447,
+            26.65587
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 7,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0007",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 999999,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "critical_bridge_submersion",
+        "flood_depth_est_m": 2.5,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": true,
+        "osm_id": 334452935,
+        "highway": "trunk",
+        "name": "Mahendra Highway",
+        "ref": "NH01",
+        "surface": "paved",
+        "bridge": "yes",
+        "length_m": 404.9,
+        "length_km": 0.405,
+        "navigation_instruction": "ROAD CLOSED: Mahendra Highway (TRUNK) is inundated by Koshi floodwaters at est. 2.5m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-1 Urgent"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.93823,
+            26.64047
+          ],
+          [
+            87.93416,
+            26.64041
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 8,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0008",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 500000,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "roadway_inundation",
+        "flood_depth_est_m": 1.2,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": false,
+        "osm_id": 337389000,
+        "highway": "tertiary",
+        "name": "Unnamed Arterial Road",
+        "ref": "",
+        "surface": "paved",
+        "bridge": "no",
+        "length_m": 3454.1,
+        "length_km": 3.454,
+        "navigation_instruction": "ROAD CLOSED: Unnamed Arterial Road (TERTIARY) is inundated by Koshi floodwaters at est. 1.2m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-2 Secondary"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.60554,
+            26.44197
+          ],
+          [
+            87.60498,
+            26.44188
+          ],
+          [
+            87.60454,
+            26.44169
+          ],
+          [
+            87.60414,
+            26.44166
+          ],
+          [
+            87.60394,
+            26.44151
+          ],
+          [
+            87.60378,
+            26.44123
+          ],
+          [
+            87.60375,
+            26.44099
+          ],
+          [
+            87.60398,
+            26.44063
+          ],
+          [
+            87.60431,
+            26.43956
+          ],
+          [
+            87.60438,
+            26.43875
+          ],
+          [
+            87.6043,
+            26.43831
+          ],
+          [
+            87.60404,
+            26.43767
+          ],
+          [
+            87.60292,
+            26.43704
+          ],
+          [
+            87.60313,
+            26.43582
+          ],
+          [
+            87.60313,
+            26.43544
+          ],
+          [
+            87.60303,
+            26.43524
+          ],
+          [
+            87.60138,
+            26.43411
+          ],
+          [
+            87.6008,
+            26.43355
+          ],
+          [
+            87.60018,
+            26.43176
+          ],
+          [
+            87.59974,
+            26.43006
+          ],
+          [
+            87.59971,
+            26.42534
+          ],
+          [
+            87.6001,
+            26.4219
+          ],
+          [
+            87.6003,
+            26.42147
+          ],
+          [
+            87.60492,
+            26.41505
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 9,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0009",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 500000,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "roadway_inundation",
+        "flood_depth_est_m": 1.2,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": false,
+        "osm_id": 343081302,
+        "highway": "tertiary",
+        "name": "Unnamed Arterial Road",
+        "ref": "03DR002",
+        "surface": "paved",
+        "bridge": "no",
+        "length_m": 43.6,
+        "length_km": 0.044,
+        "navigation_instruction": "ROAD CLOSED: Unnamed Arterial Road (TERTIARY) is inundated by Koshi floodwaters at est. 1.2m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-2 Secondary"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.76795,
+            26.91356
+          ],
+          [
+            87.76783,
+            26.91338
+          ],
+          [
+            87.76764,
+            26.91331
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 10,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0010",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 500000,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "roadway_inundation",
+        "flood_depth_est_m": 1.2,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": false,
+        "osm_id": 348127320,
+        "highway": "tertiary",
+        "name": "Unnamed Arterial Road",
+        "ref": "",
+        "surface": "paved",
+        "bridge": "no",
+        "length_m": 929.9,
+        "length_km": 0.93,
+        "navigation_instruction": "ROAD CLOSED: Unnamed Arterial Road (TERTIARY) is inundated by Koshi floodwaters at est. 1.2m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-2 Secondary"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            88.06974,
+            26.39887
+          ],
+          [
+            88.06733,
+            26.39922
+          ],
+          [
+            88.06685,
+            26.39907
+          ],
+          [
+            88.06618,
+            26.39926
+          ],
+          [
+            88.06297,
+            26.39934
+          ],
+          [
+            88.06155,
+            26.39962
+          ],
+          [
+            88.06125,
+            26.39947
+          ],
+          [
+            88.06116,
+            26.39925
+          ],
+          [
+            88.06089,
+            26.39903
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 11,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0011",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 999999,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "critical_bridge_submersion",
+        "flood_depth_est_m": 2.5,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": true,
+        "osm_id": 354341257,
+        "highway": "primary",
+        "name": "Kechana - Jhapa Chok Road",
+        "ref": "NH02",
+        "surface": "paved",
+        "bridge": "yes",
+        "length_m": 87.9,
+        "length_km": 0.088,
+        "navigation_instruction": "ROAD CLOSED: Kechana - Jhapa Chok Road (PRIMARY) is inundated by Koshi floodwaters at est. 2.5m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-1 Urgent"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            88.0698,
+            26.50134
+          ],
+          [
+            88.06964,
+            26.50056
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 12,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0012",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 999999,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "severe_highway_flooding",
+        "flood_depth_est_m": 1.8,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": false,
+        "osm_id": 354341258,
+        "highway": "primary",
+        "name": "Kechana - Jhapa Chok Road",
+        "ref": "NH02",
+        "surface": "paved",
+        "bridge": "no",
+        "length_m": 2483.0,
+        "length_km": 2.483,
+        "navigation_instruction": "ROAD CLOSED: Kechana - Jhapa Chok Road (PRIMARY) is inundated by Koshi floodwaters at est. 1.8m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-1 Urgent"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            88.06964,
+            26.50056
+          ],
+          [
+            88.06957,
+            26.50025
+          ],
+          [
+            88.06962,
+            26.49996
+          ],
+          [
+            88.07026,
+            26.49809
+          ],
+          [
+            88.07027,
+            26.49473
+          ],
+          [
+            88.07015,
+            26.49261
+          ],
+          [
+            88.07026,
+            26.49138
+          ],
+          [
+            88.07028,
+            26.47825
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 13,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0013",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 999999,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "critical_bridge_submersion",
+        "flood_depth_est_m": 2.5,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": true,
+        "osm_id": 355667726,
+        "highway": "tertiary",
+        "name": "Unnamed Arterial Road",
+        "ref": "",
+        "surface": "paved",
+        "bridge": "yes",
+        "length_m": 32.2,
+        "length_km": 0.032,
+        "navigation_instruction": "ROAD CLOSED: Unnamed Arterial Road (TERTIARY) is inundated by Koshi floodwaters at est. 2.5m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-2 Secondary"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.74515,
+            26.55796
+          ],
+          [
+            87.74546,
+            26.55789
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 14,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0014",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 999999,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "critical_bridge_submersion",
+        "flood_depth_est_m": 2.5,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": true,
+        "osm_id": 357821405,
+        "highway": "tertiary",
+        "name": "Unnamed Arterial Road",
+        "ref": "04DR007",
+        "surface": "paved",
+        "bridge": "yes",
+        "length_m": 65.6,
+        "length_km": 0.066,
+        "navigation_instruction": "ROAD CLOSED: Unnamed Arterial Road (TERTIARY) is inundated by Koshi floodwaters at est. 2.5m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-2 Secondary"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.92403,
+            26.52131
+          ],
+          [
+            87.92342,
+            26.52152
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 15,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0015",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 999999,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "severe_highway_flooding",
+        "flood_depth_est_m": 1.8,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": false,
+        "osm_id": 359193133,
+        "highway": "primary",
+        "name": "Unnamed Arterial Road",
+        "ref": "",
+        "surface": "paved",
+        "bridge": "no",
+        "length_m": 1022.0,
+        "length_km": 1.022,
+        "navigation_instruction": "ROAD CLOSED: Unnamed Arterial Road (PRIMARY) is inundated by Koshi floodwaters at est. 1.8m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-1 Urgent"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.88612,
+            26.51813
+          ],
+          [
+            87.8878,
+            26.51826
+          ],
+          [
+            87.88851,
+            26.51844
+          ],
+          [
+            87.88895,
+            26.51844
+          ],
+          [
+            87.8903,
+            26.51807
+          ],
+          [
+            87.89135,
+            26.51791
+          ],
+          [
+            87.89288,
+            26.51789
+          ],
+          [
+            87.89384,
+            26.51764
+          ],
+          [
+            87.89622,
+            26.51749
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 16,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0016",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 999999,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "critical_bridge_submersion",
+        "flood_depth_est_m": 2.5,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": true,
+        "osm_id": 361762427,
+        "highway": "tertiary",
+        "name": "Unnamed Arterial Road",
+        "ref": "",
+        "surface": "paved",
+        "bridge": "yes",
+        "length_m": 34.5,
+        "length_km": 0.035,
+        "navigation_instruction": "ROAD CLOSED: Unnamed Arterial Road (TERTIARY) is inundated by Koshi floodwaters at est. 2.5m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-2 Secondary"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.89895,
+            26.62594
+          ],
+          [
+            87.89909,
+            26.62566
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 17,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0017",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 999999,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "severe_highway_flooding",
+        "flood_depth_est_m": 1.8,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": false,
+        "osm_id": 487179482,
+        "highway": "primary",
+        "name": "Mechi Highway",
+        "ref": "NH02",
+        "surface": "paved",
+        "bridge": "no",
+        "length_m": 5447.2,
+        "length_km": 5.447,
+        "navigation_instruction": "ROAD CLOSED: Mechi Highway (PRIMARY) is inundated by Koshi floodwaters at est. 1.8m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-1 Urgent"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            88.08304,
+            26.83557
+          ],
+          [
+            88.08352,
+            26.83532
+          ],
+          [
+            88.08358,
+            26.83515
+          ],
+          [
+            88.08355,
+            26.83422
+          ],
+          [
+            88.08329,
+            26.83395
+          ],
+          [
+            88.08331,
+            26.83344
+          ],
+          [
+            88.08302,
+            26.83287
+          ],
+          [
+            88.08203,
+            26.83238
+          ],
+          [
+            88.08141,
+            26.83187
+          ],
+          [
+            88.08142,
+            26.83147
+          ],
+          [
+            88.08134,
+            26.83119
+          ],
+          [
+            88.08155,
+            26.83088
+          ],
+          [
+            88.08148,
+            26.83075
+          ],
+          [
+            88.08067,
+            26.83021
+          ],
+          [
+            88.07946,
+            26.82955
+          ],
+          [
+            88.0791,
+            26.82949
+          ],
+          [
+            88.07819,
+            26.82952
+          ],
+          [
+            88.07771,
+            26.82934
+          ],
+          [
+            88.07661,
+            26.8295
+          ],
+          [
+            88.07477,
+            26.82912
+          ],
+          [
+            88.07401,
+            26.82927
+          ],
+          [
+            88.07364,
+            26.82904
+          ],
+          [
+            88.07345,
+            26.82908
+          ],
+          [
+            88.07303,
+            26.82943
+          ],
+          [
+            88.0728,
+            26.82949
+          ],
+          [
+            88.07243,
+            26.82919
+          ],
+          [
+            88.07192,
+            26.82852
+          ],
+          [
+            88.07095,
+            26.82862
+          ],
+          [
+            88.07065,
+            26.82856
+          ],
+          [
+            88.07038,
+            26.82872
+          ],
+          [
+            88.0696,
+            26.82879
+          ],
+          [
+            88.06937,
+            26.82869
+          ],
+          [
+            88.06917,
+            26.82802
+          ],
+          [
+            88.06897,
+            26.82802
+          ],
+          [
+            88.06849,
+            26.82839
+          ],
+          [
+            88.06798,
+            26.82812
+          ],
+          [
+            88.06777,
+            26.82788
+          ],
+          [
+            88.06761,
+            26.82725
+          ],
+          [
+            88.0671,
+            26.82652
+          ],
+          [
+            88.06688,
+            26.82596
+          ],
+          [
+            88.06691,
+            26.82581
+          ],
+          [
+            88.06711,
+            26.82559
+          ],
+          [
+            88.06698,
+            26.82512
+          ],
+          [
+            88.06735,
+            26.82416
+          ],
+          [
+            88.06713,
+            26.82362
+          ],
+          [
+            88.06716,
+            26.82332
+          ],
+          [
+            88.06728,
+            26.82302
+          ],
+          [
+            88.06766,
+            26.82275
+          ],
+          [
+            88.06769,
+            26.8226
+          ],
+          [
+            88.06693,
+            26.82207
+          ],
+          [
+            88.06635,
+            26.8219
+          ],
+          [
+            88.06589,
+            26.82157
+          ],
+          [
+            88.06541,
+            26.82145
+          ],
+          [
+            88.06474,
+            26.82112
+          ],
+          [
+            88.0638,
+            26.82039
+          ],
+          [
+            88.0636,
+            26.82035
+          ],
+          [
+            88.06356,
+            26.82045
+          ],
+          [
+            88.06406,
+            26.82077
+          ],
+          [
+            88.06472,
+            26.82159
+          ],
+          [
+            88.06522,
+            26.82194
+          ],
+          [
+            88.06532,
+            26.82215
+          ],
+          [
+            88.06528,
+            26.82233
+          ],
+          [
+            88.06514,
+            26.82233
+          ],
+          [
+            88.06406,
+            26.82153
+          ],
+          [
+            88.06287,
+            26.82159
+          ],
+          [
+            88.06235,
+            26.82124
+          ],
+          [
+            88.06218,
+            26.82122
+          ],
+          [
+            88.0617,
+            26.82159
+          ],
+          [
+            88.06096,
+            26.82149
+          ],
+          [
+            88.06055,
+            26.82151
+          ],
+          [
+            88.06022,
+            26.82167
+          ],
+          [
+            88.06004,
+            26.82197
+          ],
+          [
+            88.06014,
+            26.82213
+          ],
+          [
+            88.06086,
+            26.82235
+          ],
+          [
+            88.0613,
+            26.82257
+          ],
+          [
+            88.06204,
+            26.82255
+          ],
+          [
+            88.06211,
+            26.82267
+          ],
+          [
+            88.06204,
+            26.82275
+          ],
+          [
+            88.0612,
+            26.82277
+          ],
+          [
+            88.06005,
+            26.82249
+          ],
+          [
+            88.05906,
+            26.8226
+          ],
+          [
+            88.05851,
+            26.82256
+          ],
+          [
+            88.05813,
+            26.82136
+          ],
+          [
+            88.05831,
+            26.82127
+          ],
+          [
+            88.05906,
+            26.82121
+          ],
+          [
+            88.05947,
+            26.82103
+          ],
+          [
+            88.05995,
+            26.82055
+          ],
+          [
+            88.05979,
+            26.82005
+          ],
+          [
+            88.06057,
+            26.81969
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 18,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0018",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 999999,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "severe_highway_flooding",
+        "flood_depth_est_m": 1.8,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": false,
+        "osm_id": 516726531,
+        "highway": "primary",
+        "name": "Postal Highway",
+        "ref": "NH05",
+        "surface": "paved",
+        "bridge": "no",
+        "length_m": 6923.8,
+        "length_km": 6.924,
+        "navigation_instruction": "ROAD CLOSED: Postal Highway (PRIMARY) is inundated by Koshi floodwaters at est. 1.8m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-1 Urgent"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.75663,
+            26.47346
+          ],
+          [
+            87.75734,
+            26.47361
+          ],
+          [
+            87.75859,
+            26.47414
+          ],
+          [
+            87.76033,
+            26.47519
+          ],
+          [
+            87.76162,
+            26.4755
+          ],
+          [
+            87.76229,
+            26.47602
+          ],
+          [
+            87.76394,
+            26.4765
+          ],
+          [
+            87.76504,
+            26.47759
+          ],
+          [
+            87.76674,
+            26.47901
+          ],
+          [
+            87.76701,
+            26.47915
+          ],
+          [
+            87.76803,
+            26.47948
+          ],
+          [
+            87.76952,
+            26.48012
+          ],
+          [
+            87.77069,
+            26.4805
+          ],
+          [
+            87.78026,
+            26.48319
+          ],
+          [
+            87.7812,
+            26.48371
+          ],
+          [
+            87.78371,
+            26.48553
+          ],
+          [
+            87.7867,
+            26.48718
+          ],
+          [
+            87.78963,
+            26.48813
+          ],
+          [
+            87.79123,
+            26.48879
+          ],
+          [
+            87.79405,
+            26.48949
+          ],
+          [
+            87.79594,
+            26.48969
+          ],
+          [
+            87.79683,
+            26.48998
+          ],
+          [
+            87.80066,
+            26.48982
+          ],
+          [
+            87.80375,
+            26.48934
+          ],
+          [
+            87.80494,
+            26.48923
+          ],
+          [
+            87.807,
+            26.48883
+          ],
+          [
+            87.81156,
+            26.48829
+          ],
+          [
+            87.8127,
+            26.48822
+          ],
+          [
+            87.81504,
+            26.48839
+          ],
+          [
+            87.81822,
+            26.4882
+          ],
+          [
+            87.82093,
+            26.4871
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 19,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0019",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 999999,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "critical_bridge_submersion",
+        "flood_depth_est_m": 2.5,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": true,
+        "osm_id": 518143049,
+        "highway": "secondary",
+        "name": "Bahadurganj - Terhagachh Road",
+        "ref": "",
+        "surface": "paved",
+        "bridge": "yes",
+        "length_m": 72.2,
+        "length_km": 0.072,
+        "navigation_instruction": "ROAD CLOSED: Bahadurganj - Terhagachh Road (SECONDARY) is inundated by Koshi floodwaters at est. 2.5m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-2 Secondary"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.7222,
+            26.34627
+          ],
+          [
+            87.72274,
+            26.34583
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 20,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0020",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 500000,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "roadway_inundation",
+        "flood_depth_est_m": 1.2,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": false,
+        "osm_id": 518265939,
+        "highway": "tertiary",
+        "name": "Unnamed Arterial Road",
+        "ref": "",
+        "surface": "paved",
+        "bridge": "no",
+        "length_m": 2563.8,
+        "length_km": 2.564,
+        "navigation_instruction": "ROAD CLOSED: Unnamed Arterial Road (TERTIARY) is inundated by Koshi floodwaters at est. 1.2m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-2 Secondary"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.93933,
+            26.39547
+          ],
+          [
+            87.93875,
+            26.39575
+          ],
+          [
+            87.93812,
+            26.3959
+          ],
+          [
+            87.937,
+            26.3965
+          ],
+          [
+            87.93278,
+            26.39929
+          ],
+          [
+            87.93003,
+            26.40142
+          ],
+          [
+            87.9243,
+            26.40555
+          ],
+          [
+            87.92306,
+            26.40604
+          ],
+          [
+            87.92075,
+            26.40624
+          ],
+          [
+            87.91765,
+            26.40692
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 21,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0021",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 999999,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "critical_bridge_submersion",
+        "flood_depth_est_m": 2.5,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": true,
+        "osm_id": 518413715,
+        "highway": "tertiary",
+        "name": "Khuduna bari Road",
+        "ref": "04DR010",
+        "surface": "paved",
+        "bridge": "yes",
+        "length_m": 166.7,
+        "length_km": 0.167,
+        "navigation_instruction": "ROAD CLOSED: Khuduna bari Road (TERTIARY) is inundated by Koshi floodwaters at est. 2.5m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-2 Secondary"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.98778,
+            26.70625
+          ],
+          [
+            87.98722,
+            26.70767
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 22,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0022",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 999999,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "severe_highway_flooding",
+        "flood_depth_est_m": 1.8,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": false,
+        "osm_id": 518931036,
+        "highway": "primary",
+        "name": "Postal Highway",
+        "ref": "NH05",
+        "surface": "asphalt",
+        "bridge": "no",
+        "length_m": 4668.1,
+        "length_km": 4.668,
+        "navigation_instruction": "ROAD CLOSED: Postal Highway (PRIMARY) is inundated by Koshi floodwaters at est. 1.8m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-1 Urgent"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.66325,
+            26.45737
+          ],
+          [
+            87.66059,
+            26.45627
+          ],
+          [
+            87.65863,
+            26.45563
+          ],
+          [
+            87.65427,
+            26.4535
+          ],
+          [
+            87.65336,
+            26.45297
+          ],
+          [
+            87.65115,
+            26.45238
+          ],
+          [
+            87.64876,
+            26.45158
+          ],
+          [
+            87.64484,
+            26.44985
+          ],
+          [
+            87.6417,
+            26.44875
+          ],
+          [
+            87.63982,
+            26.44846
+          ],
+          [
+            87.63058,
+            26.44732
+          ],
+          [
+            87.62602,
+            26.44692
+          ],
+          [
+            87.62441,
+            26.44697
+          ],
+          [
+            87.62338,
+            26.44672
+          ],
+          [
+            87.62274,
+            26.44639
+          ],
+          [
+            87.62219,
+            26.44599
+          ],
+          [
+            87.62188,
+            26.44566
+          ],
+          [
+            87.62159,
+            26.44554
+          ],
+          [
+            87.61919,
+            26.44561
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 23,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0023",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 500000,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "roadway_inundation",
+        "flood_depth_est_m": 1.2,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": false,
+        "osm_id": 519337064,
+        "highway": "tertiary",
+        "name": "Unnamed Arterial Road",
+        "ref": "",
+        "surface": "paved",
+        "bridge": "no",
+        "length_m": 5023.6,
+        "length_km": 5.024,
+        "navigation_instruction": "ROAD CLOSED: Unnamed Arterial Road (TERTIARY) is inundated by Koshi floodwaters at est. 1.2m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-2 Secondary"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.88784,
+            26.45
+          ],
+          [
+            87.89069,
+            26.44583
+          ],
+          [
+            87.89113,
+            26.4453
+          ],
+          [
+            87.89155,
+            26.4444
+          ],
+          [
+            87.89297,
+            26.44032
+          ],
+          [
+            87.8954,
+            26.43393
+          ],
+          [
+            87.89576,
+            26.43333
+          ],
+          [
+            87.89632,
+            26.43303
+          ],
+          [
+            87.89646,
+            26.43274
+          ],
+          [
+            87.89653,
+            26.43128
+          ],
+          [
+            87.89649,
+            26.42958
+          ],
+          [
+            87.89643,
+            26.4295
+          ],
+          [
+            87.89589,
+            26.4294
+          ],
+          [
+            87.8958,
+            26.4292
+          ],
+          [
+            87.89645,
+            26.42899
+          ],
+          [
+            87.89672,
+            26.42863
+          ],
+          [
+            87.89744,
+            26.42857
+          ],
+          [
+            87.89757,
+            26.42848
+          ],
+          [
+            87.89784,
+            26.42788
+          ],
+          [
+            87.89884,
+            26.42619
+          ],
+          [
+            87.90086,
+            26.42363
+          ],
+          [
+            87.90226,
+            26.4215
+          ],
+          [
+            87.90332,
+            26.41956
+          ],
+          [
+            87.90407,
+            26.41693
+          ],
+          [
+            87.90413,
+            26.41512
+          ],
+          [
+            87.90441,
+            26.41406
+          ],
+          [
+            87.90456,
+            26.411
+          ],
+          [
+            87.9049,
+            26.40974
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 24,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0024",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 500000,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "roadway_inundation",
+        "flood_depth_est_m": 1.2,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": false,
+        "osm_id": 524320329,
+        "highway": "tertiary",
+        "name": "Unnamed Arterial Road",
+        "ref": "",
+        "surface": "paved",
+        "bridge": "no",
+        "length_m": 2628.3,
+        "length_km": 2.628,
+        "navigation_instruction": "ROAD CLOSED: Unnamed Arterial Road (TERTIARY) is inundated by Koshi floodwaters at est. 1.2m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-2 Secondary"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.57521,
+            26.35463
+          ],
+          [
+            87.56567,
+            26.35857
+          ],
+          [
+            87.55849,
+            26.35942
+          ],
+          [
+            87.55362,
+            26.35987
+          ],
+          [
+            87.55026,
+            26.36036
+          ],
+          [
+            87.54996,
+            26.36033
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 25,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0025",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 999999,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "critical_bridge_submersion",
+        "flood_depth_est_m": 2.5,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": true,
+        "osm_id": 672959117,
+        "highway": "tertiary",
+        "name": "Unnamed Arterial Road",
+        "ref": "",
+        "surface": "paved",
+        "bridge": "yes",
+        "length_m": 1185.7,
+        "length_km": 1.186,
+        "navigation_instruction": "ROAD CLOSED: Unnamed Arterial Road (TERTIARY) is inundated by Koshi floodwaters at est. 2.5m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-2 Secondary"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.91765,
+            26.40692
+          ],
+          [
+            87.90611,
+            26.40948
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 26,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0026",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 500000,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "roadway_inundation",
+        "flood_depth_est_m": 1.2,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": false,
+        "osm_id": 704935433,
+        "highway": "secondary",
+        "name": "Bahadurganj - Terhagachh Road",
+        "ref": "",
+        "surface": "paved",
+        "bridge": "no",
+        "length_m": 4618.5,
+        "length_km": 4.619,
+        "navigation_instruction": "ROAD CLOSED: Bahadurganj - Terhagachh Road (SECONDARY) is inundated by Koshi floodwaters at est. 1.2m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-2 Secondary"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.78687,
+            26.31749
+          ],
+          [
+            87.78529,
+            26.31756
+          ],
+          [
+            87.78453,
+            26.31772
+          ],
+          [
+            87.78335,
+            26.31817
+          ],
+          [
+            87.78134,
+            26.31957
+          ],
+          [
+            87.78078,
+            26.31986
+          ],
+          [
+            87.77958,
+            26.32032
+          ],
+          [
+            87.77537,
+            26.3222
+          ],
+          [
+            87.7703,
+            26.32419
+          ],
+          [
+            87.76967,
+            26.32421
+          ],
+          [
+            87.76926,
+            26.32404
+          ],
+          [
+            87.76739,
+            26.32406
+          ],
+          [
+            87.76636,
+            26.32466
+          ],
+          [
+            87.76574,
+            26.32487
+          ],
+          [
+            87.76423,
+            26.325
+          ],
+          [
+            87.76331,
+            26.32466
+          ],
+          [
+            87.76195,
+            26.32452
+          ],
+          [
+            87.75889,
+            26.32441
+          ],
+          [
+            87.75565,
+            26.3245
+          ],
+          [
+            87.74958,
+            26.32506
+          ],
+          [
+            87.74688,
+            26.32568
+          ],
+          [
+            87.74353,
+            26.32762
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 27,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0027",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 999999,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "critical_bridge_submersion",
+        "flood_depth_est_m": 2.5,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": true,
+        "osm_id": 707357987,
+        "highway": "tertiary",
+        "name": "Khuduna bari Road",
+        "ref": "04DR010",
+        "surface": "paved",
+        "bridge": "yes",
+        "length_m": 195.4,
+        "length_km": 0.195,
+        "navigation_instruction": "ROAD CLOSED: Khuduna bari Road (TERTIARY) is inundated by Koshi floodwaters at est. 2.5m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-2 Secondary"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.98053,
+            26.71766
+          ],
+          [
+            87.97912,
+            26.71889
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 28,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0028",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 999999,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "critical_bridge_submersion",
+        "flood_depth_est_m": 2.5,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": true,
+        "osm_id": 770399096,
+        "highway": "primary",
+        "name": "Postal Highway",
+        "ref": "NH05",
+        "surface": "paved",
+        "bridge": "yes",
+        "length_m": 20.8,
+        "length_km": 0.021,
+        "navigation_instruction": "ROAD CLOSED: Postal Highway (PRIMARY) is inundated by Koshi floodwaters at est. 2.5m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-1 Urgent"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.59716,
+            26.44828
+          ],
+          [
+            87.59696,
+            26.44833
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 29,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0029",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 500000,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "roadway_inundation",
+        "flood_depth_est_m": 1.2,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": false,
+        "osm_id": 792811585,
+        "highway": "secondary",
+        "name": "Unnamed Arterial Road",
+        "ref": "",
+        "surface": "paved",
+        "bridge": "no",
+        "length_m": 7410.3,
+        "length_km": 7.41,
+        "navigation_instruction": "ROAD CLOSED: Unnamed Arterial Road (SECONDARY) is inundated by Koshi floodwaters at est. 1.2m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-2 Secondary"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.76954,
+            26.22415
+          ],
+          [
+            87.76878,
+            26.22322
+          ],
+          [
+            87.76813,
+            26.22264
+          ],
+          [
+            87.7669,
+            26.22124
+          ],
+          [
+            87.76503,
+            26.21938
+          ],
+          [
+            87.76361,
+            26.2177
+          ],
+          [
+            87.76298,
+            26.2171
+          ],
+          [
+            87.76279,
+            26.2168
+          ],
+          [
+            87.76225,
+            26.21639
+          ],
+          [
+            87.76174,
+            26.21593
+          ],
+          [
+            87.76157,
+            26.21566
+          ],
+          [
+            87.76114,
+            26.21532
+          ],
+          [
+            87.75933,
+            26.21325
+          ],
+          [
+            87.75827,
+            26.21224
+          ],
+          [
+            87.75805,
+            26.21189
+          ],
+          [
+            87.75741,
+            26.21154
+          ],
+          [
+            87.75427,
+            26.21038
+          ],
+          [
+            87.74317,
+            26.20641
+          ],
+          [
+            87.73813,
+            26.20452
+          ],
+          [
+            87.72265,
+            26.19627
+          ],
+          [
+            87.72203,
+            26.19558
+          ],
+          [
+            87.72148,
+            26.19535
+          ],
+          [
+            87.72041,
+            26.19537
+          ],
+          [
+            87.72022,
+            26.19526
+          ],
+          [
+            87.71974,
+            26.19322
+          ],
+          [
+            87.71924,
+            26.19282
+          ],
+          [
+            87.71902,
+            26.19064
+          ],
+          [
+            87.71883,
+            26.19039
+          ],
+          [
+            87.71849,
+            26.19019
+          ],
+          [
+            87.71595,
+            26.1901
+          ],
+          [
+            87.71458,
+            26.18967
+          ],
+          [
+            87.71373,
+            26.18917
+          ],
+          [
+            87.71254,
+            26.189
+          ],
+          [
+            87.71151,
+            26.18851
+          ],
+          [
+            87.71127,
+            26.18825
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 30,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0030",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 999999,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "critical_bridge_submersion",
+        "flood_depth_est_m": 2.5,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": true,
+        "osm_id": 818089024,
+        "highway": "trunk",
+        "name": "Unnamed Arterial Road",
+        "ref": "NH327",
+        "surface": "paved",
+        "bridge": "yes",
+        "length_m": 77.4,
+        "length_km": 0.077,
+        "navigation_instruction": "ROAD CLOSED: Unnamed Arterial Road (TRUNK) is inundated by Koshi floodwaters at est. 2.5m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-1 Urgent"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.63084,
+            26.14166
+          ],
+          [
+            87.63008,
+            26.14153
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 31,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0031",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 999999,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "severe_highway_flooding",
+        "flood_depth_est_m": 1.8,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": false,
+        "osm_id": 818089025,
+        "highway": "trunk",
+        "name": "Unnamed Arterial Road",
+        "ref": "NH327",
+        "surface": "paved",
+        "bridge": "no",
+        "length_m": 1197.3,
+        "length_km": 1.197,
+        "navigation_instruction": "ROAD CLOSED: Unnamed Arterial Road (TRUNK) is inundated by Koshi floodwaters at est. 1.8m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-1 Urgent"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.64971,
+            26.15238
+          ],
+          [
+            87.64832,
+            26.15161
+          ],
+          [
+            87.64689,
+            26.15038
+          ],
+          [
+            87.64035,
+            26.14567
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 32,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0032",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 500000,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "roadway_inundation",
+        "flood_depth_est_m": 1.2,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": false,
+        "osm_id": 905785598,
+        "highway": "tertiary",
+        "name": "Unnamed Arterial Road",
+        "ref": "",
+        "surface": "paved",
+        "bridge": "no",
+        "length_m": 159.9,
+        "length_km": 0.16,
+        "navigation_instruction": "ROAD CLOSED: Unnamed Arterial Road (TERTIARY) is inundated by Koshi floodwaters at est. 1.2m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-2 Secondary"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.6659,
+            26.72221
+          ],
+          [
+            87.6651,
+            26.72347
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 33,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0033",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 999999,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "critical_bridge_submersion",
+        "flood_depth_est_m": 2.5,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": true,
+        "osm_id": 989067577,
+        "highway": "tertiary",
+        "name": "Unnamed Arterial Road",
+        "ref": "",
+        "surface": "paved",
+        "bridge": "yes",
+        "length_m": 319.0,
+        "length_km": 0.319,
+        "navigation_instruction": "ROAD CLOSED: Unnamed Arterial Road (TERTIARY) is inundated by Koshi floodwaters at est. 2.5m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-2 Secondary"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.58285,
+            26.38125
+          ],
+          [
+            87.58592,
+            26.38044
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 34,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0034",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 999999,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "critical_bridge_submersion",
+        "flood_depth_est_m": 2.5,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": true,
+        "osm_id": 1015732015,
+        "highway": "tertiary",
+        "name": "Unnamed Arterial Road",
+        "ref": "",
+        "surface": "paved",
+        "bridge": "yes",
+        "length_m": 69.1,
+        "length_km": 0.069,
+        "navigation_instruction": "ROAD CLOSED: Unnamed Arterial Road (TERTIARY) is inundated by Koshi floodwaters at est. 2.5m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-2 Secondary"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.79944,
+            26.13765
+          ],
+          [
+            87.7988,
+            26.13788
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 35,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0035",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 999999,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "critical_bridge_submersion",
+        "flood_depth_est_m": 2.5,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": true,
+        "osm_id": 1040234410,
+        "highway": "primary",
+        "name": "Postal Highway",
+        "ref": "NH05",
+        "surface": "paved",
+        "bridge": "yes",
+        "length_m": 779.6,
+        "length_km": 0.78,
+        "navigation_instruction": "ROAD CLOSED: Postal Highway (PRIMARY) is inundated by Koshi floodwaters at est. 2.5m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-1 Urgent"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.82093,
+            26.4871
+          ],
+          [
+            87.82791,
+            26.48393
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 36,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0036",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 999999,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "severe_highway_flooding",
+        "flood_depth_est_m": 1.8,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": false,
+        "osm_id": 1040234411,
+        "highway": "primary",
+        "name": "Postal Highway",
+        "ref": "NH05",
+        "surface": "paved",
+        "bridge": "no",
+        "length_m": 1008.2,
+        "length_km": 1.008,
+        "navigation_instruction": "ROAD CLOSED: Postal Highway (PRIMARY) is inundated by Koshi floodwaters at est. 1.8m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-1 Urgent"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.82791,
+            26.48393
+          ],
+          [
+            87.82951,
+            26.48334
+          ],
+          [
+            87.83131,
+            26.48301
+          ],
+          [
+            87.83234,
+            26.48267
+          ],
+          [
+            87.83372,
+            26.482
+          ],
+          [
+            87.83587,
+            26.4813
+          ],
+          [
+            87.83667,
+            26.48107
+          ],
+          [
+            87.83742,
+            26.48099
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 37,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0037",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 999999,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "critical_bridge_submersion",
+        "flood_depth_est_m": 2.5,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": true,
+        "osm_id": 1040234413,
+        "highway": "primary",
+        "name": "Unnamed Arterial Road",
+        "ref": "NH05",
+        "surface": "paved",
+        "bridge": "yes",
+        "length_m": 114.2,
+        "length_km": 0.114,
+        "navigation_instruction": "ROAD CLOSED: Unnamed Arterial Road (PRIMARY) is inundated by Koshi floodwaters at est. 2.5m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-1 Urgent"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.75556,
+            26.47308
+          ],
+          [
+            87.75663,
+            26.47346
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 38,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0038",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 500000,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "roadway_inundation",
+        "flood_depth_est_m": 1.2,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": false,
+        "osm_id": 1130628994,
+        "highway": "tertiary",
+        "name": "Unnamed Arterial Road",
+        "ref": "NH09",
+        "surface": "paved",
+        "bridge": "no",
+        "length_m": 116.7,
+        "length_km": 0.117,
+        "navigation_instruction": "ROAD CLOSED: Unnamed Arterial Road (TERTIARY) is inundated by Koshi floodwaters at est. 1.2m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-2 Secondary"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.94065,
+            26.73385
+          ],
+          [
+            87.94049,
+            26.73408
+          ],
+          [
+            87.94046,
+            26.73486
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 39,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0039",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 999999,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "critical_bridge_submersion",
+        "flood_depth_est_m": 2.5,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": true,
+        "osm_id": 1131260635,
+        "highway": "secondary",
+        "name": "Unnamed Arterial Road",
+        "ref": "",
+        "surface": "paved",
+        "bridge": "yes",
+        "length_m": 57.6,
+        "length_km": 0.058,
+        "navigation_instruction": "ROAD CLOSED: Unnamed Arterial Road (SECONDARY) is inundated by Koshi floodwaters at est. 2.5m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-2 Secondary"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.73991,
+            26.27506
+          ],
+          [
+            87.73934,
+            26.27496
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 40,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0040",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 999999,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "critical_bridge_submersion",
+        "flood_depth_est_m": 2.5,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": true,
+        "osm_id": 1131260638,
+        "highway": "secondary",
+        "name": "Unnamed Arterial Road",
+        "ref": "",
+        "surface": "paved",
+        "bridge": "yes",
+        "length_m": 77.0,
+        "length_km": 0.077,
+        "navigation_instruction": "ROAD CLOSED: Unnamed Arterial Road (SECONDARY) is inundated by Koshi floodwaters at est. 2.5m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-2 Secondary"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.72608,
+            26.28044
+          ],
+          [
+            87.72531,
+            26.28049
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 41,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0041",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 500000,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "roadway_inundation",
+        "flood_depth_est_m": 1.2,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": false,
+        "osm_id": 1131260659,
+        "highway": "tertiary",
+        "name": "Unnamed Arterial Road",
+        "ref": "",
+        "surface": "paved",
+        "bridge": "no",
+        "length_m": 4497.8,
+        "length_km": 4.498,
+        "navigation_instruction": "ROAD CLOSED: Unnamed Arterial Road (TERTIARY) is inundated by Koshi floodwaters at est. 1.2m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-2 Secondary"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.71582,
+            26.24968
+          ],
+          [
+            87.7157,
+            26.24922
+          ],
+          [
+            87.71553,
+            26.24791
+          ],
+          [
+            87.71558,
+            26.24773
+          ],
+          [
+            87.71594,
+            26.24748
+          ],
+          [
+            87.71601,
+            26.2462
+          ],
+          [
+            87.71629,
+            26.24536
+          ],
+          [
+            87.71681,
+            26.24481
+          ],
+          [
+            87.71689,
+            26.24461
+          ],
+          [
+            87.71682,
+            26.24162
+          ],
+          [
+            87.71659,
+            26.24005
+          ],
+          [
+            87.71676,
+            26.23913
+          ],
+          [
+            87.7173,
+            26.2383
+          ],
+          [
+            87.71797,
+            26.23765
+          ],
+          [
+            87.71845,
+            26.2374
+          ],
+          [
+            87.72061,
+            26.23695
+          ],
+          [
+            87.72225,
+            26.23706
+          ],
+          [
+            87.72334,
+            26.23697
+          ],
+          [
+            87.72395,
+            26.23681
+          ],
+          [
+            87.72513,
+            26.23614
+          ],
+          [
+            87.72635,
+            26.2359
+          ],
+          [
+            87.72765,
+            26.23544
+          ],
+          [
+            87.72874,
+            26.23526
+          ],
+          [
+            87.72909,
+            26.2349
+          ],
+          [
+            87.72938,
+            26.23439
+          ],
+          [
+            87.72969,
+            26.23413
+          ],
+          [
+            87.72977,
+            26.23349
+          ],
+          [
+            87.73009,
+            26.2325
+          ],
+          [
+            87.7299,
+            26.23085
+          ],
+          [
+            87.72992,
+            26.23041
+          ],
+          [
+            87.73078,
+            26.22833
+          ],
+          [
+            87.73149,
+            26.22716
+          ],
+          [
+            87.73175,
+            26.22658
+          ],
+          [
+            87.73252,
+            26.22549
+          ],
+          [
+            87.73303,
+            26.22437
+          ],
+          [
+            87.7333,
+            26.22332
+          ],
+          [
+            87.73335,
+            26.2224
+          ],
+          [
+            87.7333,
+            26.22214
+          ],
+          [
+            87.73207,
+            26.22001
+          ],
+          [
+            87.73179,
+            26.21912
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 42,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0042",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 500000,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "roadway_inundation",
+        "flood_depth_est_m": 1.2,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": false,
+        "osm_id": 1232195638,
+        "highway": "secondary",
+        "name": "Unnamed Arterial Road",
+        "ref": "",
+        "surface": "paved",
+        "bridge": "no",
+        "length_m": 5009.4,
+        "length_km": 5.009,
+        "navigation_instruction": "ROAD CLOSED: Unnamed Arterial Road (SECONDARY) is inundated by Koshi floodwaters at est. 1.2m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-2 Secondary"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.76954,
+            26.22415
+          ],
+          [
+            87.76853,
+            26.22394
+          ],
+          [
+            87.76627,
+            26.22408
+          ],
+          [
+            87.76601,
+            26.224
+          ],
+          [
+            87.76477,
+            26.22325
+          ],
+          [
+            87.76305,
+            26.22266
+          ],
+          [
+            87.75929,
+            26.22206
+          ],
+          [
+            87.75801,
+            26.22194
+          ],
+          [
+            87.7545,
+            26.21954
+          ],
+          [
+            87.75385,
+            26.21921
+          ],
+          [
+            87.75338,
+            26.21921
+          ],
+          [
+            87.7528,
+            26.21962
+          ],
+          [
+            87.75185,
+            26.21968
+          ],
+          [
+            87.7501,
+            26.21933
+          ],
+          [
+            87.74935,
+            26.21937
+          ],
+          [
+            87.74898,
+            26.21929
+          ],
+          [
+            87.74745,
+            26.21867
+          ],
+          [
+            87.7461,
+            26.21834
+          ],
+          [
+            87.74571,
+            26.21812
+          ],
+          [
+            87.73999,
+            26.21749
+          ],
+          [
+            87.73875,
+            26.21746
+          ],
+          [
+            87.73753,
+            26.21754
+          ],
+          [
+            87.73739,
+            26.21744
+          ],
+          [
+            87.73682,
+            26.21652
+          ],
+          [
+            87.73647,
+            26.21625
+          ],
+          [
+            87.73608,
+            26.21606
+          ],
+          [
+            87.7361,
+            26.21427
+          ],
+          [
+            87.73629,
+            26.21355
+          ],
+          [
+            87.73617,
+            26.2132
+          ],
+          [
+            87.73735,
+            26.21252
+          ],
+          [
+            87.73782,
+            26.21172
+          ],
+          [
+            87.7385,
+            26.21098
+          ],
+          [
+            87.73897,
+            26.21071
+          ],
+          [
+            87.73921,
+            26.21041
+          ],
+          [
+            87.73988,
+            26.21016
+          ],
+          [
+            87.74027,
+            26.20934
+          ],
+          [
+            87.74086,
+            26.20866
+          ],
+          [
+            87.74207,
+            26.20758
+          ],
+          [
+            87.74317,
+            26.20641
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 43,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0043",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 500000,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "roadway_inundation",
+        "flood_depth_est_m": 1.2,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": false,
+        "osm_id": 1352143681,
+        "highway": "secondary",
+        "name": "Unnamed Arterial Road",
+        "ref": "",
+        "surface": "paved",
+        "bridge": "no",
+        "length_m": 5008.8,
+        "length_km": 5.009,
+        "navigation_instruction": "ROAD CLOSED: Unnamed Arterial Road (SECONDARY) is inundated by Koshi floodwaters at est. 1.2m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-2 Secondary"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.76379,
+            26.32483
+          ],
+          [
+            87.76376,
+            26.3255
+          ],
+          [
+            87.76334,
+            26.3263
+          ],
+          [
+            87.76332,
+            26.32697
+          ],
+          [
+            87.76366,
+            26.32795
+          ],
+          [
+            87.76399,
+            26.32804
+          ],
+          [
+            87.76412,
+            26.32823
+          ],
+          [
+            87.76421,
+            26.32863
+          ],
+          [
+            87.76402,
+            26.32992
+          ],
+          [
+            87.76407,
+            26.33087
+          ],
+          [
+            87.76454,
+            26.33262
+          ],
+          [
+            87.76568,
+            26.33614
+          ],
+          [
+            87.76568,
+            26.3365
+          ],
+          [
+            87.76559,
+            26.33678
+          ],
+          [
+            87.76464,
+            26.33841
+          ],
+          [
+            87.76384,
+            26.33962
+          ],
+          [
+            87.7629,
+            26.34064
+          ],
+          [
+            87.76234,
+            26.34098
+          ],
+          [
+            87.7622,
+            26.34168
+          ],
+          [
+            87.7622,
+            26.34488
+          ],
+          [
+            87.76204,
+            26.34604
+          ],
+          [
+            87.76207,
+            26.34652
+          ],
+          [
+            87.76231,
+            26.34736
+          ],
+          [
+            87.76243,
+            26.34883
+          ],
+          [
+            87.76254,
+            26.349
+          ],
+          [
+            87.76303,
+            26.34926
+          ],
+          [
+            87.76315,
+            26.34952
+          ],
+          [
+            87.76332,
+            26.35137
+          ],
+          [
+            87.76349,
+            26.35224
+          ],
+          [
+            87.76465,
+            26.35369
+          ],
+          [
+            87.76503,
+            26.35436
+          ],
+          [
+            87.76588,
+            26.35677
+          ],
+          [
+            87.76623,
+            26.35825
+          ],
+          [
+            87.76634,
+            26.3583
+          ],
+          [
+            87.76637,
+            26.36492
+          ],
+          [
+            87.76699,
+            26.36581
+          ],
+          [
+            87.76756,
+            26.36569
+          ],
+          [
+            87.76846,
+            26.36534
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 44,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0044",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 500000,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "roadway_inundation",
+        "flood_depth_est_m": 1.2,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": false,
+        "osm_id": 1352143708,
+        "highway": "secondary_link",
+        "name": "Unnamed Arterial Road",
+        "ref": "",
+        "surface": "paved",
+        "bridge": "no",
+        "length_m": 511.3,
+        "length_km": 0.511,
+        "navigation_instruction": "ROAD CLOSED: Unnamed Arterial Road (SECONDARY_LINK) is inundated by Koshi floodwaters at est. 1.2m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-2 Secondary"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.82952,
+            26.34372
+          ],
+          [
+            87.82907,
+            26.34377
+          ],
+          [
+            87.82847,
+            26.34394
+          ],
+          [
+            87.82776,
+            26.34394
+          ],
+          [
+            87.82631,
+            26.34422
+          ],
+          [
+            87.82541,
+            26.34403
+          ],
+          [
+            87.8245,
+            26.34394
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 45,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0045",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 500000,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "roadway_inundation",
+        "flood_depth_est_m": 1.2,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": false,
+        "osm_id": 1352168686,
+        "highway": "secondary_link",
+        "name": "Unnamed Arterial Road",
+        "ref": "",
+        "surface": "paved",
+        "bridge": "no",
+        "length_m": 2580.6,
+        "length_km": 2.581,
+        "navigation_instruction": "ROAD CLOSED: Unnamed Arterial Road (SECONDARY_LINK) is inundated by Koshi floodwaters at est. 1.2m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-2 Secondary"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.82943,
+            26.37515
+          ],
+          [
+            87.8299,
+            26.37298
+          ],
+          [
+            87.83027,
+            26.37223
+          ],
+          [
+            87.82959,
+            26.37152
+          ],
+          [
+            87.82908,
+            26.37164
+          ],
+          [
+            87.82725,
+            26.37159
+          ],
+          [
+            87.82517,
+            26.3724
+          ],
+          [
+            87.82431,
+            26.37242
+          ],
+          [
+            87.8234,
+            26.37273
+          ],
+          [
+            87.82259,
+            26.37274
+          ],
+          [
+            87.8215,
+            26.37304
+          ],
+          [
+            87.82131,
+            26.37302
+          ],
+          [
+            87.82102,
+            26.37259
+          ],
+          [
+            87.81985,
+            26.37264
+          ],
+          [
+            87.81979,
+            26.37259
+          ],
+          [
+            87.8197,
+            26.37205
+          ],
+          [
+            87.81956,
+            26.37187
+          ],
+          [
+            87.81636,
+            26.37225
+          ],
+          [
+            87.81627,
+            26.3722
+          ],
+          [
+            87.81573,
+            26.37153
+          ],
+          [
+            87.81564,
+            26.37129
+          ],
+          [
+            87.81557,
+            26.37051
+          ],
+          [
+            87.81539,
+            26.3701
+          ],
+          [
+            87.81533,
+            26.36932
+          ],
+          [
+            87.81556,
+            26.36843
+          ],
+          [
+            87.81625,
+            26.36693
+          ],
+          [
+            87.81613,
+            26.36645
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 46,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0046",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 999999,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "severe_highway_flooding",
+        "flood_depth_est_m": 1.8,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": false,
+        "osm_id": 1355136731,
+        "highway": "trunk",
+        "name": "Unnamed Arterial Road",
+        "ref": "NH327",
+        "surface": "paved",
+        "bridge": "no",
+        "length_m": 1551.6,
+        "length_km": 1.552,
+        "navigation_instruction": "ROAD CLOSED: Unnamed Arterial Road (TRUNK) is inundated by Koshi floodwaters at est. 1.8m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-1 Urgent"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.64967,
+            26.15247
+          ],
+          [
+            87.65281,
+            26.15471
+          ],
+          [
+            87.65458,
+            26.15564
+          ],
+          [
+            87.65579,
+            26.15604
+          ],
+          [
+            87.65859,
+            26.15645
+          ],
+          [
+            87.6597,
+            26.15653
+          ],
+          [
+            87.66032,
+            26.15653
+          ],
+          [
+            87.66389,
+            26.15609
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 47,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0047",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 999999,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "severe_highway_flooding",
+        "flood_depth_est_m": 1.8,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": false,
+        "osm_id": 1355136733,
+        "highway": "trunk",
+        "name": "Unnamed Arterial Road",
+        "ref": "NH327",
+        "surface": "paved",
+        "bridge": "no",
+        "length_m": 1196.9,
+        "length_km": 1.197,
+        "navigation_instruction": "ROAD CLOSED: Unnamed Arterial Road (TRUNK) is inundated by Koshi floodwaters at est. 1.8m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-1 Urgent"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.64031,
+            26.14576
+          ],
+          [
+            87.6468,
+            26.15045
+          ],
+          [
+            87.64828,
+            26.15171
+          ],
+          [
+            87.64909,
+            26.15221
+          ],
+          [
+            87.64967,
+            26.15247
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 48,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0048",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 999999,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "critical_bridge_submersion",
+        "flood_depth_est_m": 2.5,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": true,
+        "osm_id": 1355146159,
+        "highway": "trunk",
+        "name": "Unnamed Arterial Road",
+        "ref": "NH327",
+        "surface": "paved",
+        "bridge": "yes",
+        "length_m": 77.4,
+        "length_km": 0.077,
+        "navigation_instruction": "ROAD CLOSED: Unnamed Arterial Road (TRUNK) is inundated by Koshi floodwaters at est. 2.5m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-1 Urgent"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.63004,
+            26.14165
+          ],
+          [
+            87.6308,
+            26.14178
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 49,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0049",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 999999,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "severe_highway_flooding",
+        "flood_depth_est_m": 1.8,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": false,
+        "osm_id": 1359312626,
+        "highway": "trunk",
+        "name": "Unnamed Arterial Road",
+        "ref": "NH327",
+        "surface": "paved",
+        "bridge": "no",
+        "length_m": 14541.6,
+        "length_km": 14.542,
+        "navigation_instruction": "ROAD CLOSED: Unnamed Arterial Road (TRUNK) is inundated by Koshi floodwaters at est. 1.8m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-1 Urgent"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.82114,
+            26.23584
+          ],
+          [
+            87.81458,
+            26.23446
+          ],
+          [
+            87.81358,
+            26.23418
+          ],
+          [
+            87.81213,
+            26.23356
+          ],
+          [
+            87.81068,
+            26.23271
+          ],
+          [
+            87.80485,
+            26.22766
+          ],
+          [
+            87.78963,
+            26.21417
+          ],
+          [
+            87.78371,
+            26.20945
+          ],
+          [
+            87.76913,
+            26.19818
+          ],
+          [
+            87.76237,
+            26.19236
+          ],
+          [
+            87.74694,
+            26.17947
+          ],
+          [
+            87.74384,
+            26.17698
+          ],
+          [
+            87.71106,
+            26.15872
+          ],
+          [
+            87.71013,
+            26.15843
+          ],
+          [
+            87.70867,
+            26.15828
+          ],
+          [
+            87.70758,
+            26.15837
+          ],
+          [
+            87.7064,
+            26.15877
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 50,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0050",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 999999,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "severe_highway_flooding",
+        "flood_depth_est_m": 1.8,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": false,
+        "osm_id": 1359312627,
+        "highway": "trunk",
+        "name": "Unnamed Arterial Road",
+        "ref": "NH327",
+        "surface": "paved",
+        "bridge": "no",
+        "length_m": 14536.9,
+        "length_km": 14.537,
+        "navigation_instruction": "ROAD CLOSED: Unnamed Arterial Road (TRUNK) is inundated by Koshi floodwaters at est. 1.8m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-1 Urgent"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.7064,
+            26.15877
+          ],
+          [
+            87.70753,
+            26.15845
+          ],
+          [
+            87.70881,
+            26.15835
+          ],
+          [
+            87.71005,
+            26.1585
+          ],
+          [
+            87.71105,
+            26.1588
+          ],
+          [
+            87.74379,
+            26.17705
+          ],
+          [
+            87.74814,
+            26.18057
+          ],
+          [
+            87.76394,
+            26.19379
+          ],
+          [
+            87.77001,
+            26.199
+          ],
+          [
+            87.78665,
+            26.21187
+          ],
+          [
+            87.78886,
+            26.21366
+          ],
+          [
+            87.81014,
+            26.23245
+          ],
+          [
+            87.81177,
+            26.23352
+          ],
+          [
+            87.8137,
+            26.23434
+          ],
+          [
+            87.8162,
+            26.23492
+          ],
+          [
+            87.82112,
+            26.2359
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 51,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0051",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 999999,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "critical_bridge_submersion",
+        "flood_depth_est_m": 2.5,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": true,
+        "osm_id": 1359515794,
+        "highway": "trunk",
+        "name": "Unnamed Arterial Road",
+        "ref": "NH327",
+        "surface": "paved",
+        "bridge": "yes",
+        "length_m": 66.6,
+        "length_km": 0.067,
+        "navigation_instruction": "ROAD CLOSED: Unnamed Arterial Road (TRUNK) is inundated by Koshi floodwaters at est. 2.5m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-1 Urgent"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.88058,
+            26.31541
+          ],
+          [
+            87.87998,
+            26.31516
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 52,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0052",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 999999,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "critical_bridge_submersion",
+        "flood_depth_est_m": 2.5,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": true,
+        "osm_id": 1359515837,
+        "highway": "trunk",
+        "name": "Unnamed Arterial Road",
+        "ref": "NH327",
+        "surface": "paved",
+        "bridge": "yes",
+        "length_m": 212.9,
+        "length_km": 0.213,
+        "navigation_instruction": "ROAD CLOSED: Unnamed Arterial Road (TRUNK) is inundated by Koshi floodwaters at est. 2.5m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-1 Urgent"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            88.03929,
+            26.34449
+          ],
+          [
+            88.03718,
+            26.34479
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 53,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0053",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 999999,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "critical_bridge_submersion",
+        "flood_depth_est_m": 2.5,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": true,
+        "osm_id": 1359515838,
+        "highway": "trunk",
+        "name": "Unnamed Arterial Road",
+        "ref": "NH327",
+        "surface": "paved",
+        "bridge": "yes",
+        "length_m": 211.6,
+        "length_km": 0.212,
+        "navigation_instruction": "ROAD CLOSED: Unnamed Arterial Road (TRUNK) is inundated by Koshi floodwaters at est. 2.5m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-1 Urgent"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            88.0372,
+            26.34493
+          ],
+          [
+            88.03929,
+            26.34461
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 54,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0054",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 999999,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "critical_bridge_submersion",
+        "flood_depth_est_m": 2.5,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": true,
+        "osm_id": 1359515841,
+        "highway": "trunk",
+        "name": "Unnamed Arterial Road",
+        "ref": "NH327",
+        "surface": "paved",
+        "bridge": "yes",
+        "length_m": 104.7,
+        "length_km": 0.105,
+        "navigation_instruction": "ROAD CLOSED: Unnamed Arterial Road (TRUNK) is inundated by Koshi floodwaters at est. 2.5m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-1 Urgent"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            88.01964,
+            26.34892
+          ],
+          [
+            88.0187,
+            26.34851
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 55,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0055",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 999999,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "critical_bridge_submersion",
+        "flood_depth_est_m": 2.5,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": true,
+        "osm_id": 1359515842,
+        "highway": "trunk",
+        "name": "Unnamed Arterial Road",
+        "ref": "NH327",
+        "surface": "paved",
+        "bridge": "yes",
+        "length_m": 103.5,
+        "length_km": 0.103,
+        "navigation_instruction": "ROAD CLOSED: Unnamed Arterial Road (TRUNK) is inundated by Koshi floodwaters at est. 2.5m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-1 Urgent"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            88.01864,
+            26.34861
+          ],
+          [
+            88.01958,
+            26.34902
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 56,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0056",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 999999,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "critical_bridge_submersion",
+        "flood_depth_est_m": 2.5,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": true,
+        "osm_id": 1359519958,
+        "highway": "trunk",
+        "name": "Unnamed Arterial Road",
+        "ref": "NH327",
+        "surface": "paved",
+        "bridge": "yes",
+        "length_m": 136.9,
+        "length_km": 0.137,
+        "navigation_instruction": "ROAD CLOSED: Unnamed Arterial Road (TRUNK) is inundated by Koshi floodwaters at est. 2.5m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-1 Urgent"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            88.05165,
+            26.34635
+          ],
+          [
+            88.05054,
+            26.34562
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 57,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0057",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 999999,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "severe_highway_flooding",
+        "flood_depth_est_m": 1.8,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": false,
+        "osm_id": 1359519960,
+        "highway": "trunk",
+        "name": "Unnamed Arterial Road",
+        "ref": "NH327",
+        "surface": "paved",
+        "bridge": "no",
+        "length_m": 7559.7,
+        "length_km": 7.56,
+        "navigation_instruction": "ROAD CLOSED: Unnamed Arterial Road (TRUNK) is inundated by Koshi floodwaters at est. 1.8m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-1 Urgent"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            88.06913,
+            26.36343
+          ],
+          [
+            88.07019,
+            26.36857
+          ],
+          [
+            88.07056,
+            26.36994
+          ],
+          [
+            88.07135,
+            26.37183
+          ],
+          [
+            88.07204,
+            26.373
+          ],
+          [
+            88.10135,
+            26.4105
+          ],
+          [
+            88.10574,
+            26.41596
+          ],
+          [
+            88.10928,
+            26.42064
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 58,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0058",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 999999,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "critical_bridge_submersion",
+        "flood_depth_est_m": 2.5,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": true,
+        "osm_id": 1360670996,
+        "highway": "tertiary",
+        "name": "Unnamed Arterial Road",
+        "ref": "",
+        "surface": "paved",
+        "bridge": "yes",
+        "length_m": 133.9,
+        "length_km": 0.134,
+        "navigation_instruction": "ROAD CLOSED: Unnamed Arterial Road (TERTIARY) is inundated by Koshi floodwaters at est. 2.5m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-2 Secondary"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.58235,
+            26.3518
+          ],
+          [
+            87.58111,
+            26.35227
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": 59,
+      "properties": {
+        "hazard_id": "HAZ-ROUTE-0059",
+        "route_status": "impassable",
+        "is_passable": false,
+        "traffic_status": "closed",
+        "routing_penalty": 500000,
+        "detour_required": true,
+        "avoid_edge": true,
+        "speed_kmh": 0,
+        "hazard_type": "flood_water",
+        "hazard_level": "roadway_inundation",
+        "flood_depth_est_m": 1.2,
+        "submersion_status": "fully_submerged",
+        "bridge_affected": false,
+        "osm_id": 1360671000,
+        "highway": "tertiary",
+        "name": "Unnamed Arterial Road",
+        "ref": "",
+        "surface": "paved",
+        "bridge": "no",
+        "length_m": 1784.0,
+        "length_km": 1.784,
+        "navigation_instruction": "ROAD CLOSED: Unnamed Arterial Road (TERTIARY) is inundated by Koshi floodwaters at est. 1.2m depth. Impassable to all vehicular traffic. Detour mandatory.",
+        "emergency_clearance_priority": "Tier-2 Secondary"
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            87.59951,
+            26.34783
+          ],
+          [
+            87.59823,
+            26.3479
+          ],
+          [
+            87.59578,
+            26.34845
+          ],
+          [
+            87.5881,
+            26.34947
+          ],
+          [
+            87.58235,
+            26.3518
+          ]
+        ]
+      }
+    }
+  ]
+}

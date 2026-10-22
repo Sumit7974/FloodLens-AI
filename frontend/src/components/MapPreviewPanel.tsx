@@ -25,28 +25,29 @@ export const MapPreviewPanel: React.FC<MapPreviewPanelProps> = ({ onSelectSosIte
   };
 
   return (
-    <div className="flex flex-col h-full rounded-none bg-[#0a0a0a] border border-[#27272a] overflow-hidden shadow-none">
+    <div className="flex flex-col h-full rounded-lg bg-[#071326]/85 border border-[#1e3a5f]/80 overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.5)] backdrop-blur-xl">
       {/* Map Control Toolbar */}
-      <div className="px-4 py-3 border-b border-[#27272a] bg-[#000000] flex flex-wrap items-center justify-between gap-2.5">
+      <div className="px-4 py-3 border-b border-[#1e3a5f]/80 bg-[#091a32]/85 flex flex-wrap items-center justify-between gap-2.5">
         <div>
-          <h3 className="font-display text-xs tracking-[1.4px] uppercase font-bold text-white">
+          <h3 className="font-display text-xs tracking-[1.4px] uppercase font-bold text-white flex items-center gap-2">
+            <Compass className="w-3.5 h-3.5 text-[#38bdf8]" />
             Tactical Geospatial Overview
           </h3>
-          <p className="font-mono text-[10px] text-[#71717a] uppercase mt-0.5">
+          <p className="font-mono text-[10px] text-[#38bdf8] uppercase mt-0.5 font-semibold">
             KOSHI BASIN SUB-WATERSHED // 26°49′N 87°09′E
           </p>
         </div>
 
         {/* Horizon selector buttons */}
-        <div className="flex items-center gap-1 bg-black p-0.5 border border-[#27272a]">
+        <div className="flex items-center gap-1 bg-[#060e1d] p-1 border border-[#1e3a5f] rounded">
           {(['now', '+1h', '+3h', '+6h'] as const).map((horizon) => (
             <button
               key={horizon}
               onClick={() => setActiveHorizon(horizon)}
-              className={`px-2.5 py-1 text-[10px] font-mono font-bold uppercase transition-all ${
+              className={`px-2.5 py-1 text-[10px] font-mono font-bold uppercase transition-all rounded ${
                 activeHorizon === horizon
-                  ? 'bg-white text-black'
-                  : 'text-[#888890] hover:text-white'
+                  ? 'bg-gradient-to-r from-[#0284c7] to-[#0ea5e9] text-white shadow-[0_0_10px_rgba(14,165,233,0.4)]'
+                  : 'text-[#94a3b8] hover:text-white'
               }`}
             >
               {horizon.toUpperCase()}
@@ -55,61 +56,61 @@ export const MapPreviewPanel: React.FC<MapPreviewPanelProps> = ({ onSelectSosIte
         </div>
       </div>
 
-      {/* Layer Toggles: Sleek Inline Text / Segment Switcher (No Capsules) */}
-      <div className="px-4 py-2 border-b border-[#27272a] bg-[#0a0a0a] flex flex-wrap items-center gap-4 text-xs font-mono">
-        <span className="font-micro text-[10px] uppercase tracking-[1.2px] text-[#71717a]">
+      {/* Layer Toggles with Colorful Status Dots */}
+      <div className="px-4 py-2 border-b border-[#1e3a5f]/70 bg-[#0a182f]/80 flex flex-wrap items-center gap-4 text-xs font-mono">
+        <span className="font-micro text-[10px] uppercase tracking-[1.2px] text-[#94a3b8] font-bold">
           LAYERS:
         </span>
 
         {/* Rainfall Layer */}
         <button
           onClick={() => toggleLayer('rainfall')}
-          className={`flex items-center gap-1.5 transition-colors uppercase tracking-wider text-[11px] ${
+          className={`flex items-center gap-1.5 transition-colors uppercase tracking-wider text-[11px] cursor-pointer ${
             layers.rainfall
-              ? 'text-white font-bold'
-              : 'text-[#71717a] hover:text-white'
+              ? 'text-sky-300 font-bold'
+              : 'text-[#64748b] hover:text-[#94a3b8]'
           }`}
         >
-          <span className={`w-1.5 h-1.5 rounded-full ${layers.rainfall ? 'bg-blue-400' : 'bg-[#27272a]'}`}></span>
+          <span className={`w-2 h-2 rounded-full ${layers.rainfall ? 'bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.8)]' : 'bg-[#1e293b]'}`}></span>
           <span>RADAR</span>
         </button>
 
         {/* Flood Extent */}
         <button
           onClick={() => toggleLayer('floodExtent')}
-          className={`flex items-center gap-1.5 transition-colors uppercase tracking-wider text-[11px] ${
+          className={`flex items-center gap-1.5 transition-colors uppercase tracking-wider text-[11px] cursor-pointer ${
             layers.floodExtent
-              ? 'text-white font-bold'
-              : 'text-[#71717a] hover:text-white'
+              ? 'text-cyan-300 font-bold'
+              : 'text-[#64748b] hover:text-[#94a3b8]'
           }`}
         >
-          <span className={`w-1.5 h-1.5 rounded-full ${layers.floodExtent ? 'bg-cyan-400' : 'bg-[#27272a]'}`}></span>
+          <span className={`w-2 h-2 rounded-full ${layers.floodExtent ? 'bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.8)]' : 'bg-[#1e293b]'}`}></span>
           <span>EXTENT</span>
         </button>
 
         {/* Shelters */}
         <button
           onClick={() => toggleLayer('shelters')}
-          className={`flex items-center gap-1.5 transition-colors uppercase tracking-wider text-[11px] ${
+          className={`flex items-center gap-1.5 transition-colors uppercase tracking-wider text-[11px] cursor-pointer ${
             layers.shelters
-              ? 'text-white font-bold'
-              : 'text-[#71717a] hover:text-white'
+              ? 'text-emerald-300 font-bold'
+              : 'text-[#64748b] hover:text-[#94a3b8]'
           }`}
         >
-          <span className={`w-1.5 h-1.5 rounded-full ${layers.shelters ? 'bg-emerald-400' : 'bg-[#27272a]'}`}></span>
+          <span className={`w-2 h-2 rounded-full ${layers.shelters ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]' : 'bg-[#1e293b]'}`}></span>
           <span>SHELTERS</span>
         </button>
 
         {/* River Gauges */}
         <button
           onClick={() => toggleLayer('riverGauges')}
-          className={`flex items-center gap-1.5 transition-colors uppercase tracking-wider text-[11px] ${
+          className={`flex items-center gap-1.5 transition-colors uppercase tracking-wider text-[11px] cursor-pointer ${
             layers.riverGauges
-              ? 'text-white font-bold'
-              : 'text-[#71717a] hover:text-white'
+              ? 'text-amber-300 font-bold'
+              : 'text-[#64748b] hover:text-[#94a3b8]'
           }`}
         >
-          <span className={`w-1.5 h-1.5 rounded-full ${layers.riverGauges ? 'bg-amber-400' : 'bg-[#27272a]'}`}></span>
+          <span className={`w-2 h-2 rounded-full ${layers.riverGauges ? 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.8)]' : 'bg-[#1e293b]'}`}></span>
           <span>GAUGES</span>
         </button>
       </div>

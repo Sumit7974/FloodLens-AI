@@ -84,3 +84,30 @@ def test_authenticated_roundtrip_protocol_without_network(monkeypatch, demo_feat
     assert requests[0][0].endswith("/api/v1/predictions/ingest")
     assert "/api/v1/predictions/latest?location_id=" in requests[1][0]
     assert all(entry[1] == "test-token" for entry in requests)
+
+
+def test_frontend_prediction_centre_api_contract(demo_features):
+    """Verify that backend ForecastResponse fulfills PredictionCentre's TypeScript interface."""
+    from app.schemas.forecast import ForecastResponse
+
+    payload = build_demo_forecast(demo_features, location_id="loc_barahachhetra_w2")
+    response_obj = ForecastResponse.model_validate(payload)
+    data = response_obj.model_dump(mode="json")
+
+    # Required fields in PredictionCentre.tsx: ForecastResponse
+    assert "forecast_id" in data
+    assert "location_id" in data and data["location_id"] == "loc_barahachhetra_w2"
+    assert "issued_at" in data
+    assert "mode" in data and data["mode"] == "historical_demo"
+    assert "model_version" in data and data["model_version"] == "candidate-leakfree-v1"
+    assert "data_quality" in data
+    assert "horizons" in data and len(data["horizons"]) == 3
+    assert "limitations" in data and len(data["limitations"]) > 0
+
+    # Horizons must map 1h, 3h, 6h
+    horizon_hours = {h["hours"]: h for h in data["horizons"]}
+    assert set(horizon_hours.keys()) == {1, 3, 6}
+    for h in (1, 3, 6):
+        assert horizon_hours[h]["risk_level"] in ("low", "moderate", "high", "critical")
+        assert horizon_hours[h]["calibrated_probability"] is None  # Uncalibrated score
+

@@ -1,0 +1,11 @@
+node_modules/
+.expo/
+dist/
+dist-test/
+android/
+ios/
+.env
+.env.local
+*.apk
+*.aab
+npm-debug.log*
