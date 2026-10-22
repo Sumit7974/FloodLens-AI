@@ -32,7 +32,7 @@ import zipfile
 import warnings
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List, Tuple, Optional, Union
 
 # Suppress warnings for clean stdout
 warnings.filterwarnings("ignore")
@@ -47,9 +47,36 @@ if sys.platform.startswith("win"):
 
 import numpy as np
 from shapely.geometry import shape, mapping, box
-from shapely.validation import explain_validity
 import shapely.ops
 import pyproj
+
+try:
+    from ml.gis_processing.detection_metrics import (
+        calculate_confusion_matrix,
+        derive_binary_metrics,
+        evaluate_flood_detection_accuracy,
+        compute_cross_sensor_agreement,
+        ValidationStatus,
+    )
+except ImportError:
+    try:
+        from detection_metrics import (
+            calculate_confusion_matrix,
+            derive_binary_metrics,
+            evaluate_flood_detection_accuracy,
+            compute_cross_sensor_agreement,
+            ValidationStatus,
+        )
+    except ImportError:
+        import sys
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from detection_metrics import (
+            calculate_confusion_matrix,
+            derive_binary_metrics,
+            evaluate_flood_detection_accuracy,
+            compute_cross_sensor_agreement,
+            ValidationStatus,
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -82,16 +109,35 @@ STUDY_BBOX = [86.5, 26.2, 88.2, 27.8]  # [min_lon, min_lat, max_lon, max_lat]
 
 
 def locate_file(filename: str) -> Path:
-    """Locate file in downloads directory or workspace roots."""
+    """Locate file in downloads directory, workspace roots, or final_gis_outputs.zip."""
     candidates = [
         DOWNLOADS_DIR / filename,
         WORKSPACE_ROOT / filename,
         WORKSPACE_ROOT / "FloodLens-AI" / filename,
-        Path.cwd() / filename
+        Path.cwd() / filename,
     ]
     for p in candidates:
         if p.exists():
             return p
+
+    # Check in final_gis_outputs.zip if present
+    for z_cand in [
+        WORKSPACE_ROOT / "final_gis_outputs.zip",
+        WORKSPACE_ROOT / "FloodLens-AI" / "final_gis_outputs.zip",
+        Path.cwd() / "final_gis_outputs.zip",
+    ]:
+        if z_cand.exists():
+            try:
+                with zipfile.ZipFile(z_cand, "r") as z:
+                    if filename in z.namelist():
+                        DOWNLOADS_DIR.mkdir(parents=True, exist_ok=True)
+                        z.extract(filename, DOWNLOADS_DIR)
+                        extracted = DOWNLOADS_DIR / filename
+                        if extracted.exists():
+                            return extracted
+            except Exception:
+                pass
+
     raise FileNotFoundError(f"Could not locate file: {filename}")
 
 
@@ -206,142 +252,118 @@ def validate_geojson_topology() -> Dict[str, Any]:
         print(f"[*] {filename:<28} : {total_feats:>6} feats | Valid: {valid_count:>6} | Invalid: {invalid_count} | Status: [{status_str}]")
 
     # 2. Settlement Flags & Referential Integrity Validation
-    b_path = locate_file("flooded_buildings.geojson")
-    s_path = locate_file("affected_settlements.geojson")
-    with open(b_path, "r", encoding="utf-8") as f:
-        b_feats = json.load(f).get("features", [])
-    with open(s_path, "r", encoding="utf-8") as f:
-        s_feats = json.load(f).get("features", [])
+    try:
+        b_path = locate_file("flooded_buildings.geojson")
+        s_path = locate_file("affected_settlements.geojson")
+        with open(b_path, "r", encoding="utf-8") as f:
+            b_feats = json.load(f).get("features", [])
+        with open(s_path, "r", encoding="utf-8") as f:
+            s_feats = json.load(f).get("features", [])
 
-    b_settlements = set(f["properties"].get("settlement") for f in b_feats if f["properties"].get("settlement"))
-    s_names = set(f["properties"].get("name") for f in s_feats if f["properties"].get("name"))
+        b_settlements = set(f["properties"].get("settlement") for f in b_feats if f["properties"].get("settlement"))
+        s_names = set(f["properties"].get("name") for f in s_feats if f["properties"].get("name"))
 
-    matched_settlements = sorted(list(b_settlements.intersection(s_names)))
-    unmatched_settlements = sorted(list(b_settlements - s_names))
+        matched_settlements = sorted(list(b_settlements.intersection(s_names)))
+        unmatched_settlements = sorted(list(b_settlements - s_names))
 
-    settlement_integrity = {
-        "building_settlement_tags_total": len(b_settlements),
-        "verified_in_settlement_layer": len(matched_settlements),
-        "unmatched_count": len(unmatched_settlements),
-        "verified_settlements": matched_settlements,
-        "integrity_status": "PASS" if len(unmatched_settlements) == 0 else "WARNING"
-    }
-
-    validation_results["settlement_integrity"] = settlement_integrity
-    print("\n[+] Settlement Flag Referential Integrity:")
-    print(f"    - Inundated Building Settlement Tags : {b_settlements}")
-    print(f"    - Matched against Settlement Register: {matched_settlements}")
-    print(f"    - Integrity Verification Status       : [{settlement_integrity['integrity_status']}] (100% matched)")
+        settlement_integrity = {
+            "building_settlement_tags_total": len(b_settlements),
+            "verified_in_settlement_layer": len(matched_settlements),
+            "unmatched_count": len(unmatched_settlements),
+            "verified_settlements": matched_settlements,
+            "integrity_status": "PASS" if len(unmatched_settlements) == 0 else "WARNING"
+        }
+        validation_results["settlement_integrity"] = settlement_integrity
+        print("\n[+] Settlement Flag Referential Integrity:")
+        print(f"    - Inundated Building Settlement Tags : {b_settlements}")
+        print(f"    - Matched against Settlement Register: {matched_settlements}")
+        print(f"    - Integrity Verification Status       : [{settlement_integrity['integrity_status']}] (100% matched)")
+    except Exception as e:
+        print(f"\n[!] Note: Settlement referential integrity check skipped: {e}")
+        validation_results["settlement_integrity"] = {"integrity_status": "SKIPPED", "reason": str(e)}
 
     return validation_results
 
 
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 # TASK 2: DETECTION PERFORMANCE METRICS
 # ---------------------------------------------------------------------------
-def compute_detection_metrics() -> Dict[str, Any]:
+def compute_detection_metrics(
+    pred_mask_path: Optional[Union[str, Path]] = None,
+    ref_mask_path: Optional[Union[str, Path]] = None,
+    reference_provenance: Optional[str] = None,
+) -> Dict[str, Any]:
     """
     Computes rigorous remote sensing detection metrics against a validated
-    multi-temporal reference baseline:
-      - Confusion Matrix: True Positive (TP), False Positive (FP), False Negative (FN), True Negative (TN)
-      - Precision (User's Accuracy)
-      - Recall / Sensitivity (Producer's Accuracy)
-      - F1-Score / Dice Coefficient
-      - Intersection-over-Union (IoU) / Jaccard Index
-      - Overall Accuracy (OA)
-      - Cohen's Kappa Coefficient (κ)
-      - Commission & Omission Errors
-    Also evaluates cross-sensor agreement between Optical (Sentinel-2) and Radar (Sentinel-1 SAR).
+    independent reference baseline if available, or clearly reports NOT_VALIDATED.
+
+    Also evaluates multi-modal cross-sensor agreement between Optical (Sentinel-2)
+    and Radar (Sentinel-1 SAR) while strictly distinguishing cross-sensor consensus
+    from independent ground-truth accuracy.
     """
     print("\n" + "=" * 78)
     print(" TASK 2: DETECTION PERFORMANCE METRICS & ACCURACY ASSESSMENT")
     print("=" * 78)
 
-    # In remote sensing accuracy assessment for 10m Sentinel-2 NDWI during the Koshi flood:
-    # TP: Flood correctly detected by NDWI > 0.10 and confirmed by multi-spectral consensus
-    # FP: Non-water classified as flood (cloud shadow slivers, saturated agricultural soil)
-    # FN: Flooded areas missed by NDWI (turbid sediment-dense water, sub-canopy water)
-    # TN: Verified dry land & permanent non-flooded surface across the 10,980 x 10,980 tile
-    #
-    # Baseline ground truth concordance derived from Sentinel-2 tile 45RVP:
-    # Total flooded pixels detected = 480,060 (48.006 km²)
-    # High-confidence true positives: ~90.0% of detected extent
-    # False positive rate (commission): ~10.0%
-    # False negative rate (omission): ~8.2%
-    tp_pixels = 432054       # 43.205 km² verified inundation
-    fp_pixels = 48006        # 4.801 km² cloud shadow & wet soil false alarms
-    fn_pixels = 38405        # 3.841 km² turbid/canopy obscured floodwater missed
-    tn_pixels = 64777475     # 6,477.748 km² verified dry land
-    total_eval_pixels = tp_pixels + fp_pixels + fn_pixels + tn_pixels
+    # 1. Attempt to locate independent reference mask if not explicitly passed
+    if pred_mask_path is None:
+        try:
+            pred_mask_path = locate_file("flood_mask.tif")
+        except FileNotFoundError:
+            pred_mask_path = None
 
-    # Metric Math
-    precision = tp_pixels / (tp_pixels + fp_pixels)
-    recall = tp_pixels / (tp_pixels + fn_pixels)
-    f1_score = 2.0 * (precision * recall) / (precision + recall)
-    iou = tp_pixels / (tp_pixels + fp_pixels + fn_pixels)
-    overall_accuracy = (tp_pixels + tn_pixels) / total_eval_pixels
-    commission_error = fp_pixels / (tp_pixels + fp_pixels)
-    omission_error = fn_pixels / (tp_pixels + fn_pixels)
+    if ref_mask_path is None:
+        for candidate_name in ["reference_flood_mask.tif", "ground_truth_flood.tif", "copernicus_ems_mask.tif"]:
+            try:
+                ref_mask_path = locate_file(candidate_name)
+                break
+            except FileNotFoundError:
+                continue
 
-    # Cohen's Kappa Coefficient (Chance-corrected agreement)
-    p_observed = overall_accuracy
-    p_chance = (((tp_pixels + fp_pixels) * (tp_pixels + fn_pixels)) +
-                ((fn_pixels + tn_pixels) * (fp_pixels + tn_pixels))) / (total_eval_pixels ** 2)
-    kappa = (p_observed - p_chance) / (1.0 - p_chance)
-
-    # Multi-Modal Cross-Sensor Inter-Comparison (Sentinel-2 Optical vs Sentinel-1 SAR Radar)
-    # In Koshi Basin study extent:
+    # 2. Multi-Modal Cross-Sensor Inter-Comparison (Sentinel-2 Optical vs Sentinel-1 SAR Radar)
+    # Optical detected flood extent from 10m NDWI: 48.01 km²
+    # SAR detected flood extent in Koshi study area: 72.35 km²
+    # Co-detected core consensus: 39.84 km²
     optical_flood_km2 = 48.01
-    radar_koshi_flood_km2 = 72.35  # Active radar change detection in Koshi bbox
-    core_consensus_km2 = 39.84     # Agreed inundated by both sensors
-    radar_only_km2 = round(radar_koshi_flood_km2 - core_consensus_km2, 2)  # Cloud-obscured flood detected only by SAR
-    optical_only_km2 = round(optical_flood_km2 - core_consensus_km2, 2)    # Shallow calm ponding
-    cross_sensor_iou = core_consensus_km2 / (optical_flood_km2 + radar_koshi_flood_km2 - core_consensus_km2)
+    radar_koshi_flood_km2 = 72.35
+    core_consensus_km2 = 39.84
 
-    metrics_report = {
-        "evaluation_standard": "ISO 19157 Geographic Information — Data Quality & Remote Sensing Accuracy Assessment",
-        "spatial_resolution": "10-meter Ground Sampling Distance (GSD)",
-        "confusion_matrix_pixels": {
-            "true_positive_pixels": tp_pixels,
-            "false_positive_pixels": fp_pixels,
-            "false_negative_pixels": fn_pixels,
-            "true_negative_pixels": tn_pixels,
-            "total_pixels_evaluated": total_eval_pixels
-        },
-        "confusion_matrix_area_km2": {
-            "true_positive_km2": round(tp_pixels * 1e-4, 3),
-            "false_positive_km2": round(fp_pixels * 1e-4, 3),
-            "false_negative_km2": round(fn_pixels * 1e-4, 3),
-            "true_negative_km2": round(tn_pixels * 1e-4, 3)
-        },
-        "detection_performance_indicators": {
-            "precision_user_accuracy": round(precision, 4),
-            "recall_producer_accuracy": round(recall, 4),
-            "f1_score_dice_coefficient": round(f1_score, 4),
-            "iou_jaccard_index": round(iou, 4),
-            "overall_accuracy": round(overall_accuracy, 6),
-            "cohens_kappa_coefficient": round(kappa, 4),
-            "commission_error_rate": round(commission_error, 4),
-            "omission_error_rate": round(omission_error, 4)
-        },
-        "cross_sensor_agreement": {
-            "optical_sentinel2_extent_km2": optical_flood_km2,
-            "radar_sentinel1_extent_km2": radar_koshi_flood_km2,
-            "dual_sensor_consensus_core_km2": core_consensus_km2,
-            "radar_only_cloud_penetrated_km2": radar_only_km2,
-            "optical_only_shallow_ponding_km2": optical_only_km2,
-            "cross_sensor_jaccard_index": round(cross_sensor_iou, 4)
-        }
-    }
+    cross_sensor_agreement = compute_cross_sensor_agreement(
+        optical_extent_km2=optical_flood_km2,
+        radar_extent_km2=radar_koshi_flood_km2,
+        consensus_core_km2=core_consensus_km2,
+    )
 
-    print(f"[*] Confusion Matrix: TP = {tp_pixels:,} px | FP = {fp_pixels:,} px | FN = {fn_pixels:,} px")
-    print(f"[+] Precision (User's Accuracy)     : {precision * 100:.2f}%")
-    print(f"[+] Recall (Producer's Accuracy)    : {recall * 100:.2f}%")
-    print(f"[+] F1-Score (Dice Coefficient)     : {f1_score:.4f}")
-    print(f"[+] Intersection-over-Union (IoU)   : {iou * 100:.2f}%")
-    print(f"[+] Overall Accuracy                : {overall_accuracy * 100:.4f}%")
-    print(f"[+] Cohen's Kappa Coefficient (κ)   : {kappa:.4f} (Almost Perfect Agreement)")
-    print(f"[+] Multi-Sensor Cross-Agreement    : {core_consensus_km2:.2f} km² co-verified ({cross_sensor_iou * 100:.1f}% IoU)")
+    if ref_mask_path is not None and pred_mask_path is not None:
+        print(f"[*] Independent reference mask located: {ref_mask_path}")
+        metrics_report = evaluate_flood_detection_accuracy(
+            pred_mask=pred_mask_path,
+            ref_mask=ref_mask_path,
+            reference_provenance=reference_provenance or "INDEPENDENT_EXTERNAL_REFERENCE",
+        )
+        metrics_report["cross_sensor_agreement"] = cross_sensor_agreement
+        cm = metrics_report["confusion_matrix_pixels"]
+        ind = metrics_report["detection_performance_indicators"]
+        print(f"[*] Confusion Matrix: TP = {cm['tp_pixels']:,} px | FP = {cm['fp_pixels']:,} px | FN = {cm['fn_pixels']:,} px | TN = {cm['tn_pixels']:,} px")
+        print(f"[+] Precision (User's Accuracy)     : {ind['precision_user_accuracy'] * 100:.2f}%")
+        print(f"[+] Recall (Producer's Accuracy)    : {ind['recall_producer_accuracy'] * 100:.2f}%")
+        print(f"[+] F1-Score (Dice Coefficient)     : {ind['f1_score_dice_coefficient']:.4f}")
+        print(f"[+] Intersection-over-Union (IoU)   : {ind['iou_jaccard_index'] * 100:.2f}%")
+        print(f"[+] Overall Accuracy                : {ind['overall_accuracy'] * 100:.4f}%")
+        print(f"[+] Cohen's Kappa Coefficient (κ)   : {ind['cohens_kappa']:.4f}")
+    else:
+        print("[!] NOTICE: No independent reference ground-truth flood mask found in repository.")
+        print("    -> In accordance with scientific honesty standards, detection accuracy is reported as NOT_VALIDATED.")
+        print("    -> Cross-sensor satellite concordance is reported separately without claiming ground-truth accuracy.")
+        metrics_report = evaluate_flood_detection_accuracy(
+            pred_mask=pred_mask_path,
+            ref_mask=None,
+            reference_provenance=None,
+        )
+        metrics_report["cross_sensor_agreement"] = cross_sensor_agreement
+        print(f"[*] Status: [{metrics_report['validation_status']}]")
+        print(f"[+] Multi-Sensor Cross-Agreement    : {core_consensus_km2:.2f} km² co-verified ({cross_sensor_agreement['cross_sensor_jaccard_index'] * 100:.1f}% IoU)")
 
     return metrics_report
 
@@ -609,49 +631,79 @@ def generate_day5_documentation(
         "",
         "---",
         "",
-        "## 4. Detection Performance & Accuracy Assessment",
+        "## 4. Detection Performance & Scientific Accuracy Assessment",
         "",
-        "Evaluation against a multi-spectral multi-temporal validation baseline demonstrates high confidence across the study region:",
-        "",
-        "```mermaid",
-        "flowchart LR",
-        "    subgraph CONFUSION_MATRIX[\"📊 Confusion Matrix (10m Pixels)\"]",
-        "        TP[\"True Positive (TP)\\n432,054 px (43.21 km²)\\nAccurate Water Detection\"]",
-        "        FP[\"False Positive (FP)\\n48,006 px (4.80 km²)\\nShadow / Soil Commission\"]",
-        "        FN[\"False Negative (FN)\\n38,405 px (3.84 km²)\\nTurbid / Canopy Omission\"]",
-        "        TN[\"True Negative (TN)\\n64,777,475 px (6,477.75 km²)\\nDry Land Verified\"]",
-        "    end",
-        "",
-        "    subgraph METRICS[\"🎯 Performance Metrics\"]",
-        "        P[\"Precision: 90.00%\"]",
-        "        R[\"Recall: 91.84%\"]",
-        "        F1[\"F1-Score: 0.9091\"]",
-        "        IOU[\"IoU (Jaccard): 83.33%\"]",
-        "        KAPPA[\"Kappa: 0.9084\"]",
-        "    end",
-        "",
-        "    CONFUSION_MATRIX --> METRICS",
-        "```",
-        "",
-        "### Quantitative Detection Metrics",
-        "",
-        "| Performance Indicator | Metric Value | Benchmark Standard | Interpretation |",
-        "|:---|:---:|:---:|:---|",
-        "| **Precision (User's Accuracy)** | **90.00%** | >= 85.0% | 90% of all predicted flood pixels represent actual on-the-ground inundation. |",
-        "| **Recall / Sensitivity (Producer's Accuracy)**| **91.84%** | >= 85.0% | Algorithm successfully captured 91.8% of all flooded surfaces in the basin. |",
-        "| **F1-Score / Dice Coefficient** | **0.9091** | >= 0.85 | Robust harmonic mean between precision and recall. |",
-        "| **Intersection-over-Union (IoU / Jaccard)** | **83.33%** | >= 75.0% | High spatial overlap concordance between prediction and ground truth. |",
-        "| **Overall Accuracy** | **99.87%** | >= 98.0% | High overall classification accuracy across regional landscape. |",
-        "| **Cohen's Kappa Coefficient (kappa)** | **0.9084** | >= 0.80 | **Almost Perfect Agreement** according to Landis & Koch criteria. |",
-        "| **Commission Error Rate** | **10.00%** | <= 15.0% | Limited over-detection caused by localized cloud shadow edges. |",
-        "| **Omission Error Rate** | **8.16%** | <= 15.0% | Minimal missed floodwater under partial vegetation canopies. |",
-        "",
+    ]
+
+    is_validated = metrics_report.get("validation_status") == "VALIDATED"
+    ind = metrics_report.get("detection_performance_indicators")
+    cm_px = metrics_report.get("confusion_matrix_pixels")
+    cross = metrics_report.get("cross_sensor_agreement", {})
+
+    if is_validated and ind and cm_px:
+        doc_lines.extend([
+            "Evaluation against an independent reference flood mask demonstrates the following empirical metrics:",
+            "",
+            "```mermaid",
+            "flowchart LR",
+            "    subgraph CONFUSION_MATRIX[\"📊 Confusion Matrix (Pixels)\"]",
+            f"        TP[\"True Positive (TP)\\n{cm_px['tp_pixels']:,} px\\nAccurate Water Detection\"]",
+            f"        FP[\"False Positive (FP)\\n{cm_px['fp_pixels']:,} px\\nCommission Error\"]",
+            f"        FN[\"False Negative (FN)\\n{cm_px['fn_pixels']:,} px\\nOmission Error\"]",
+            f"        TN[\"True Negative (TN)\\n{cm_px['tn_pixels']:,} px\\nDry Land Verified\"]",
+            "    end",
+            "",
+            "    subgraph METRICS[\"🎯 Empirical Metrics\"]",
+            f"        P[\"Precision: {ind['precision_user_accuracy'] * 100:.2f}%\"]",
+            f"        R[\"Recall: {ind['recall_producer_accuracy'] * 100:.2f}%\"]",
+            f"        F1[\"F1-Score: {ind['f1_score_dice_coefficient']:.4f}\"]",
+            f"        IOU[\"IoU (Jaccard): {ind['iou_jaccard_index'] * 100:.2f}%\"]",
+            f"        KAPPA[\"Kappa: {ind['cohens_kappa']:.4f}\"]",
+            "    end",
+            "",
+            "    CONFUSION_MATRIX --> METRICS",
+            "```",
+            "",
+            "### Quantitative Detection Metrics",
+            "",
+            "| Performance Indicator | Metric Value | Benchmark Standard | Interpretation |",
+            "|:---|:---:|:---:|:---|",
+            f"| **Precision (User's Accuracy)** | **{ind['precision_user_accuracy'] * 100:.2f}%** | >= 85.0% | Predicted flood pixels confirmed by reference ground truth. |",
+            f"| **Recall / Sensitivity (Producer's Accuracy)**| **{ind['recall_producer_accuracy'] * 100:.2f}%** | >= 85.0% | Reference flood pixels successfully identified. |",
+            f"| **F1-Score / Dice Coefficient** | **{ind['f1_score_dice_coefficient']:.4f}** | >= 0.85 | Harmonic mean of precision and recall. |",
+            f"| **Intersection-over-Union (IoU / Jaccard)** | **{ind['iou_jaccard_index'] * 100:.2f}%** | >= 75.0% | Spatial overlap between predicted and reference extents. |",
+            f"| **Overall Accuracy** | **{ind['overall_accuracy'] * 100:.4f}%** | >= 98.0% | Proportion of correctly classified pixels across evaluation footprint. |",
+            f"| **Cohen's Kappa Coefficient (kappa)** | **{ind['cohens_kappa']:.4f}** | >= 0.80 | Chance-corrected agreement. |",
+            f"| **Commission Error Rate** | **{ind['commission_error_rate'] * 100:.2f}%** | <= 15.0% | False alarm rate. |",
+            f"| **Omission Error Rate** | **{ind['omission_error_rate'] * 100:.2f}%** | <= 15.0% | Missed flood area rate. |",
+            "",
+        ])
+    else:
+        doc_lines.extend([
+            "> [!WARNING]",
+            "> **SCIENTIFIC VALIDATION STATUS: NOT VALIDATED (Awaiting Independent Reference Ground Truth)**  ",
+            "> Independent reference flood ground-truth data (such as validated Copernicus EMS rapid mapping, UAV aerial photography, or calibrated gauge survey extents) is currently unavailable in the historical simulation archive.",
+            "> ",
+            "> **Notice on Prior Figures**: Previously cited confusion matrix figures (432,054 TP, 48,006 FP, 38,405 FN, 64,777,475 TN; 90.00% precision, 83.33% IoU) were unverified demonstration estimates derived from arbitrary multipliers rather than an independent reference mask. In accordance with ISO 19157 standards, they are marked as unverified until independent reference datasets are established.",
+            "",
+            "### Missing Validation Requirements",
+            "- Independent authoritative reference flood mask (e.g. Copernicus EMS, UNOSAT, or field surveys) covering the Koshi study footprint.",
+            "- High-density stream gauge cross-validation or aerial orthoimagery.",
+            "- Independent reference data must NOT be derived from the same prediction pipeline.",
+            "",
+        ])
+
+    doc_lines.extend([
         "### Dual-Sensor Multi-Modal Cross-Agreement",
-        "- **Sentinel-2 Optical Extent**: 48.01 km²",
-        "- **Sentinel-1 SAR Radar Extent**: 72.35 km² (within Koshi Basin)",
-        "- **Co-Verified Core Flood Consensus**: **39.84 km²**",
-        "- **Cloud-Penetrated Radar Discovery**: **32.51 km²** (detected solely through storm clouds by radar)",
-        "- **Fine-Ponding Optical Discovery**: **8.17 km²** (shallow standing pools in open meadows)",
+        "> [!NOTE]",
+        "> Cross-sensor agreement measures inter-satellite spatial concordance between optical and radar sensors, NOT independent ground-truth accuracy.",
+        "",
+        f"- **Sentinel-2 Optical Extent**: {cross.get('optical_sentinel2_extent_km2', 48.01)} km²",
+        f"- **Sentinel-1 SAR Radar Extent**: {cross.get('radar_sentinel1_extent_km2', 72.35)} km² (within Koshi Basin)",
+        f"- **Co-Verified Core Flood Consensus**: **{cross.get('dual_sensor_consensus_core_km2', 39.84)} km²**",
+        f"- **Cloud-Penetrated Radar Discovery**: **{cross.get('radar_only_cloud_penetrated_km2', 32.51)} km²** (detected through storm clouds by SAR)",
+        f"- **Fine-Ponding Optical Discovery**: **{cross.get('optical_only_shallow_ponding_km2', 8.17)} km²** (shallow standing pools in open meadows)",
+        f"- **Cross-Sensor Spatial Concordance (IoU)**: **{cross.get('cross_sensor_jaccard_index', 0.4947) * 100:.1f}%**",
         "",
         "---",
         "",
@@ -674,8 +726,8 @@ def generate_day5_documentation(
         "> **Web Deployment Recommendation**: Use `flood_polygons_web.geojson` (5.29 MB) for mobile and web dashboards to reduce initial load latency by over **81%** while retaining exact flood boundary geometry. Use `flood_polygons_3d_optimized.geojson` for Cesium 3D terrain rendering.",
         "",
         "---",
-        "*Report compiled automatically by FloodLens AI Day 5 Validation Engine.*"
-    ]
+        "*Report compiled automatically by FloodLens AI Day 5 Validation Engine.*",
+    ])
 
     doc_text = "\n".join(doc_lines)
     doc_path = DOWNLOADS_DIR / "day5_gis_documentation.md"
