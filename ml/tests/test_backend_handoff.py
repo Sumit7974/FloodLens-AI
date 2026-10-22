@@ -3,8 +3,8 @@ from __future__ import annotations
 
 import pytest
 
-from app.schemas.forecast import ForecastIngestRequest
 from ml.scripts.submit_demo_forecast import build_demo_forecast, submit_historical_test_forecast
+from app.schemas.forecast import ForecastIngestRequest
 
 
 @pytest.fixture
