@@ -1,0 +1,396 @@
+{
+  "run_id": "eval_day4_20261021_172316",
+  "evaluation_timestamp": "2026-10-21T17:23:15Z",
+  "model_version": "era5-v1",
+  "study_area": "Sapta Koshi Basin \u2014 Barahachhetra Ward 2 / Chatara Gauge, Sunsari District, Nepal Terai",
+  "multiclass_evaluations": {
+    "+1h": {
+      "horizon_hours": 1,
+      "sample_size": 1463,
+      "matched_pairs": 1463,
+      "unmatched_forecasts": 1,
+      "exact_accuracy": 0.9802,
+      "off_by_one_tolerance_accuracy": 1.0,
+      "balanced_accuracy": 0.8947,
+      "macro_f1": 0.9095,
+      "weighted_f1": 0.9802,
+      "confusion_matrix": [
+        [
+          1316,
+          12,
+          0,
+          0
+        ],
+        [
+          11,
+          76,
+          0,
+          0
+        ],
+        [
+          0,
+          4,
+          15,
+          1
+        ],
+        [
+          0,
+          0,
+          1,
+          27
+        ]
+      ],
+      "per_class": {
+        "low": {
+          "precision": 0.9917,
+          "recall": 0.991,
+          "f1-score": 0.9913,
+          "support": 1328.0
+        },
+        "moderate": {
+          "precision": 0.8261,
+          "recall": 0.8736,
+          "f1-score": 0.8492,
+          "support": 87.0
+        },
+        "high": {
+          "precision": 0.9375,
+          "recall": 0.75,
+          "f1-score": 0.8333,
+          "support": 20.0
+        },
+        "critical": {
+          "precision": 0.9643,
+          "recall": 0.9643,
+          "f1-score": 0.9643,
+          "support": 28.0
+        },
+        "macro avg": {
+          "precision": 0.9299,
+          "recall": 0.8947,
+          "f1-score": 0.9095,
+          "support": 1463.0
+        },
+        "weighted avg": {
+          "precision": 0.9806,
+          "recall": 0.9802,
+          "f1-score": 0.9802,
+          "support": 1463.0
+        }
+      }
+    },
+    "+3h": {
+      "horizon_hours": 3,
+      "sample_size": 1461,
+      "matched_pairs": 1461,
+      "unmatched_forecasts": 3,
+      "exact_accuracy": 0.9658,
+      "off_by_one_tolerance_accuracy": 1.0,
+      "balanced_accuracy": 0.8883,
+      "macro_f1": 0.8637,
+      "weighted_f1": 0.9675,
+      "confusion_matrix": [
+        [
+          1293,
+          33,
+          0,
+          0
+        ],
+        [
+          9,
+          77,
+          1,
+          0
+        ],
+        [
+          0,
+          1,
+          16,
+          3
+        ],
+        [
+          0,
+          0,
+          3,
+          25
+        ]
+      ],
+      "per_class": {
+        "low": {
+          "precision": 0.9931,
+          "recall": 0.9751,
+          "f1-score": 0.984,
+          "support": 1326.0
+        },
+        "moderate": {
+          "precision": 0.6937,
+          "recall": 0.8851,
+          "f1-score": 0.7778,
+          "support": 87.0
+        },
+        "high": {
+          "precision": 0.8,
+          "recall": 0.8,
+          "f1-score": 0.8,
+          "support": 20.0
+        },
+        "critical": {
+          "precision": 0.8929,
+          "recall": 0.8929,
+          "f1-score": 0.8929,
+          "support": 28.0
+        },
+        "macro avg": {
+          "precision": 0.8449,
+          "recall": 0.8883,
+          "f1-score": 0.8637,
+          "support": 1461.0
+        },
+        "weighted avg": {
+          "precision": 0.9707,
+          "recall": 0.9658,
+          "f1-score": 0.9675,
+          "support": 1461.0
+        }
+      }
+    },
+    "+6h": {
+      "horizon_hours": 6,
+      "sample_size": 1458,
+      "matched_pairs": 1458,
+      "unmatched_forecasts": 6,
+      "exact_accuracy": 0.9472,
+      "off_by_one_tolerance_accuracy": 1.0,
+      "balanced_accuracy": 0.8735,
+      "macro_f1": 0.8096,
+      "weighted_f1": 0.9521,
+      "confusion_matrix": [
+        [
+          1267,
+          56,
+          0,
+          0
+        ],
+        [
+          8,
+          74,
+          5,
+          0
+        ],
+        [
+          0,
+          0,
+          18,
+          2
+        ],
+        [
+          0,
+          0,
+          6,
+          22
+        ]
+      ],
+      "per_class": {
+        "low": {
+          "precision": 0.9937,
+          "recall": 0.9577,
+          "f1-score": 0.9754,
+          "support": 1323.0
+        },
+        "moderate": {
+          "precision": 0.5692,
+          "recall": 0.8506,
+          "f1-score": 0.682,
+          "support": 87.0
+        },
+        "high": {
+          "precision": 0.6207,
+          "recall": 0.9,
+          "f1-score": 0.7347,
+          "support": 20.0
+        },
+        "critical": {
+          "precision": 0.9167,
+          "recall": 0.7857,
+          "f1-score": 0.8462,
+          "support": 28.0
+        },
+        "macro avg": {
+          "precision": 0.7751,
+          "recall": 0.8735,
+          "f1-score": 0.8096,
+          "support": 1458.0
+        },
+        "weighted avg": {
+          "precision": 0.9618,
+          "recall": 0.9472,
+          "f1-score": 0.9521,
+          "support": 1458.0
+        }
+      }
+    }
+  },
+  "binary_warning_evaluations": {
+    "+1h": {
+      "horizon_hours": 1,
+      "sample_size": 1463,
+      "warning_precision": 1.0,
+      "warning_recall": 0.9167,
+      "warning_f1": 0.9565,
+      "confusion_matrix": [
+        [
+          1415,
+          0
+        ],
+        [
+          4,
+          44
+        ]
+      ],
+      "false_alarm_ratio": 0.0,
+      "false_alarm_rate_pofd": 0.0,
+      "false_positives_count": 0,
+      "false_negatives_count": 4,
+      "true_positives_count": 44,
+      "true_negatives_count": 1415
+    },
+    "+3h": {
+      "horizon_hours": 3,
+      "sample_size": 1461,
+      "warning_precision": 0.9792,
+      "warning_recall": 0.9792,
+      "warning_f1": 0.9792,
+      "confusion_matrix": [
+        [
+          1412,
+          1
+        ],
+        [
+          1,
+          47
+        ]
+      ],
+      "false_alarm_ratio": 0.0208,
+      "false_alarm_rate_pofd": 0.0007,
+      "false_positives_count": 1,
+      "false_negatives_count": 1,
+      "true_positives_count": 47,
+      "true_negatives_count": 1412
+    },
+    "+6h": {
+      "horizon_hours": 6,
+      "sample_size": 1458,
+      "warning_precision": 0.9057,
+      "warning_recall": 1.0,
+      "warning_f1": 0.9505,
+      "confusion_matrix": [
+        [
+          1405,
+          5
+        ],
+        [
+          0,
+          48
+        ]
+      ],
+      "false_alarm_ratio": 0.0943,
+      "false_alarm_rate_pofd": 0.0035,
+      "false_positives_count": 5,
+      "false_negatives_count": 0,
+      "true_positives_count": 48,
+      "true_negatives_count": 1405
+    }
+  },
+  "false_alarm_analyses": {
+    "+1h": {
+      "total_warnings_issued": 44,
+      "false_positives_count": 0,
+      "true_positives_count": 44,
+      "false_negatives_count": 4,
+      "true_negatives_count": 1415,
+      "total_non_flood_events": 1415,
+      "false_alarm_ratio": 0.0,
+      "false_alarm_rate_pofd": 0.0,
+      "severe_false_alarm_jumps_count": 0,
+      "multiclass_overpredictions_count": 13,
+      "multiclass_overprediction_rate": 0.0089,
+      "formula_definitions": {
+        "false_alarm_ratio_far": "FAR = FP / (TP + FP) = Fraction of issued warnings that were false",
+        "false_alarm_rate_pofd": "POFD = FP / (FP + TN) = Fraction of non-flood events that incorrectly alarmed",
+        "severe_false_alarm_jump": "Count of instances where true class was LOW (0) but prediction jumped directly to CRITICAL (3)"
+      }
+    },
+    "+3h": {
+      "total_warnings_issued": 48,
+      "false_positives_count": 1,
+      "true_positives_count": 47,
+      "false_negatives_count": 1,
+      "true_negatives_count": 1412,
+      "total_non_flood_events": 1413,
+      "false_alarm_ratio": 0.0208,
+      "false_alarm_rate_pofd": 0.0007,
+      "severe_false_alarm_jumps_count": 0,
+      "multiclass_overpredictions_count": 37,
+      "multiclass_overprediction_rate": 0.0253,
+      "formula_definitions": {
+        "false_alarm_ratio_far": "FAR = FP / (TP + FP) = Fraction of issued warnings that were false",
+        "false_alarm_rate_pofd": "POFD = FP / (FP + TN) = Fraction of non-flood events that incorrectly alarmed",
+        "severe_false_alarm_jump": "Count of instances where true class was LOW (0) but prediction jumped directly to CRITICAL (3)"
+      }
+    },
+    "+6h": {
+      "total_warnings_issued": 53,
+      "false_positives_count": 5,
+      "true_positives_count": 48,
+      "false_negatives_count": 0,
+      "true_negatives_count": 1405,
+      "total_non_flood_events": 1410,
+      "false_alarm_ratio": 0.0943,
+      "false_alarm_rate_pofd": 0.0035,
+      "severe_false_alarm_jumps_count": 0,
+      "multiclass_overpredictions_count": 63,
+      "multiclass_overprediction_rate": 0.0432,
+      "formula_definitions": {
+        "false_alarm_ratio_far": "FAR = FP / (TP + FP) = Fraction of issued warnings that were false",
+        "false_alarm_rate_pofd": "POFD = FP / (FP + TN) = Fraction of non-flood events that incorrectly alarmed",
+        "severe_false_alarm_jump": "Count of instances where true class was LOW (0) but prediction jumped directly to CRITICAL (3)"
+      }
+    }
+  },
+  "numerical_evaluations": [
+    {
+      "variable_name": "nwp_precipitation_forecast_3h",
+      "sample_size": 1461,
+      "mae": 0.0,
+      "rmse": 0.0,
+      "mean_bias": -0.0,
+      "units": "mm",
+      "is_data_sufficient": true,
+      "data_limitation_statement": "Evaluated against ERA5 hourly reanalysis precipitation observations. ERA5 grid cell smooths sub-grid convective cloudbursts."
+    },
+    {
+      "variable_name": "continuous_floodwater_depth_m",
+      "sample_size": 0,
+      "mae": null,
+      "rmse": null,
+      "mean_bias": null,
+      "units": "meters",
+      "is_data_sufficient": false,
+      "data_limitation_statement": "DATA GAP LIMITATION: Exactly 0 ground-truth floodwater depth measurements exist in the historical record. Nepal DHM Station 695 records river stage (gauge water surface elevation above datum), NOT overbank flood depth. MAE and RMSE for flood depth are STRICTLY NOT calculated to prevent fabricating misleading validation claims."
+    },
+    {
+      "variable_name": "in_situ_river_stage_m",
+      "sample_size": 0,
+      "mae": null,
+      "rmse": null,
+      "mean_bias": null,
+      "units": "meters",
+      "is_data_sufficient": false,
+      "data_limitation_statement": "EXTERNAL DEPENDENCY LIMITATION: Nepal DHM Chatara Station 695 river stage REST API is unavailable. Feature is marked NaN in historical reanalysis feeds."
+    }
+  ],
+  "unobserved_targets_audit": {
+    "continuous_floodwater_depth_m": "CRITICAL DATA GAP: Zero ground-truth water depth measurements exist. Continuous flood depth (m) evaluation has NOT been performed to prevent fabricating validation claims.",
+    "stormwater_drainage_culvert_surcharge": "DATA VOID: No municipal stormwater telemetry or drain blockage sensors exist for Sunsari District."
+  }
+}

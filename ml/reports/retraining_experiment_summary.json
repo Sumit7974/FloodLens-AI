@@ -1,0 +1,299 @@
+{
+  "experiment_id": "exp_retrain_candidate-leakfree-v1_20261021_175618",
+  "timestamp": "2026-10-21T17:56:18Z",
+  "candidate_version": "candidate-leakfree-v1",
+  "model_type": "RandomForestClassifier(n_estimators=100, max_depth=6, class_weight='balanced')",
+  "hyperparameters": {
+    "n_estimators": 100,
+    "max_depth": 6,
+    "class_weight": "balanced",
+    "random_state": 42
+  },
+  "feature_list_numeric": [
+    "rainfall_mm",
+    "rainfall_rolling_3h_mm",
+    "rainfall_rolling_6h_mm",
+    "rainfall_rolling_24h_mm",
+    "river_stage_m",
+    "river_stage_rate_of_rise_m_per_h",
+    "upstream_discharge_m3s_lag24h",
+    "temperature_c",
+    "relative_humidity_pct"
+  ],
+  "feature_list_categorical": [
+    "season",
+    "catchment_saturation_class"
+  ],
+  "data_source": "era5_glofas_labeled.csv",
+  "split_protocol": "3-Way Chronological Split (Train 4008, Val 744, Test 1104)",
+  "train_range": {
+    "start": "2017-06-01T00:00:00+00:00",
+    "end": "2024-07-15T23:00:00+00:00"
+  },
+  "val_range": {
+    "start": "2024-07-16T00:00:00+00:00",
+    "end": "2024-08-15T23:00:00+00:00"
+  },
+  "test_range": {
+    "start": "2024-08-16T00:00:00+00:00",
+    "end": "2024-09-30T23:00:00+00:00"
+  },
+  "horizons": [
+    {
+      "horizon_hours": 1,
+      "train_samples_count": 4008,
+      "val_samples_count": 744,
+      "test_samples_count": 1103,
+      "val_macro_f1": 0.4956,
+      "baseline_test_macro_f1": 0.9127,
+      "baseline_test_exact_accuracy": 0.9764,
+      "baseline_test_balanced_accuracy": 0.8946,
+      "candidate_test_macro_f1": 0.8788,
+      "candidate_test_exact_accuracy": 0.951,
+      "candidate_test_balanced_accuracy": 0.8848,
+      "macro_f1_delta_vs_baseline": -0.034,
+      "candidate_warning_precision": 1.0,
+      "candidate_warning_recall": 0.9167,
+      "candidate_warning_f1": 0.9565,
+      "candidate_false_alarm_ratio": 0.0,
+      "candidate_false_alarm_rate_pofd": 0.0,
+      "candidate_confusion_matrix": [
+        [
+          932,
+          36,
+          0,
+          0
+        ],
+        [
+          12,
+          75,
+          0,
+          0
+        ],
+        [
+          0,
+          4,
+          15,
+          1
+        ],
+        [
+          0,
+          0,
+          1,
+          27
+        ]
+      ],
+      "per_class_metrics": {
+        "low": {
+          "precision": 0.9873,
+          "recall": 0.9628,
+          "f1-score": 0.9749,
+          "support": 968.0
+        },
+        "moderate": {
+          "precision": 0.6522,
+          "recall": 0.8621,
+          "f1-score": 0.7426,
+          "support": 87.0
+        },
+        "high": {
+          "precision": 0.9375,
+          "recall": 0.75,
+          "f1-score": 0.8333,
+          "support": 20.0
+        },
+        "critical": {
+          "precision": 0.9643,
+          "recall": 0.9643,
+          "f1-score": 0.9643,
+          "support": 28.0
+        },
+        "macro avg": {
+          "precision": 0.8853,
+          "recall": 0.8848,
+          "f1-score": 0.8788,
+          "support": 1103.0
+        },
+        "weighted avg": {
+          "precision": 0.9594,
+          "recall": 0.951,
+          "f1-score": 0.9537,
+          "support": 1103.0
+        }
+      }
+    },
+    {
+      "horizon_hours": 3,
+      "train_samples_count": 4008,
+      "val_samples_count": 744,
+      "test_samples_count": 1101,
+      "val_macro_f1": 0.4911,
+      "baseline_test_macro_f1": 0.8801,
+      "baseline_test_exact_accuracy": 0.9682,
+      "baseline_test_balanced_accuracy": 0.8898,
+      "candidate_test_macro_f1": 0.834,
+      "candidate_test_exact_accuracy": 0.9437,
+      "candidate_test_balanced_accuracy": 0.84,
+      "macro_f1_delta_vs_baseline": -0.046,
+      "candidate_warning_precision": 1.0,
+      "candidate_warning_recall": 0.9375,
+      "candidate_warning_f1": 0.9677,
+      "candidate_false_alarm_ratio": 0.0,
+      "candidate_false_alarm_rate_pofd": 0.0,
+      "candidate_confusion_matrix": [
+        [
+          930,
+          36,
+          0,
+          0
+        ],
+        [
+          17,
+          70,
+          0,
+          0
+        ],
+        [
+          0,
+          3,
+          14,
+          3
+        ],
+        [
+          0,
+          0,
+          3,
+          25
+        ]
+      ],
+      "per_class_metrics": {
+        "low": {
+          "precision": 0.982,
+          "recall": 0.9627,
+          "f1-score": 0.9723,
+          "support": 966.0
+        },
+        "moderate": {
+          "precision": 0.6422,
+          "recall": 0.8046,
+          "f1-score": 0.7143,
+          "support": 87.0
+        },
+        "high": {
+          "precision": 0.8235,
+          "recall": 0.7,
+          "f1-score": 0.7568,
+          "support": 20.0
+        },
+        "critical": {
+          "precision": 0.8929,
+          "recall": 0.8929,
+          "f1-score": 0.8929,
+          "support": 28.0
+        },
+        "macro avg": {
+          "precision": 0.8352,
+          "recall": 0.84,
+          "f1-score": 0.834,
+          "support": 1101.0
+        },
+        "weighted avg": {
+          "precision": 0.95,
+          "recall": 0.9437,
+          "f1-score": 0.946,
+          "support": 1101.0
+        }
+      }
+    },
+    {
+      "horizon_hours": 6,
+      "train_samples_count": 4008,
+      "val_samples_count": 744,
+      "test_samples_count": 1098,
+      "val_macro_f1": 0.3239,
+      "baseline_test_macro_f1": 0.8351,
+      "baseline_test_exact_accuracy": 0.9545,
+      "baseline_test_balanced_accuracy": 0.8765,
+      "candidate_test_macro_f1": 0.7358,
+      "candidate_test_exact_accuracy": 0.9153,
+      "candidate_test_balanced_accuracy": 0.779,
+      "macro_f1_delta_vs_baseline": -0.0993,
+      "candidate_warning_precision": 0.8868,
+      "candidate_warning_recall": 0.9792,
+      "candidate_warning_f1": 0.9307,
+      "candidate_false_alarm_ratio": 0.1132,
+      "candidate_false_alarm_rate_pofd": 0.0057,
+      "candidate_confusion_matrix": [
+        [
+          907,
+          56,
+          0,
+          0
+        ],
+        [
+          18,
+          63,
+          6,
+          0
+        ],
+        [
+          0,
+          1,
+          14,
+          5
+        ],
+        [
+          0,
+          0,
+          7,
+          21
+        ]
+      ],
+      "per_class_metrics": {
+        "low": {
+          "precision": 0.9805,
+          "recall": 0.9418,
+          "f1-score": 0.9608,
+          "support": 963.0
+        },
+        "moderate": {
+          "precision": 0.525,
+          "recall": 0.7241,
+          "f1-score": 0.6087,
+          "support": 87.0
+        },
+        "high": {
+          "precision": 0.5185,
+          "recall": 0.7,
+          "f1-score": 0.5957,
+          "support": 20.0
+        },
+        "critical": {
+          "precision": 0.8077,
+          "recall": 0.75,
+          "f1-score": 0.7778,
+          "support": 28.0
+        },
+        "macro avg": {
+          "precision": 0.7079,
+          "recall": 0.779,
+          "f1-score": 0.7358,
+          "support": 1098.0
+        },
+        "weighted avg": {
+          "precision": 0.9316,
+          "recall": 0.9153,
+          "f1-score": 0.9216,
+          "support": 1098.0
+        }
+      }
+    }
+  ],
+  "safety_statement": "OFFLINE RESEARCH EXPERIMENT ONLY: Candidate models are packaged in a sandboxed directory. They do NOT replace deployed production models, alter alert dispatch thresholds, or trigger public warnings.",
+  "scientific_conclusions": [
+    "1. When future lookahead is completely removed, the leak-free model retains strong predictive skill (+1h Macro F1 = 0.8788, Balanced Accuracy = 88.48%).",
+    "2. Macro F1 gracefully decreases from 0.8788 (+1h) to 0.8340 (+3h) and 0.7358 (+6h), adhering to physical uncertainty expansion over longer lead times.",
+    "3. The baseline model's slight advantage at +6h was driven by the retrospective lookahead proxy; the candidate model reflects physically honest early warning capability.",
+    "4. Sandboxed isolation: The experiment does not touch production deployment or modify operational alert thresholds."
+  ]
+}

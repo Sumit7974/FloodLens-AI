@@ -10,8 +10,8 @@ import { InteractiveHoverButton } from '@/components/ui/interactive-hover-button
 interface SosQueueProps {
   requests: HelpRequest[];
   onSelectIncident?: (requestId: string) => void;
-  onHandoffToDeoc?: (requestId: string) => void;
-  onAssignRequest?: (requestId: string, unitName: string) => void; // backwards compat
+  onHandoffToDeoc?: (requestId: string) => Promise<boolean> | boolean;
+  onAssignRequest?: (requestId: string, unitName: string) => Promise<boolean> | boolean | void; // backwards compat
 }
 
 export const SosQueue: React.FC<SosQueueProps> = ({
@@ -33,18 +33,27 @@ export const SosQueue: React.FC<SosQueueProps> = ({
     }
   };
 
-  const handleTriggerHandoff = (reqId: string) => {
-    if (onHandoffToDeoc) {
-      onHandoffToDeoc(reqId);
-    } else if (onAssignRequest) {
-      onAssignRequest(reqId, 'DEOC Sunsari District Operations');
+  const handleTriggerHandoff = async (reqId: string) => {
+    if (!onHandoffToDeoc && !onAssignRequest) {
+      setHandoffSuccessMsg('No approved backend handoff action is configured.');
+      return;
     }
-
-    setHandoffSuccessMsg(`Incident #${reqId} transmitted to District Emergency Operations Center (DEOC)`);
-    setTimeout(() => {
-      setHandoffSuccessMsg(null);
-      setActiveDossierRequest(null);
-    }, 2500);
+    try {
+      const result = onHandoffToDeoc
+        ? await onHandoffToDeoc(reqId)
+        : await onAssignRequest?.(reqId, 'DEMO - authority review');
+      if (result === false) {
+        setHandoffSuccessMsg(`NOT SAVED: ${reqId}. Please check backend authentication and logs.`);
+        return;
+      }
+      setHandoffSuccessMsg(`Demo/test acknowledgement recorded for ${reqId}. No external responder dispatch.`);
+      setTimeout(() => {
+        setHandoffSuccessMsg(null);
+        setActiveDossierRequest(null);
+      }, 3000);
+    } catch (err) {
+      setHandoffSuccessMsg(`NOT SAVED: ${err instanceof Error ? err.message : 'Backend update failed'}`);
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -112,7 +121,7 @@ export const SosQueue: React.FC<SosQueueProps> = ({
                       {req.requester_name}
                     </h4>
                     <span className="px-2.5 py-0.5 rounded bg-[#0284c7]/25 border border-[#0284c7]/50 text-[#38bdf8] font-mono text-xs font-bold">
-                      {req.estimated_water_depth || '1.8M DEPTH'}
+                      {req.estimated_water_depth || 'DEPTH UNKNOWN'}
                     </span>
                     <span className="px-2 py-0.5 rounded bg-[#e86e25]/20 border border-[#e86e25]/40 text-[#fed7aa] font-mono text-xs font-bold">
                       {req.category}

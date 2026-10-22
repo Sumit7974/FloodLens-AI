@@ -4,7 +4,7 @@
 **Geographic Extent (WGS84)**: `[86.5, 26.2, 88.2, 27.8]`  
 **Projected Coordinate Reference System**: `EPSG:32645` (WGS 84 / UTM Zone 45N)  
 **Target Disaster Event**: August 2017 South Asian Monsoon Flooding Disaster  
-**Report Generated**: 2026-10-20 10:29:09 UTC  
+**Report Generated**: 2026-10-22 21:21:25 UTC  
 **Pipeline**: Day 5 QA, Validation & Optimization Suite (`day5_validation_report.py`)  
 
 ---
@@ -88,49 +88,37 @@ All GeoJSON deliverables were evaluated for topological correctness under OGC Si
 
 ---
 
-## 4. Detection Performance & Accuracy Assessment
+## 4. Detection Performance & Scientific Accuracy Assessment
 
-Evaluation against a multi-spectral multi-temporal validation baseline demonstrates high confidence across the study region:
+> [!WARNING]
+> **SCIENTIFIC VALIDATION STATUS: NOT VALIDATED (Awaiting Independent Reference Ground Truth)**  
+> Independent reference flood ground-truth data (such as validated Copernicus EMS rapid mapping, UAV aerial photography, or calibrated gauge survey extents) is currently unavailable in the historical simulation archive.
+> 
+> **Notice on Prior Figures**: Previously cited confusion matrix figures (432,054 TP, 48,006 FP, 38,405 FN, 64,777,475 TN; 90.00% precision, 83.33% IoU) were unverified demonstration estimates derived from arbitrary multipliers rather than an independent reference mask. In accordance with ISO 19157 standards, they are marked as unverified until independent reference datasets are established.
 
-```mermaid
-flowchart LR
-    subgraph CONFUSION_MATRIX["📊 Confusion Matrix (10m Pixels)"]
-        TP["True Positive (TP)\n432,054 px (43.21 km²)\nAccurate Water Detection"]
-        FP["False Positive (FP)\n48,006 px (4.80 km²)\nShadow / Soil Commission"]
-        FN["False Negative (FN)\n38,405 px (3.84 km²)\nTurbid / Canopy Omission"]
-        TN["True Negative (TN)\n64,777,475 px (6,477.75 km²)\nDry Land Verified"]
-    end
+### Missing Validation Requirements
+- Independent authoritative reference flood mask (e.g. Copernicus EMS, UNOSAT, or field surveys) covering the Koshi study footprint.
+- High-density stream gauge cross-validation or aerial orthoimagery.
+- Independent reference data must NOT be derived from the same prediction pipeline.
 
-    subgraph METRICS["🎯 Performance Metrics"]
-        P["Precision: 90.00%"]
-        R["Recall: 91.84%"]
-        F1["F1-Score: 0.9091"]
-        IOU["IoU (Jaccard): 83.33%"]
-        KAPPA["Kappa: 0.9084"]
-    end
+### Multi-Modal Satellite Extent Comparison (Optical vs SAR)
+> [!NOTE]
+> Multi-modal satellite comparison measures spatial correspondence between Sentinel-2 optical and Sentinel-1 SAR detections across their available acquisitions. It is NOT independent ground-truth accuracy.
 
-    CONFUSION_MATRIX --> METRICS
-```
+- **Sentinel-2 Optical Detected Flood Extent (Full Scene)**: **48.01 km²** (`flood_polygons.geojson`)
+- **Sentinel-1 SAR Radar Detected Flood Extent (Full Scene)**: **2080.72 km²** (`radar_flood_polygons.geojson`)
+- **Common Geographical Footprint**: [87.446, 26.1284, 87.6098, 26.6598]
+- **Footprint Inference Method**: Inferred from bounding envelopes of detected flood polygons (raw sensor swaths unavailable)
+- **Cross-Sensor Agreement Status**: **UNVERIFIED** (NON_COEXTENSIVE_SCENE_COVERAGE)
+- **Common Footprint Optical Flood Extent (Strictly Clipped)**: **7.04 km²**
+- **Common Footprint SAR Flood Extent (Strictly Clipped)**: **45.88 km²**
+- **Geometric Intersection Area in Common Footprint**: **0.25 km²**
+- **Geometric Union Area in Common Footprint**: **52.67 km²**
+- **Geometric Overlap (IoU) in Common Footprint**: **0.48%**
 
-### Quantitative Detection Metrics
-
-| Performance Indicator | Metric Value | Benchmark Standard | Interpretation |
-|:---|:---:|:---:|:---|
-| **Precision (User's Accuracy)** | **90.00%** | >= 85.0% | 90% of all predicted flood pixels represent actual on-the-ground inundation. |
-| **Recall / Sensitivity (Producer's Accuracy)**| **91.84%** | >= 85.0% | Algorithm successfully captured 91.8% of all flooded surfaces in the basin. |
-| **F1-Score / Dice Coefficient** | **0.9091** | >= 0.85 | Robust harmonic mean between precision and recall. |
-| **Intersection-over-Union (IoU / Jaccard)** | **83.33%** | >= 75.0% | High spatial overlap concordance between prediction and ground truth. |
-| **Overall Accuracy** | **99.87%** | >= 98.0% | High overall classification accuracy across regional landscape. |
-| **Cohen's Kappa Coefficient (kappa)** | **0.9084** | >= 0.80 | **Almost Perfect Agreement** according to Landis & Koch criteria. |
-| **Commission Error Rate** | **10.00%** | <= 15.0% | Limited over-detection caused by localized cloud shadow edges. |
-| **Omission Error Rate** | **8.16%** | <= 15.0% | Minimal missed floodwater under partial vegetation canopies. |
-
-### Dual-Sensor Multi-Modal Cross-Agreement
-- **Sentinel-2 Optical Extent**: 48.01 km²
-- **Sentinel-1 SAR Radar Extent**: 72.35 km² (within Koshi Basin)
-- **Co-Verified Core Flood Consensus**: **39.84 km²**
-- **Cloud-Penetrated Radar Discovery**: **32.51 km²** (detected solely through storm clouds by radar)
-- **Fine-Ponding Optical Discovery**: **8.17 km²** (shallow standing pools in open meadows)
+#### Scientific Analysis of Sensor Footprint Discrepancy
+- **Coverage Notice**: The comparison footprint is inferred strictly from the bounding envelopes of detected flood polygons. Verified raw satellite swath acquisition footprints are not bundled in repository assets; inferred bounds indicate detected feature overlap, not full sensor swath coverage.
+- **Analysis**: The optical Sentinel-2 scene and Sentinel-1 SAR acquisition share only an incidental border strip (0.16° lon inferred from detected polygons). Because 85.3% of the optical flood detection and 97.8% of the radar flood detection lie outside the shared boundary, cross-sensor agreement across the flood event is UNVERIFIED.
 
 ---
 

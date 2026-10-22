@@ -23,6 +23,8 @@ export interface BackendHealthResponse {
   };
 }
 
+import { getAccessToken } from './backendApi';
+
 export class ApiService {
   private static isConnected: boolean = false;
   private static lastCheck: number = 0;
@@ -64,14 +66,19 @@ export class ApiService {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 3000);
 
+      const headers: Record<string, string> = { 'Accept': 'application/json' };
+      const token = getAccessToken();
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
       const res = await fetch(`${API_BASE_URL}/alerts`, {
         signal: controller.signal,
+        headers,
       });
       clearTimeout(timeoutId);
 
       if (res.ok) {
         const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           return { alerts: data, fromBackend: true };
         }
       }
@@ -82,14 +89,26 @@ export class ApiService {
   }
 
   /**
-   * Transmit standardized DEOC handoff packet to backend
+   * Transmit standardized DEOC handoff packet to backend using supported PATCH /assistance/{id}
    */
   public static async logHandoffToBackend(incidentId: string, payload: any): Promise<boolean> {
     try {
-      const res = await fetch(`${API_BASE_URL}/assistance/${incidentId}/handoff`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+      const headers: Record<string, string> = {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      };
+      const token = getAccessToken();
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const statusNotes = payload?.status_notes || payload?.notes || (typeof payload === 'string' ? payload : 'Authority DEOC handoff packet acknowledged');
+
+      const res = await fetch(`${API_BASE_URL}/assistance/${encodeURIComponent(incidentId)}`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({
+          status: 'acknowledged',
+          status_notes: statusNotes,
+        }),
       });
       return res.ok;
     } catch {

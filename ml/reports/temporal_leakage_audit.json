@@ -1,0 +1,150 @@
+{
+  "audit_id": "audit_leakage_20261021_175236",
+  "audit_timestamp": "2026-10-21T17:52:36Z",
+  "target_dataset": "ml/data/processed/era5_glofas_labeled.csv",
+  "total_features_audited": 12,
+  "pass_count": 10,
+  "fail_count": 2,
+  "unverified_count": 0,
+  "audit_records": [
+    {
+      "feature_name": "rainfall_mm",
+      "feature_source": "ECMWF ERA5 hourly reanalysis via Open-Meteo Historical Weather API",
+      "issuance_time_definition": "Timestamp t (hourly forecast issue cycle)",
+      "observation_time_definition": "Hour [t-1, t] precipitation accumulation",
+      "leakage_status": "PASS",
+      "leakage_category": "NONE",
+      "evidence_and_explanation": "Represents backward-looking hourly precipitation. At forecast time t, the preceding hour is complete and fully recorded. No forward-looking information is referenced.",
+      "corrective_action_required": "None. Feature is temporally valid.",
+      "is_used_in_baseline": true
+    },
+    {
+      "feature_name": "rainfall_rolling_3h_mm",
+      "feature_source": "Pandas rolling sum: merged['rainfall_mm'].rolling(3).sum()",
+      "issuance_time_definition": "Timestamp t",
+      "observation_time_definition": "3-hour window [t-2, t]",
+      "leakage_status": "PASS",
+      "leakage_category": "NONE",
+      "evidence_and_explanation": "Rolling window uses standard backward aggregation over indices i-2, i-1, i. All constituent measurements precede or coincide with issuance timestamp t.",
+      "corrective_action_required": "None. Feature is temporally valid.",
+      "is_used_in_baseline": true
+    },
+    {
+      "feature_name": "rainfall_rolling_6h_mm",
+      "feature_source": "Pandas rolling sum: merged['rainfall_mm'].rolling(6).sum()",
+      "issuance_time_definition": "Timestamp t",
+      "observation_time_definition": "6-hour window [t-5, t]",
+      "leakage_status": "PASS",
+      "leakage_category": "NONE",
+      "evidence_and_explanation": "Standard backward rolling sum over the preceding 6 hours. Contains zero post-issuance observations.",
+      "corrective_action_required": "None. Feature is temporally valid.",
+      "is_used_in_baseline": true
+    },
+    {
+      "feature_name": "rainfall_rolling_24h_mm",
+      "feature_source": "Pandas rolling sum: merged['rainfall_mm'].rolling(24).sum()",
+      "issuance_time_definition": "Timestamp t",
+      "observation_time_definition": "24-hour synoptic window [t-23, t]",
+      "leakage_status": "PASS",
+      "leakage_category": "NONE",
+      "evidence_and_explanation": "Standard backward rolling accumulation over the preceding 24 hours. Accurately reflects antecedent moisture conditions at time t.",
+      "corrective_action_required": "None. Feature is temporally valid.",
+      "is_used_in_baseline": true
+    },
+    {
+      "feature_name": "temperature_c",
+      "feature_source": "ECMWF ERA5 2-meter air temperature",
+      "issuance_time_definition": "Timestamp t",
+      "observation_time_definition": "Instantaneous value at timestamp t",
+      "leakage_status": "PASS",
+      "leakage_category": "NONE",
+      "evidence_and_explanation": "Represents ambient air temperature at time t. Fully observable at issue time.",
+      "corrective_action_required": "None. Feature is temporally valid.",
+      "is_used_in_baseline": true
+    },
+    {
+      "feature_name": "relative_humidity_pct",
+      "feature_source": "ECMWF ERA5 2-meter relative humidity",
+      "issuance_time_definition": "Timestamp t",
+      "observation_time_definition": "Instantaneous value at timestamp t",
+      "leakage_status": "PASS",
+      "leakage_category": "NONE",
+      "evidence_and_explanation": "Represents atmospheric relative humidity at time t. Fully observable at issue time.",
+      "corrective_action_required": "None. Feature is temporally valid.",
+      "is_used_in_baseline": true
+    },
+    {
+      "feature_name": "season",
+      "feature_source": "Deterministic calendar mapping: month of timestamp t",
+      "issuance_time_definition": "Timestamp t",
+      "observation_time_definition": "Calendar date of timestamp t",
+      "leakage_status": "PASS",
+      "leakage_category": "NONE",
+      "evidence_and_explanation": "Derived strictly from the month index of timestamp t. Known prior to issuance.",
+      "corrective_action_required": "None. Feature is temporally valid.",
+      "is_used_in_baseline": true
+    },
+    {
+      "feature_name": "catchment_saturation_class",
+      "feature_source": "Binned classification of rainfall_rolling_24h_mm at timestamp t",
+      "issuance_time_definition": "Timestamp t",
+      "observation_time_definition": "Derived from 24h antecedent rainfall [t-23, t]",
+      "leakage_status": "PASS",
+      "leakage_category": "NONE",
+      "evidence_and_explanation": "Calculated strictly from antecedent rolling rainfall. No future data is accessed.",
+      "corrective_action_required": "None. Feature is temporally valid.",
+      "is_used_in_baseline": true
+    },
+    {
+      "feature_name": "river_stage_m",
+      "feature_source": "Nepal DHM Chatara Station 695 specification (all NaN in reanalysis)",
+      "issuance_time_definition": "Timestamp t",
+      "observation_time_definition": "Gauge stage at timestamp t",
+      "leakage_status": "PASS",
+      "leakage_category": "UNOBSERVED_DATA",
+      "evidence_and_explanation": "Feature contains exclusively NaN values in historical reanalysis feeds. No post-event or future water levels exist in this column. Imputed via training median.",
+      "corrective_action_required": "When DHM live telemetry is restored, ensure readings are stamped at or before t.",
+      "is_used_in_baseline": true
+    },
+    {
+      "feature_name": "river_stage_rate_of_rise_m_per_h",
+      "feature_source": "First difference: (stage_t - stage_{t-1}) / 1h (all NaN in reanalysis)",
+      "issuance_time_definition": "Timestamp t",
+      "observation_time_definition": "Backward difference between t-1 and t",
+      "leakage_status": "PASS",
+      "leakage_category": "UNOBSERVED_DATA",
+      "evidence_and_explanation": "Backward finite difference. All values are NaN in reanalysis proxy feeds. Zero leakage.",
+      "corrective_action_required": "None. Formula is strictly backward-looking.",
+      "is_used_in_baseline": true
+    },
+    {
+      "feature_name": "upstream_discharge_m3s",
+      "feature_source": "Copernicus GloFAS daily river discharge merged via dt.normalize()",
+      "issuance_time_definition": "Hourly timestamp t on calendar date D",
+      "observation_time_definition": "Full calendar day D (00:00 to 23:59 UTC aggregate)",
+      "leakage_status": "FAIL",
+      "leakage_category": "INTRA_DAY_AGGREGATION_LEAKAGE",
+      "evidence_and_explanation": "EVIDENCE CONFIRMED: In data_ingestion.py lines 330\u2013338, GloFAS daily discharge is joined by calendar date D. For an early morning forecast issued at 02:00 UTC on date D, the daily GloFAS value incorporates upstream runoff that occurs across afternoon and evening hours of date D. At 02:00 UTC, the full-day discharge is physically unobserved in real time.",
+      "corrective_action_required": "MANDATORY CORRECTION FOR RETRAINING EXPERIMENT: Lag the GloFAS daily discharge by 1 calendar day (t - 24 hours, i.e. discharge of date D-1), guaranteeing that only fully completed prior-day discharge observations enter the model at forecast issuance time.",
+      "is_used_in_baseline": true
+    },
+    {
+      "feature_name": "forecast_precip_next_3h_mm",
+      "feature_source": "data_ingestion.py line 356: rainfall_rolling_3h_mm.shift(-3)",
+      "issuance_time_definition": "Timestamp t",
+      "observation_time_definition": "Future window [t, t+3h] actual precipitation",
+      "leakage_status": "FAIL",
+      "leakage_category": "LOOKAHEAD_TARGET_LEAKAGE",
+      "evidence_and_explanation": "EVIDENCE CONFIRMED: In data_ingestion.py lines 353\u2013358, this feature was synthesized via merged['rainfall_rolling_3h_mm'].shift(-3). At timestamp t, actual precipitation that falls between t and t+3h is physically in the future and strictly unobservable. Providing the exact observed future rainfall gives the model a retrospective lookahead oracle, which violates early warning operational reality.",
+      "corrective_action_required": "MANDATORY CORRECTION FOR RETRAINING EXPERIMENT: Completely remove forecast_precip_next_3h_mm from the candidate feature vector, OR replace it with an authentic Numerical Weather Prediction (NWP) forecast cycle that has independent forecast errors. Training models without this feature proves model skill based strictly on antecedent hydrological memory.",
+      "is_used_in_baseline": true
+    }
+  ],
+  "overall_leakage_verdict": "LEAKAGE_IDENTIFIED_AND_DOCUMENTED: 2 features contain temporal lookahead in reanalysis feeds (forecast_precip_next_3h_mm shifted future rain; upstream_discharge_m3s same-day calendar aggregation). Corrective actions specified for Day 5 offline retraining.",
+  "recommendations": [
+    "1. Remove forecast_precip_next_3h_mm in leak-free candidate model experiment (candidate-leakfree-v1).",
+    "2. Apply a 24-hour lag (shift(+24)) to GloFAS daily discharge to ensure strictly antecedent observations.",
+    "3. Keep frozen baseline (era5-v1) intact to serve as transparent benchmark of lookahead impact.",
+    "4. Verify that preprocessing (scaling, imputation) remains 100% isolated to training splits."
+  ]
+}

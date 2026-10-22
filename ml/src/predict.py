@@ -18,6 +18,14 @@ import joblib
 import numpy as np
 import pandas as pd
 
+# Compatibility alias for unpickling scikit-learn Cython loss functions across versions
+try:
+    import sys
+    import sklearn._loss._loss as _cy_loss
+    sys.modules.setdefault("_loss", _cy_loss)
+except (ImportError, AttributeError):
+    pass
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger(__name__)
 
@@ -44,10 +52,25 @@ class FloodRiskPredictor:
 
     def _load_artifacts(self) -> None:
         """Load model metadata and horizon pipelines from serialized joblib artifacts."""
-        meta_path = self.models_dir / f"model_metadata_{self.model_version}.json"
+        self.is_leakfree_candidate = self.model_version == "candidate-leakfree-v1"
+        meta_path = (
+            self.models_dir / "experiments" / "experiment_metadata_candidate-leakfree-v1.json"
+            if self.is_leakfree_candidate
+            else self.models_dir / f"model_metadata_{self.model_version}.json"
+        )
         if meta_path.exists():
             with open(meta_path, "r", encoding="utf-8") as f:
                 self.metadata = json.load(f)
+            if self.is_leakfree_candidate:
+                self.metadata["model_version"] = self.model_version
+                self.metadata["is_reanalysis_data"] = True
+                self.metadata["is_synthetic_data"] = False
+                self.metadata["disclaimer"] = (
+                    "RESEARCH PROTOTYPE: leak-free retrospective ERA5/GloFAS "
+                    "rainfall-proxy classifier, not validated against observed flood events."
+                )
+        elif self.is_leakfree_candidate:
+            raise FileNotFoundError(f"Leak-free candidate metadata missing at {meta_path}")
         else:
             logger.warning(f"Model metadata not found at {meta_path}. Using default configuration.")
             self.metadata = {
@@ -73,10 +96,18 @@ class FloodRiskPredictor:
 
         horizons = self.metadata.get("horizons_hours", [1, 3, 6])
         for h in horizons:
-            model_path = self.models_dir / f"baseline_rf_plus_{h}h_{self.model_version}.joblib"
+            if self.is_leakfree_candidate:
+                model_path = (
+                    self.models_dir / "experiments" /
+                    f"leakfree_rf_plus_{h}h_{self.model_version}.joblib"
+                )
+            else:
+                model_path = self.models_dir / f"baseline_rf_plus_{h}h_{self.model_version}.joblib"
+                if not model_path.exists():
+                    model_path = self.models_dir / f"candidate_gbdt_plus_{h}h_{self.model_version}.joblib"
             if model_path.exists():
                 self.models[h] = joblib.load(model_path)
-                logger.info(f"Loaded baseline model for horizon +{h}h from {model_path}")
+                logger.info(f"Loaded model for horizon +{h}h from {model_path}")
             else:
                 logger.warning(f"Horizon +{h}h model artifact not found at {model_path}")
 
@@ -139,6 +170,11 @@ class FloodRiskPredictor:
         )
         operational_mode = mode or ("historical_demo" if is_demo else "model_estimate")
         is_valid, limitations, data_quality = self.validate_features(features)
+        if self.is_leakfree_candidate:
+            limitations.append(
+                "Raw Random Forest class scores are NOT probability-calibrated; "
+                "calibrated_probability is omitted."
+            )
 
         # Safety rule: If critical inputs are missing, NEVER emit a false low-risk result!
         if not is_valid or not self.models:
@@ -190,7 +226,7 @@ class FloodRiskPredictor:
                 horizon_predictions.append({
                     "hours": h,
                     "risk_level": risk_level,
-                    "calibrated_probability": prob,
+                    "calibrated_probability": None if self.is_leakfree_candidate else prob,
                 })
             except Exception as exc:
                 logger.error(f"Error predicting horizon +{h}h: {exc}")

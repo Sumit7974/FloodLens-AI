@@ -1,0 +1,749 @@
+{
+  "run_id": "eval_day4_20261021_171941",
+  "evaluation_timestamp": "2026-10-21T17:19:41Z",
+  "study_area": "Sapta Koshi Basin \u2014 Barahachhetra Ward 2 / Chatara Gauge, Sunsari District, Nepal Terai",
+  "model_version": "candidate-v2",
+  "matching_summaries": [
+    {
+      "location_id": "loc_barahachhetra_w2",
+      "horizon_hours": 1,
+      "total_forecasts_issued": 1464,
+      "total_observations_available": 1464,
+      "matched_pairs_count": 1463,
+      "unmatched_forecasts_count": 1,
+      "unmatched_observations_count": 1,
+      "mismatched_locations_rejected": 0,
+      "mismatched_timestamps_rejected": 0,
+      "lead_time_alignment_verified": true,
+      "is_reanalysis_data": true,
+      "is_synthetic_data": false,
+      "data_source": "Open-Meteo ERA5+GloFAS",
+      "unmatched_reason": "End-of-series boundary effect: 1 forecast(s) at tail of dataset have valid_at timestamps exceeding dataset end range."
+    },
+    {
+      "location_id": "loc_barahachhetra_w2",
+      "horizon_hours": 3,
+      "total_forecasts_issued": 1464,
+      "total_observations_available": 1464,
+      "matched_pairs_count": 1461,
+      "unmatched_forecasts_count": 3,
+      "unmatched_observations_count": 3,
+      "mismatched_locations_rejected": 0,
+      "mismatched_timestamps_rejected": 0,
+      "lead_time_alignment_verified": true,
+      "is_reanalysis_data": true,
+      "is_synthetic_data": false,
+      "data_source": "Open-Meteo ERA5+GloFAS",
+      "unmatched_reason": "End-of-series boundary effect: 3 forecast(s) at tail of dataset have valid_at timestamps exceeding dataset end range."
+    },
+    {
+      "location_id": "loc_barahachhetra_w2",
+      "horizon_hours": 6,
+      "total_forecasts_issued": 1464,
+      "total_observations_available": 1464,
+      "matched_pairs_count": 1458,
+      "unmatched_forecasts_count": 6,
+      "unmatched_observations_count": 6,
+      "mismatched_locations_rejected": 0,
+      "mismatched_timestamps_rejected": 0,
+      "lead_time_alignment_verified": true,
+      "is_reanalysis_data": true,
+      "is_synthetic_data": false,
+      "data_source": "Open-Meteo ERA5+GloFAS",
+      "unmatched_reason": "End-of-series boundary effect: 6 forecast(s) at tail of dataset have valid_at timestamps exceeding dataset end range."
+    }
+  ],
+  "multiclass_evaluations": {
+    "+1h": {
+      "horizon_hours": 1,
+      "sample_size": 1463,
+      "matched_pairs": 1463,
+      "unmatched_forecasts": 1,
+      "exact_accuracy": 0.9884,
+      "off_by_one_tolerance_accuracy": 1.0,
+      "balanced_accuracy": 0.8945,
+      "macro_f1": 0.9059,
+      "weighted_f1": 0.9881,
+      "confusion_matrix": [
+        [
+          1324,
+          4,
+          0,
+          0
+        ],
+        [
+          6,
+          81,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          13,
+          6
+        ],
+        [
+          0,
+          0,
+          0,
+          28
+        ]
+      ],
+      "per_class": {
+        "low": {
+          "precision": 0.9955,
+          "recall": 0.997,
+          "f1-score": 0.9962,
+          "support": 1328.0
+        },
+        "moderate": {
+          "precision": 0.9419,
+          "recall": 0.931,
+          "f1-score": 0.9364,
+          "support": 87.0
+        },
+        "high": {
+          "precision": 1.0,
+          "recall": 0.65,
+          "f1-score": 0.7879,
+          "support": 20.0
+        },
+        "critical": {
+          "precision": 0.8235,
+          "recall": 1.0,
+          "f1-score": 0.9032,
+          "support": 28.0
+        },
+        "macro avg": {
+          "precision": 0.9402,
+          "recall": 0.8945,
+          "f1-score": 0.9059,
+          "support": 1463.0
+        },
+        "weighted avg": {
+          "precision": 0.9891,
+          "recall": 0.9884,
+          "f1-score": 0.9881,
+          "support": 1463.0
+        }
+      }
+    },
+    "+3h": {
+      "horizon_hours": 3,
+      "sample_size": 1461,
+      "matched_pairs": 1461,
+      "unmatched_forecasts": 3,
+      "exact_accuracy": 0.9671,
+      "off_by_one_tolerance_accuracy": 0.9986,
+      "balanced_accuracy": 0.808,
+      "macro_f1": 0.8213,
+      "weighted_f1": 0.966,
+      "confusion_matrix": [
+        [
+          1316,
+          10,
+          0,
+          0
+        ],
+        [
+          25,
+          60,
+          2,
+          0
+        ],
+        [
+          2,
+          0,
+          16,
+          2
+        ],
+        [
+          0,
+          0,
+          7,
+          21
+        ]
+      ],
+      "per_class": {
+        "low": {
+          "precision": 0.9799,
+          "recall": 0.9925,
+          "f1-score": 0.9861,
+          "support": 1326.0
+        },
+        "moderate": {
+          "precision": 0.8571,
+          "recall": 0.6897,
+          "f1-score": 0.7643,
+          "support": 87.0
+        },
+        "high": {
+          "precision": 0.64,
+          "recall": 0.8,
+          "f1-score": 0.7111,
+          "support": 20.0
+        },
+        "critical": {
+          "precision": 0.913,
+          "recall": 0.75,
+          "f1-score": 0.8235,
+          "support": 28.0
+        },
+        "macro avg": {
+          "precision": 0.8475,
+          "recall": 0.808,
+          "f1-score": 0.8213,
+          "support": 1461.0
+        },
+        "weighted avg": {
+          "precision": 0.9667,
+          "recall": 0.9671,
+          "f1-score": 0.966,
+          "support": 1461.0
+        }
+      }
+    },
+    "+6h": {
+      "horizon_hours": 6,
+      "sample_size": 1458,
+      "matched_pairs": 1458,
+      "unmatched_forecasts": 6,
+      "exact_accuracy": 0.963,
+      "off_by_one_tolerance_accuracy": 0.9986,
+      "balanced_accuracy": 0.776,
+      "macro_f1": 0.7994,
+      "weighted_f1": 0.961,
+      "confusion_matrix": [
+        [
+          1314,
+          9,
+          0,
+          0
+        ],
+        [
+          31,
+          55,
+          1,
+          0
+        ],
+        [
+          0,
+          2,
+          16,
+          2
+        ],
+        [
+          0,
+          2,
+          7,
+          19
+        ]
+      ],
+      "per_class": {
+        "low": {
+          "precision": 0.977,
+          "recall": 0.9932,
+          "f1-score": 0.985,
+          "support": 1323.0
+        },
+        "moderate": {
+          "precision": 0.8088,
+          "recall": 0.6322,
+          "f1-score": 0.7097,
+          "support": 87.0
+        },
+        "high": {
+          "precision": 0.6667,
+          "recall": 0.8,
+          "f1-score": 0.7273,
+          "support": 20.0
+        },
+        "critical": {
+          "precision": 0.9048,
+          "recall": 0.6786,
+          "f1-score": 0.7755,
+          "support": 28.0
+        },
+        "macro avg": {
+          "precision": 0.8393,
+          "recall": 0.776,
+          "f1-score": 0.7994,
+          "support": 1458.0
+        },
+        "weighted avg": {
+          "precision": 0.9613,
+          "recall": 0.963,
+          "f1-score": 0.961,
+          "support": 1458.0
+        }
+      }
+    }
+  },
+  "binary_warning_evaluations": {
+    "+1h": {
+      "horizon_hours": 1,
+      "sample_size": 1463,
+      "warning_precision": 1.0,
+      "warning_recall": 0.9792,
+      "warning_f1": 0.9895,
+      "confusion_matrix": [
+        [
+          1415,
+          0
+        ],
+        [
+          1,
+          47
+        ]
+      ],
+      "false_alarm_ratio": 0.0,
+      "false_alarm_rate_pofd": 0.0,
+      "false_positives_count": 0,
+      "false_negatives_count": 1,
+      "true_positives_count": 47,
+      "true_negatives_count": 1415
+    },
+    "+3h": {
+      "horizon_hours": 3,
+      "sample_size": 1461,
+      "warning_precision": 0.9583,
+      "warning_recall": 0.9583,
+      "warning_f1": 0.9583,
+      "confusion_matrix": [
+        [
+          1411,
+          2
+        ],
+        [
+          2,
+          46
+        ]
+      ],
+      "false_alarm_ratio": 0.0417,
+      "false_alarm_rate_pofd": 0.0014,
+      "false_positives_count": 2,
+      "false_negatives_count": 2,
+      "true_positives_count": 46,
+      "true_negatives_count": 1411
+    },
+    "+6h": {
+      "horizon_hours": 6,
+      "sample_size": 1458,
+      "warning_precision": 0.9778,
+      "warning_recall": 0.9167,
+      "warning_f1": 0.9462,
+      "confusion_matrix": [
+        [
+          1409,
+          1
+        ],
+        [
+          4,
+          44
+        ]
+      ],
+      "false_alarm_ratio": 0.0222,
+      "false_alarm_rate_pofd": 0.0007,
+      "false_positives_count": 1,
+      "false_negatives_count": 4,
+      "true_positives_count": 44,
+      "true_negatives_count": 1409
+    }
+  },
+  "false_alarm_analyses": {
+    "+1h": {
+      "total_warnings_issued": 47,
+      "false_positives_count": 0,
+      "true_positives_count": 47,
+      "false_negatives_count": 1,
+      "true_negatives_count": 1415,
+      "total_non_flood_events": 1415,
+      "false_alarm_ratio": 0.0,
+      "false_alarm_rate_pofd": 0.0,
+      "severe_false_alarm_jumps_count": 0,
+      "multiclass_overpredictions_count": 10,
+      "multiclass_overprediction_rate": 0.0068,
+      "formula_definitions": {
+        "false_alarm_ratio_far": "FAR = FP / (TP + FP) = Fraction of issued warnings that were false",
+        "false_alarm_rate_pofd": "POFD = FP / (FP + TN) = Fraction of non-flood events that incorrectly alarmed",
+        "severe_false_alarm_jump": "Count of instances where true class was LOW (0) but prediction jumped directly to CRITICAL (3)"
+      }
+    },
+    "+3h": {
+      "total_warnings_issued": 48,
+      "false_positives_count": 2,
+      "true_positives_count": 46,
+      "false_negatives_count": 2,
+      "true_negatives_count": 1411,
+      "total_non_flood_events": 1413,
+      "false_alarm_ratio": 0.0417,
+      "false_alarm_rate_pofd": 0.0014,
+      "severe_false_alarm_jumps_count": 0,
+      "multiclass_overpredictions_count": 14,
+      "multiclass_overprediction_rate": 0.0096,
+      "formula_definitions": {
+        "false_alarm_ratio_far": "FAR = FP / (TP + FP) = Fraction of issued warnings that were false",
+        "false_alarm_rate_pofd": "POFD = FP / (FP + TN) = Fraction of non-flood events that incorrectly alarmed",
+        "severe_false_alarm_jump": "Count of instances where true class was LOW (0) but prediction jumped directly to CRITICAL (3)"
+      }
+    },
+    "+6h": {
+      "total_warnings_issued": 45,
+      "false_positives_count": 1,
+      "true_positives_count": 44,
+      "false_negatives_count": 4,
+      "true_negatives_count": 1409,
+      "total_non_flood_events": 1410,
+      "false_alarm_ratio": 0.0222,
+      "false_alarm_rate_pofd": 0.0007,
+      "severe_false_alarm_jumps_count": 0,
+      "multiclass_overpredictions_count": 12,
+      "multiclass_overprediction_rate": 0.0082,
+      "formula_definitions": {
+        "false_alarm_ratio_far": "FAR = FP / (TP + FP) = Fraction of issued warnings that were false",
+        "false_alarm_rate_pofd": "POFD = FP / (FP + TN) = Fraction of non-flood events that incorrectly alarmed",
+        "severe_false_alarm_jump": "Count of instances where true class was LOW (0) but prediction jumped directly to CRITICAL (3)"
+      }
+    }
+  },
+  "numerical_evaluations": [
+    {
+      "variable_name": "nwp_precipitation_forecast_3h",
+      "sample_size": 1461,
+      "mae": 0.0,
+      "rmse": 0.0,
+      "mean_bias": -0.0,
+      "units": "mm",
+      "is_data_sufficient": true,
+      "data_limitation_statement": "Evaluated against ERA5 hourly reanalysis precipitation observations. ERA5 grid cell smooths sub-grid convective cloudbursts."
+    },
+    {
+      "variable_name": "continuous_floodwater_depth_m",
+      "sample_size": 0,
+      "mae": null,
+      "rmse": null,
+      "mean_bias": null,
+      "units": "meters",
+      "is_data_sufficient": false,
+      "data_limitation_statement": "DATA GAP LIMITATION: Exactly 0 ground-truth floodwater depth measurements exist in the historical record. Nepal DHM Station 695 records river stage (gauge water surface elevation above datum), NOT overbank flood depth. MAE and RMSE for flood depth are STRICTLY NOT calculated to prevent fabricating misleading validation claims."
+    },
+    {
+      "variable_name": "in_situ_river_stage_m",
+      "sample_size": 0,
+      "mae": null,
+      "rmse": null,
+      "mean_bias": null,
+      "units": "meters",
+      "is_data_sufficient": false,
+      "data_limitation_statement": "EXTERNAL DEPENDENCY LIMITATION: Nepal DHM Chatara Station 695 river stage REST API is unavailable. Feature is marked NaN in historical reanalysis feeds."
+    }
+  ],
+  "unobserved_targets_audit": {
+    "continuous_floodwater_depth_m": "CRITICAL DATA GAP: Zero ground-truth water depth measurements exist. Continuous flood depth (m) evaluation has NOT been performed to prevent fabricating validation claims.",
+    "stormwater_drainage_culvert_surcharge": "DATA VOID: No municipal stormwater telemetry or drain blockage sensors exist for Sunsari District."
+  },
+  "matched_sample_pairs": [
+    {
+      "record_id": "pair_h1_00000",
+      "location_id": "loc_barahachhetra_w2",
+      "horizon_hours": 1,
+      "issued_at": "2024-08-01T00:00:00+00:00",
+      "valid_at": "2024-08-01T01:00:00+00:00",
+      "observed_at": "2024-08-01T01:00:00+00:00",
+      "predicted_risk_level": "low",
+      "predicted_risk_id": 0,
+      "observed_risk_level": "low",
+      "observed_risk_id": 0,
+      "concordance": "EXACT_MATCH",
+      "severity_delta": 0,
+      "is_false_alarm": false,
+      "is_missed_flood": false,
+      "is_severe_false_alarm_jump": false,
+      "is_reanalysis": true,
+      "is_synthetic": false,
+      "data_source": "Open-Meteo ERA5+GloFAS"
+    },
+    {
+      "record_id": "pair_h1_00001",
+      "location_id": "loc_barahachhetra_w2",
+      "horizon_hours": 1,
+      "issued_at": "2024-08-01T01:00:00+00:00",
+      "valid_at": "2024-08-01T02:00:00+00:00",
+      "observed_at": "2024-08-01T02:00:00+00:00",
+      "predicted_risk_level": "low",
+      "predicted_risk_id": 0,
+      "observed_risk_level": "low",
+      "observed_risk_id": 0,
+      "concordance": "EXACT_MATCH",
+      "severity_delta": 0,
+      "is_false_alarm": false,
+      "is_missed_flood": false,
+      "is_severe_false_alarm_jump": false,
+      "is_reanalysis": true,
+      "is_synthetic": false,
+      "data_source": "Open-Meteo ERA5+GloFAS"
+    },
+    {
+      "record_id": "pair_h1_00002",
+      "location_id": "loc_barahachhetra_w2",
+      "horizon_hours": 1,
+      "issued_at": "2024-08-01T02:00:00+00:00",
+      "valid_at": "2024-08-01T03:00:00+00:00",
+      "observed_at": "2024-08-01T03:00:00+00:00",
+      "predicted_risk_level": "low",
+      "predicted_risk_id": 0,
+      "observed_risk_level": "low",
+      "observed_risk_id": 0,
+      "concordance": "EXACT_MATCH",
+      "severity_delta": 0,
+      "is_false_alarm": false,
+      "is_missed_flood": false,
+      "is_severe_false_alarm_jump": false,
+      "is_reanalysis": true,
+      "is_synthetic": false,
+      "data_source": "Open-Meteo ERA5+GloFAS"
+    },
+    {
+      "record_id": "pair_h1_00003",
+      "location_id": "loc_barahachhetra_w2",
+      "horizon_hours": 1,
+      "issued_at": "2024-08-01T03:00:00+00:00",
+      "valid_at": "2024-08-01T04:00:00+00:00",
+      "observed_at": "2024-08-01T04:00:00+00:00",
+      "predicted_risk_level": "low",
+      "predicted_risk_id": 0,
+      "observed_risk_level": "low",
+      "observed_risk_id": 0,
+      "concordance": "EXACT_MATCH",
+      "severity_delta": 0,
+      "is_false_alarm": false,
+      "is_missed_flood": false,
+      "is_severe_false_alarm_jump": false,
+      "is_reanalysis": true,
+      "is_synthetic": false,
+      "data_source": "Open-Meteo ERA5+GloFAS"
+    },
+    {
+      "record_id": "pair_h1_00004",
+      "location_id": "loc_barahachhetra_w2",
+      "horizon_hours": 1,
+      "issued_at": "2024-08-01T04:00:00+00:00",
+      "valid_at": "2024-08-01T05:00:00+00:00",
+      "observed_at": "2024-08-01T05:00:00+00:00",
+      "predicted_risk_level": "low",
+      "predicted_risk_id": 0,
+      "observed_risk_level": "low",
+      "observed_risk_id": 0,
+      "concordance": "EXACT_MATCH",
+      "severity_delta": 0,
+      "is_false_alarm": false,
+      "is_missed_flood": false,
+      "is_severe_false_alarm_jump": false,
+      "is_reanalysis": true,
+      "is_synthetic": false,
+      "data_source": "Open-Meteo ERA5+GloFAS"
+    },
+    {
+      "record_id": "pair_h1_00005",
+      "location_id": "loc_barahachhetra_w2",
+      "horizon_hours": 1,
+      "issued_at": "2024-08-01T05:00:00+00:00",
+      "valid_at": "2024-08-01T06:00:00+00:00",
+      "observed_at": "2024-08-01T06:00:00+00:00",
+      "predicted_risk_level": "low",
+      "predicted_risk_id": 0,
+      "observed_risk_level": "low",
+      "observed_risk_id": 0,
+      "concordance": "EXACT_MATCH",
+      "severity_delta": 0,
+      "is_false_alarm": false,
+      "is_missed_flood": false,
+      "is_severe_false_alarm_jump": false,
+      "is_reanalysis": true,
+      "is_synthetic": false,
+      "data_source": "Open-Meteo ERA5+GloFAS"
+    },
+    {
+      "record_id": "pair_h1_00006",
+      "location_id": "loc_barahachhetra_w2",
+      "horizon_hours": 1,
+      "issued_at": "2024-08-01T06:00:00+00:00",
+      "valid_at": "2024-08-01T07:00:00+00:00",
+      "observed_at": "2024-08-01T07:00:00+00:00",
+      "predicted_risk_level": "low",
+      "predicted_risk_id": 0,
+      "observed_risk_level": "low",
+      "observed_risk_id": 0,
+      "concordance": "EXACT_MATCH",
+      "severity_delta": 0,
+      "is_false_alarm": false,
+      "is_missed_flood": false,
+      "is_severe_false_alarm_jump": false,
+      "is_reanalysis": true,
+      "is_synthetic": false,
+      "data_source": "Open-Meteo ERA5+GloFAS"
+    },
+    {
+      "record_id": "pair_h1_00007",
+      "location_id": "loc_barahachhetra_w2",
+      "horizon_hours": 1,
+      "issued_at": "2024-08-01T07:00:00+00:00",
+      "valid_at": "2024-08-01T08:00:00+00:00",
+      "observed_at": "2024-08-01T08:00:00+00:00",
+      "predicted_risk_level": "low",
+      "predicted_risk_id": 0,
+      "observed_risk_level": "low",
+      "observed_risk_id": 0,
+      "concordance": "EXACT_MATCH",
+      "severity_delta": 0,
+      "is_false_alarm": false,
+      "is_missed_flood": false,
+      "is_severe_false_alarm_jump": false,
+      "is_reanalysis": true,
+      "is_synthetic": false,
+      "data_source": "Open-Meteo ERA5+GloFAS"
+    },
+    {
+      "record_id": "pair_h1_00008",
+      "location_id": "loc_barahachhetra_w2",
+      "horizon_hours": 1,
+      "issued_at": "2024-08-01T08:00:00+00:00",
+      "valid_at": "2024-08-01T09:00:00+00:00",
+      "observed_at": "2024-08-01T09:00:00+00:00",
+      "predicted_risk_level": "low",
+      "predicted_risk_id": 0,
+      "observed_risk_level": "low",
+      "observed_risk_id": 0,
+      "concordance": "EXACT_MATCH",
+      "severity_delta": 0,
+      "is_false_alarm": false,
+      "is_missed_flood": false,
+      "is_severe_false_alarm_jump": false,
+      "is_reanalysis": true,
+      "is_synthetic": false,
+      "data_source": "Open-Meteo ERA5+GloFAS"
+    },
+    {
+      "record_id": "pair_h1_00009",
+      "location_id": "loc_barahachhetra_w2",
+      "horizon_hours": 1,
+      "issued_at": "2024-08-01T09:00:00+00:00",
+      "valid_at": "2024-08-01T10:00:00+00:00",
+      "observed_at": "2024-08-01T10:00:00+00:00",
+      "predicted_risk_level": "low",
+      "predicted_risk_id": 0,
+      "observed_risk_level": "low",
+      "observed_risk_id": 0,
+      "concordance": "EXACT_MATCH",
+      "severity_delta": 0,
+      "is_false_alarm": false,
+      "is_missed_flood": false,
+      "is_severe_false_alarm_jump": false,
+      "is_reanalysis": true,
+      "is_synthetic": false,
+      "data_source": "Open-Meteo ERA5+GloFAS"
+    },
+    {
+      "record_id": "pair_h1_00010",
+      "location_id": "loc_barahachhetra_w2",
+      "horizon_hours": 1,
+      "issued_at": "2024-08-01T10:00:00+00:00",
+      "valid_at": "2024-08-01T11:00:00+00:00",
+      "observed_at": "2024-08-01T11:00:00+00:00",
+      "predicted_risk_level": "low",
+      "predicted_risk_id": 0,
+      "observed_risk_level": "low",
+      "observed_risk_id": 0,
+      "concordance": "EXACT_MATCH",
+      "severity_delta": 0,
+      "is_false_alarm": false,
+      "is_missed_flood": false,
+      "is_severe_false_alarm_jump": false,
+      "is_reanalysis": true,
+      "is_synthetic": false,
+      "data_source": "Open-Meteo ERA5+GloFAS"
+    },
+    {
+      "record_id": "pair_h1_00011",
+      "location_id": "loc_barahachhetra_w2",
+      "horizon_hours": 1,
+      "issued_at": "2024-08-01T11:00:00+00:00",
+      "valid_at": "2024-08-01T12:00:00+00:00",
+      "observed_at": "2024-08-01T12:00:00+00:00",
+      "predicted_risk_level": "low",
+      "predicted_risk_id": 0,
+      "observed_risk_level": "low",
+      "observed_risk_id": 0,
+      "concordance": "EXACT_MATCH",
+      "severity_delta": 0,
+      "is_false_alarm": false,
+      "is_missed_flood": false,
+      "is_severe_false_alarm_jump": false,
+      "is_reanalysis": true,
+      "is_synthetic": false,
+      "data_source": "Open-Meteo ERA5+GloFAS"
+    },
+    {
+      "record_id": "pair_h1_00012",
+      "location_id": "loc_barahachhetra_w2",
+      "horizon_hours": 1,
+      "issued_at": "2024-08-01T12:00:00+00:00",
+      "valid_at": "2024-08-01T13:00:00+00:00",
+      "observed_at": "2024-08-01T13:00:00+00:00",
+      "predicted_risk_level": "low",
+      "predicted_risk_id": 0,
+      "observed_risk_level": "low",
+      "observed_risk_id": 0,
+      "concordance": "EXACT_MATCH",
+      "severity_delta": 0,
+      "is_false_alarm": false,
+      "is_missed_flood": false,
+      "is_severe_false_alarm_jump": false,
+      "is_reanalysis": true,
+      "is_synthetic": false,
+      "data_source": "Open-Meteo ERA5+GloFAS"
+    },
+    {
+      "record_id": "pair_h1_00013",
+      "location_id": "loc_barahachhetra_w2",
+      "horizon_hours": 1,
+      "issued_at": "2024-08-01T13:00:00+00:00",
+      "valid_at": "2024-08-01T14:00:00+00:00",
+      "observed_at": "2024-08-01T14:00:00+00:00",
+      "predicted_risk_level": "low",
+      "predicted_risk_id": 0,
+      "observed_risk_level": "low",
+      "observed_risk_id": 0,
+      "concordance": "EXACT_MATCH",
+      "severity_delta": 0,
+      "is_false_alarm": false,
+      "is_missed_flood": false,
+      "is_severe_false_alarm_jump": false,
+      "is_reanalysis": true,
+      "is_synthetic": false,
+      "data_source": "Open-Meteo ERA5+GloFAS"
+    },
+    {
+      "record_id": "pair_h1_00014",
+      "location_id": "loc_barahachhetra_w2",
+      "horizon_hours": 1,
+      "issued_at": "2024-08-01T14:00:00+00:00",
+      "valid_at": "2024-08-01T15:00:00+00:00",
+      "observed_at": "2024-08-01T15:00:00+00:00",
+      "predicted_risk_level": "low",
+      "predicted_risk_id": 0,
+      "observed_risk_level": "low",
+      "observed_risk_id": 0,
+      "concordance": "EXACT_MATCH",
+      "severity_delta": 0,
+      "is_false_alarm": false,
+      "is_missed_flood": false,
+      "is_severe_false_alarm_jump": false,
+      "is_reanalysis": true,
+      "is_synthetic": false,
+      "data_source": "Open-Meteo ERA5+GloFAS"
+    }
+  ],
+  "summary_verdict": "PASS_ON_HELD_OUT_TEST_DATA"
+}

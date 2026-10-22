@@ -1,0 +1,12 @@
+{
+  "_note": "ILLUSTRATIVE SYNTHETIC INPUTS FOR OFFLINE/HISTORICAL TESTS ONLY. These values are not verified readings.",
+  "rainfall_mm": 12.5,
+  "rainfall_rolling_3h_mm": 28,
+  "rainfall_rolling_6h_mm": 45,
+  "rainfall_rolling_24h_mm": 95,
+  "upstream_discharge_m3s_lag24h": 5400,
+  "temperature_c": 28.5,
+  "relative_humidity_pct": 83,
+  "season": "monsoon",
+  "catchment_saturation_class": "wet"
+}
