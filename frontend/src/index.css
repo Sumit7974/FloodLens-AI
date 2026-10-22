@@ -1,90 +1,112 @@
 @import "tailwindcss";
 
+@variant dark (&:where(.dark, .dark *));
+
 @layer base {
   :root {
-    --canvas-night: #000000;
-    --canvas-night-soft: #0a0a0a;
-    --hairline-on-dark: #3a3a3f;
+    --canvas-night: #050d1a;
+    --canvas-night-soft: #0a1628;
+    --hairline-on-dark: #1e3a5f;
     --on-primary: #ffffff;
-    --on-primary-mute: #f0f0fa;
-    --ink-mute: #5a5a5f;
+    --on-primary-mute: #94a3b8;
+    --ink-mute: #64748b;
+
+    /* Vibrant Brand Color Palette */
+    --color-orange-primary: #e86e25;
+    --color-orange-glow: rgba(232, 110, 37, 0.4);
+    --color-cyan-primary: #0ea5e9;
+    --color-cyan-glow: rgba(14, 165, 233, 0.4);
+    --color-blue-deep: #336099;
+    --color-emerald-nominal: #10b981;
+    --color-rose-danger: #ef4444;
+    --color-amber-warning: #f59e0b;
   }
 
   body {
     margin: 0;
     padding: 0;
-    background-color: #000000;
+    background-color: #030814;
+    background-image: 
+      radial-gradient(ellipse 80% 50% at 50% -10%, rgba(14, 165, 233, 0.16), transparent 70%),
+      radial-gradient(ellipse 60% 40% at 85% 60%, rgba(232, 110, 37, 0.10), transparent 60%);
     color: #ffffff;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-family: 'Barlow Semi Condensed', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden;
   }
 
-  /* Aerospace Mission Control scrollbar */
+  /* Mission Control vibrant scrollbar */
   ::-webkit-scrollbar {
-    width: 4px;
-    height: 4px;
+    width: 6px;
+    height: 6px;
   }
+
   ::-webkit-scrollbar-track {
-    background: #000000;
+    background: #040914;
   }
+
   ::-webkit-scrollbar-thumb {
-    background: #3a3a3f;
-    border-radius: 0px;
+    background: #1e3a5f;
+    border-radius: 9999px;
   }
+
   ::-webkit-scrollbar-thumb:hover {
-    background: #5a5a5f;
+    background: #0ea5e9;
   }
 }
 
-/* Typography Classes per DESIGN-spacex.md */
+/* Typography Classes */
 .font-display {
-  font-family: 'D-DIN-Bold', 'Arial Narrow', 'Barlow Condensed', Arial, sans-serif;
+  font-family: 'D-DIN-Bold', 'Barlow Semi Condensed', 'Arial Narrow', sans-serif;
   text-transform: uppercase;
   letter-spacing: 1.4px;
   line-height: 1.05;
 }
 
 .font-display-hero {
-  font-family: 'D-DIN-Bold', 'Arial Narrow', 'Barlow Condensed', Arial, sans-serif;
+  font-family: 'D-DIN-Bold', 'Barlow Semi Condensed', 'Arial Narrow', sans-serif;
   text-transform: uppercase;
   letter-spacing: 1.6px;
   line-height: 0.95;
 }
 
 .font-micro {
-  font-family: 'D-DIN', 'Arial Narrow', 'Barlow Condensed', Arial, sans-serif;
-  font-size: 11px;
+  font-family: 'Barlow Semi Condensed', 'D-DIN', 'Arial Narrow', sans-serif;
+  font-size: 12px;
   text-transform: uppercase;
-  letter-spacing: 0.96px;
+  letter-spacing: 1.1px;
   font-weight: 600;
 }
 
-/* Button & Action Geometry per DESIGN-spacex.md */
+/* Button & Action Geometry: Vibrant Luminous Buttons */
 .btn-ghost-pill {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.45rem;
   border-radius: 9999px;
-  border: 1px solid #ffffff;
-  background-color: transparent;
+  border: 1px solid rgba(14, 165, 233, 0.5);
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.18), rgba(232, 110, 37, 0.18));
   color: #ffffff;
-  font-family: 'D-DIN-Bold', 'Arial Narrow', 'Barlow Condensed', Arial, sans-serif;
+  font-family: 'D-DIN-Bold', 'Barlow Semi Condensed', 'Arial Narrow', sans-serif;
   font-size: 13px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1.17px;
   padding: 8px 20px;
-  transition: all 0.15s ease-in-out;
+  transition: all 0.2s ease-in-out;
   cursor: pointer;
   white-space: nowrap;
+  box-shadow: 0 0 15px rgba(14, 165, 233, 0.25);
 }
 
 .btn-ghost-pill:hover {
-  background-color: #ffffff;
-  color: #000000;
+  background: linear-gradient(135deg, #0ea5e9, #e86e25);
+  border-color: #38bdf8;
+  color: #ffffff;
+  box-shadow: 0 0 25px rgba(14, 165, 233, 0.5);
+  transform: translateY(-1px);
 }
 
 .btn-ghost-pill-subtle {
@@ -93,23 +115,25 @@
   justify-content: center;
   gap: 0.4rem;
   border-radius: 9999px;
-  border: 1px solid #3a3a3f;
-  background-color: #000000;
-  color: #f0f0fa;
-  font-family: 'D-DIN-Bold', 'Arial Narrow', 'Barlow Condensed', Arial, sans-serif;
+  border: 1px solid #1e3a5f;
+  background-color: rgba(6, 13, 27, 0.8);
+  color: #94a3b8;
+  font-family: 'D-DIN-Bold', 'Barlow Semi Condensed', 'Arial Narrow', sans-serif;
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1.0px;
   padding: 6px 14px;
-  transition: all 0.15s ease-in-out;
+  transition: all 0.2s ease-in-out;
   cursor: pointer;
   white-space: nowrap;
 }
 
 .btn-ghost-pill-subtle:hover {
-  border-color: #ffffff;
+  border-color: #38bdf8;
   color: #ffffff;
+  background-color: rgba(14, 165, 233, 0.15);
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
 }
 
 .btn-ghost-pill-active {
@@ -118,10 +142,10 @@
   justify-content: center;
   gap: 0.4rem;
   border-radius: 9999px;
-  border: 1px solid #ffffff;
-  background-color: #ffffff;
-  color: #000000;
-  font-family: 'D-DIN-Bold', 'Arial Narrow', 'Barlow Condensed', Arial, sans-serif;
+  border: 1px solid #0ea5e9;
+  background-color: #0ea5e9;
+  color: #ffffff;
+  font-family: 'D-DIN-Bold', 'Barlow Semi Condensed', 'Arial Narrow', sans-serif;
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
@@ -129,13 +153,16 @@
   padding: 6px 14px;
   cursor: pointer;
   white-space: nowrap;
+  box-shadow: 0 0 15px rgba(14, 165, 233, 0.4);
 }
 
-/* Aerospace Surface & Card Token */
+/* Glassmorphic Card Token */
 .card-spacex {
-  background-color: #0a0a0a;
-  border: 1px solid #3a3a3f;
-  border-radius: 0px;
+  background-color: rgba(7, 19, 38, 0.85);
+  border: 1px solid rgba(30, 58, 95, 0.8);
+  border-radius: 8px;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
 .badge-chip {
@@ -143,25 +170,38 @@
   align-items: center;
   gap: 0.35rem;
   border-radius: 9999px;
-  border: 1px solid #3a3a3f;
-  background-color: #000000;
-  color: #ffffff;
+  border: 1px solid #1e3a5f;
+  background-color: rgba(6, 13, 27, 0.8);
+  color: #38bdf8;
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.96px;
   padding: 3px 10px;
-  font-family: 'D-DIN', 'Arial Narrow', 'Barlow Condensed', Arial, sans-serif;
+  font-family: 'Barlow Semi Condensed', 'D-DIN', sans-serif;
   font-weight: 600;
 }
 
+
 @keyframes pulse-subtle {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.45; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.45;
+  }
 }
 
 @keyframes radar-sweep {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .animate-radar {

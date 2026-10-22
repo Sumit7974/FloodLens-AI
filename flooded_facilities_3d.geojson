@@ -1,0 +1,6467 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "id": "0",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 2702277335,
+        "amenity": "school",
+        "name": "Shree Sunpakuwa Secondary School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.6038395,
+          26.6715326,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "1",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 2702282603,
+        "amenity": "school",
+        "name": "Morang Model Secondary School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.6393674,
+          26.6672802,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "2",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 3316604595,
+        "amenity": "school",
+        "name": "Shree Sangbed Sanskrit School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.9663986,
+          26.6434629,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "3",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 3666610144,
+        "amenity": "hospital",
+        "name": "MEDICAL HOUSE",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 14.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 14.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#E63946",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.9910051,
+          26.6850027,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "4",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 4141976689,
+        "amenity": "school",
+        "name": "ct center",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.9879925,
+          26.6400388,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "5",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 4172779801,
+        "amenity": "clinic",
+        "name": "Dainiya Health Post",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 8.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 8.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#F77F00",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.5486076,
+          26.4529326,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "6",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 4173049998,
+        "amenity": "school",
+        "name": "Jyoti Bal Kunj School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.5485262,
+          26.4550306,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "7",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 4173539801,
+        "amenity": "school",
+        "name": "D.N English School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.5549214,
+          26.4059704,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "8",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 4319805363,
+        "amenity": "police",
+        "name": "Shanischare Police Station",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 10.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 10.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#1D3557",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.9928089,
+          26.6853034,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "9",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 4319812767,
+        "amenity": "hospital",
+        "name": "Sankhar Hospital",
+        "operator": "public/private",
+        "emergency": "yes",
+        "impact_status": "moderate_risk_500m",
+        "height": 14.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 14.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#E63946",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.9890032,
+          26.6860982,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "10",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 4369060680,
+        "amenity": "school",
+        "name": "gomendra higher secondary",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.9901856,
+          26.6343877,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "11",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 4454347990,
+        "amenity": "school",
+        "name": "Shree Manohar H.S. School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.6661661,
+          26.7376721,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "12",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 4502573301,
+        "amenity": "school",
+        "name": "Urlabari Multiple Campus",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.6196194,
+          26.6648843,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "13",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 4554995990,
+        "amenity": "hospital",
+        "name": "B&C Hospital Pvt. Ltd.",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "high_risk_100m",
+        "height": 14.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 14.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#E63946",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.9980958,
+          26.6448607,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "14",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 4581958091,
+        "amenity": "school",
+        "name": "Sunshine boarding school",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.5995841,
+          26.6659426,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "15",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 4581979389,
+        "amenity": "hospital",
+        "name": "Mangalbare Hospital",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "high_risk_100m",
+        "height": 14.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 14.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#E63946",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.6038438,
+          26.6654297,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "16",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 4581979394,
+        "amenity": "school",
+        "name": "Bidhya jyoti boarding school",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.5990436,
+          26.6654615,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "17",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 4581979589,
+        "amenity": "school",
+        "name": "Hinalaya boarding school",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.6026484,
+          26.6667649,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "18",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 4631720892,
+        "amenity": "hospital",
+        "name": "B & C Teaching Hospital",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "high_risk_100m",
+        "height": 14.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 14.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#E63946",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.997455,
+          26.6447115,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "19",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 4631720992,
+        "amenity": "police",
+        "name": "Goldhap Police Checkpost",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 10.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 10.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#1D3557",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.9612601,
+          26.5540336,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "20",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 4631721492,
+        "amenity": "hospital",
+        "name": "Kankai Hospital",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "high_risk_100m",
+        "height": 14.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 14.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#E63946",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.9973121,
+          26.6443882,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "21",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 4631721591,
+        "amenity": "school",
+        "name": "Katardangi Lower Secondary school",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.9573518,
+          26.5684572,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "22",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 4715923292,
+        "amenity": "school",
+        "name": "Mechi English Boarding School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.8646302,
+          26.6562002,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "23",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 4789397224,
+        "amenity": "school",
+        "name": "Parijat boarding school (new oxford)",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          88.0979181,
+          26.6900786,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "24",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 4925479621,
+        "amenity": "school",
+        "name": "Indreni College/Nidi School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.9698947,
+          26.6353993,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "25",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 5073656323,
+        "amenity": "hospital",
+        "name": "mechi eye hospital",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 14.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 14.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#E63946",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.9905366,
+          26.620664,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "26",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 5252077000,
+        "amenity": "school",
+        "name": "Sita Ram Samudayik Angreji School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          88.0729527,
+          26.6531235,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "27",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 5254002464,
+        "amenity": "school",
+        "name": "Sita Ram Samudayik Angreji School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          88.0729701,
+          26.6531381,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "28",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 5330416627,
+        "amenity": "school",
+        "name": "Unnamed School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.9520837,
+          26.8747204,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "29",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 5538028223,
+        "amenity": "police",
+        "name": "Prahari Chauki, Haldibari-1",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 10.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 10.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#1D3557",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.9591144,
+          26.5516611,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "30",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 5546826125,
+        "amenity": "school",
+        "name": "Dhimdhime school...",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.7182462,
+          26.5364275,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "31",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 5546847529,
+        "amenity": "school",
+        "name": "Gwalduwa school...",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.7211874,
+          26.5065236,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "32",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 5629761322,
+        "amenity": "hospital",
+        "name": "Birta City",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 14.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 14.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#E63946",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.9840073,
+          26.6439959,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "33",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 5843478047,
+        "amenity": "school",
+        "name": "mahalaxmi primary school",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.6803034,
+          26.6423227,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "34",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 6085061687,
+        "amenity": "school",
+        "name": "Hariyali Resham Secondary English Boarding School",
+        "operator": "Khem Dhakal",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.8793586,
+          26.7578766,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "35",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 6332107797,
+        "amenity": "school",
+        "name": "Ilam New Light English Secondary School",
+        "operator": "Rabin Lohani",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.8823412,
+          26.7580221,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "36",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 6618289663,
+        "amenity": "school",
+        "name": "Middle School Bhakranwadi",
+        "operator": "Education Department, Government of Bihar",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.8895709,
+          26.2382621,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "37",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 6953067885,
+        "amenity": "school",
+        "name": "Janata ma. vi., Gauradaha",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.7146482,
+          26.569253,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "38",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 7118278182,
+        "amenity": "hospital",
+        "name": "Government Hospital Rupni",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 14.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 14.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#E63946",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.7035195,
+          26.2476854,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "39",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 7127768646,
+        "amenity": "hospital",
+        "name": "Government hospital,Bahadurganj",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 14.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 14.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#E63946",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.8282207,
+          26.2649062,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "40",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 7985248370,
+        "amenity": "school",
+        "name": "Mohanmaya Secondary School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.9703602,
+          26.6400131,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "41",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 7985404744,
+        "amenity": "clinic",
+        "name": "Himalaya Medicine Center",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 8.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 8.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#F77F00",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.9915096,
+          26.6424664,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "42",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 8028053331,
+        "amenity": "hospital",
+        "name": "Government Hospital, Bibiganj",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "high_risk_100m",
+        "height": 14.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 14.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#E63946",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.7635149,
+          26.3696016,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "43",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 8419803617,
+        "amenity": "hospital",
+        "name": "Manmohan Memorial Eastern Regional Community Hospital",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 14.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 14.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#E63946",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.996845,
+          26.6437943,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "44",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9246135777,
+        "amenity": "school",
+        "name": "Siddhartha Boarding Secondary School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.7056157,
+          26.6641139,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "45",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9768423685,
+        "amenity": "hospital",
+        "name": "Om Mechi Hospital",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 14.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 14.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#E63946",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.7034991,
+          26.6594632,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "46",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9768423697,
+        "amenity": "clinic",
+        "name": "Basic Health Centre 07",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 8.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 8.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#F77F00",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.7077341,
+          26.6672472,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "47",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9768423701,
+        "amenity": "clinic",
+        "name": "Basic Health Care 03",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 8.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 8.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#F77F00",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.6602117,
+          26.6920854,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "48",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9768423702,
+        "amenity": "clinic",
+        "name": "Basic Health Care 02",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 8.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 8.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#F77F00",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.6901167,
+          26.6939847,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "49",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9771010431,
+        "amenity": "school",
+        "name": "Tarabari Adharbhut School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.6524265,
+          26.6762611,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "50",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9771010436,
+        "amenity": "school",
+        "name": "Singhdevi Madhyamik Vidayala",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.6627429,
+          26.6156529,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "51",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9771010437,
+        "amenity": "school",
+        "name": "Siddhartha Boarding Higher Secondary School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.704658,
+          26.6642524,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "52",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9771010468,
+        "amenity": "school",
+        "name": "Madhinital Ulum Madrasha",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.7074159,
+          26.6617205,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "53",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9771010469,
+        "amenity": "school",
+        "name": "Laliguras Model School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.6706707,
+          26.7175077,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "54",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9771010471,
+        "amenity": "school",
+        "name": "Janta Public Model School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.6722477,
+          26.6231367,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "55",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9771010474,
+        "amenity": "school",
+        "name": "Janchetana Adharbhut School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.655244,
+          26.6505967,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "56",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9771010476,
+        "amenity": "school",
+        "name": "Inspire English School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.7086092,
+          26.683319,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "57",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9771010477,
+        "amenity": "school",
+        "name": "Ideal Memorial Boarding School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.7037481,
+          26.6636907,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "58",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9771010480,
+        "amenity": "school",
+        "name": "Halesi Little Angels Boarding School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.7092129,
+          26.6679753,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "59",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9771010486,
+        "amenity": "school",
+        "name": "Eastern Star Boarding School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.7040448,
+          26.6592943,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "60",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9771010501,
+        "amenity": "school",
+        "name": "Bal Bikash Kendra",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.7131068,
+          26.6749984,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "61",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9771010503,
+        "amenity": "school",
+        "name": "Allied Boarding School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.6988081,
+          26.6558282,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "62",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9775328268,
+        "amenity": "school",
+        "name": "Devi Pathivara English School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.989332,
+          26.6759793,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "63",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9775328270,
+        "amenity": "school",
+        "name": "Brighter English School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.9531782,
+          26.6477584,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "64",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9775328272,
+        "amenity": "school",
+        "name": "Bal Kalyan Boarding School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.9615011,
+          26.6385423,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "65",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9775328275,
+        "amenity": "school",
+        "name": "Children Environment School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.9890296,
+          26.6465952,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "66",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9775328276,
+        "amenity": "school",
+        "name": "Sagarmatha High School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.9901331,
+          26.6411773,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "67",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9775328279,
+        "amenity": "school",
+        "name": "Balmiki Education Foundation",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.9839045,
+          26.6451098,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "68",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9775328282,
+        "amenity": "school",
+        "name": "Euro Kids Monteswori",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.978557,
+          26.6395279,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "69",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9775328283,
+        "amenity": "school",
+        "name": "Bells Model School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.9754195,
+          26.6382841,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "70",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9775328285,
+        "amenity": "school",
+        "name": "Nidhi Secondary School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.9700706,
+          26.6357251,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "71",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9775328286,
+        "amenity": "school",
+        "name": "Mohanmaya Higher Secondary School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.9704035,
+          26.6402842,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "72",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9775328287,
+        "amenity": "school",
+        "name": "Ascent Academy",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.9638275,
+          26.6413763,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "73",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9776054813,
+        "amenity": "school",
+        "name": "Birendra Uchha Madyamik Vidyala",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          88.0060941,
+          26.5143051,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "74",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9776054816,
+        "amenity": "school",
+        "name": "Dhanusha School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.98506,
+          26.539731,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "75",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9776152420,
+        "amenity": "school",
+        "name": "Little Angels Higher Secondary School Birtamode,jhapa",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          88.0103548,
+          26.6163976,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "76",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9776152427,
+        "amenity": "school",
+        "name": "Bell model english school",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          88.0107991,
+          26.6192836,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "77",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9776152428,
+        "amenity": "school",
+        "name": "bells model school",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          88.04254,
+          26.5937103,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "78",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9776152439,
+        "amenity": "school",
+        "name": "Saraswati HSS",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          88.0660472,
+          26.4737054,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "79",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9776152442,
+        "amenity": "school",
+        "name": "Shree Sinchai Basic School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          88.0548707,
+          26.4801116,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "80",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9776152452,
+        "amenity": "school",
+        "name": "Devkota Education Foundation",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          88.0893047,
+          26.5457279,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "81",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9776152461,
+        "amenity": "school",
+        "name": "Shree Bhanu Smriti Awasya Madhyamik Vidyalaya",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          88.0829303,
+          26.5467407,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "82",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9776152473,
+        "amenity": "school",
+        "name": "st. xavier's school chandragadhi",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          88.0460892,
+          26.5940947,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "83",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9776152476,
+        "amenity": "school",
+        "name": "Pashupati Primary School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          88.0982135,
+          26.5467156,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "84",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9776152489,
+        "amenity": "school",
+        "name": "Adarsha Namuna English Boarding Schoool",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          88.0513294,
+          26.5617684,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "85",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9776152496,
+        "amenity": "school",
+        "name": "Adventist English School BHADRAPUR Nepal.",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          88.0917715,
+          26.5266658,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "86",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9776152498,
+        "amenity": "school",
+        "name": "Bhadrapur Secondary School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          88.0959721,
+          26.5406717,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "87",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9776289254,
+        "amenity": "school",
+        "name": "Nanda secondary school",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.9525812,
+          26.8745712,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "88",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9776289290,
+        "amenity": "school",
+        "name": "Laxmi Adarsha secondary school",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.9334803,
+          26.8760007,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "89",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9776966653,
+        "amenity": "school",
+        "name": "Shree Kavi Shiromani H S School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          88.0963564,
+          26.6913665,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "90",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9776966671,
+        "amenity": "school",
+        "name": "Maa saraswati education foundation",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          88.0870693,
+          26.6871256,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "91",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9776966676,
+        "amenity": "school",
+        "name": "Himalayan English High School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          88.098867,
+          26.6825339,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "92",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9776966685,
+        "amenity": "school",
+        "name": "Lalpani School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          88.0850882,
+          26.6488108,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "93",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9776966686,
+        "amenity": "school",
+        "name": "parijat english school",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          88.0980549,
+          26.6901358,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "94",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9802045868,
+        "amenity": "school",
+        "name": "Young Kids Montessori Pre-School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "high_risk_100m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.6045994,
+          26.6646494,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "95",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9802045869,
+        "amenity": "school",
+        "name": "Vidya Jyoti B. School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.5990213,
+          26.6655561,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "96",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9802045870,
+        "amenity": "school",
+        "name": "Urlabari British IT College",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.6332023,
+          26.6634264,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "97",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9802045874,
+        "amenity": "school",
+        "name": "Sishu Shiksha Niketan pre school",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.5991588,
+          26.6637778,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "98",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9802045877,
+        "amenity": "school",
+        "name": "Shree Sunshine Boarding School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.5998129,
+          26.6660555,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "99",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9802045879,
+        "amenity": "school",
+        "name": "Shree Himchuli School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.6217006,
+          26.6618267,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "100",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9802045880,
+        "amenity": "school",
+        "name": "Shree Himalaya Bal Sansar Secondary Boarding School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.6027093,
+          26.6679504,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "101",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9802045882,
+        "amenity": "school",
+        "name": "Shinghabahini saccos",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.6375728,
+          26.6632574,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "102",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9802045883,
+        "amenity": "school",
+        "name": "Sarada school",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.6137011,
+          26.6648712,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "103",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9802045885,
+        "amenity": "school",
+        "name": "Pashupati Boarding Secondary School (SECONDARY BLOCK)",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.6338955,
+          26.6605396,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "104",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9802045886,
+        "amenity": "school",
+        "name": "Parlance International Academy",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.6294198,
+          26.6625413,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "105",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9802045887,
+        "amenity": "school",
+        "name": "New Vision School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.6141061,
+          26.6703324,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "106",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9802045888,
+        "amenity": "school",
+        "name": "Nepal Aadarsha English Secondary School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.6345974,
+          26.659727,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "107",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9802045889,
+        "amenity": "school",
+        "name": "Morang Model Sishu Sadan",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.6219911,
+          26.6615445,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "108",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9802045890,
+        "amenity": "school",
+        "name": "Lali Gurans English School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.6298848,
+          26.6551274,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "109",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9802045892,
+        "amenity": "school",
+        "name": "Karuna kadariya",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.6025195,
+          26.6665131,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "110",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9802045893,
+        "amenity": "school",
+        "name": "Durga mavi secondary",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.6034469,
+          26.6600415,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "111",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9802045895,
+        "amenity": "school",
+        "name": "Control P Advertising",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.6375889,
+          26.6600245,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "112",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9802045896,
+        "amenity": "school",
+        "name": "Brilliant Academy",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.5879585,
+          26.6647465,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "113",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9802045897,
+        "amenity": "school",
+        "name": "Bhrikuti Model Academy, Block - 'B",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.6398556,
+          26.6596411,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "114",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 9813020175,
+        "amenity": "hospital",
+        "name": "Unnamed Hospital",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 14.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 14.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#E63946",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.9016638,
+          26.8729509,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "115",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 10132454917,
+        "amenity": "hospital",
+        "name": "Araniko Hospitall",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 14.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 14.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#E63946",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.6321479,
+          26.6643641,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "116",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 10301918328,
+        "amenity": "hospital",
+        "name": "Damak Red Cross Society",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "high_risk_100m",
+        "height": 14.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 14.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#E63946",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.7038742,
+          26.6565794,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "117",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 11732879369,
+        "amenity": "school",
+        "name": "World Vision English School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.9978091,
+          26.6560255,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "118",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 11747078269,
+        "amenity": "hospital",
+        "name": "R & R Diagnostic & Polyclinic Private Limited",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 14.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 14.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#E63946",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          88.0007246,
+          26.6562962,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "119",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 11751900869,
+        "amenity": "school",
+        "name": "Devi Pathivara English School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.9900159,
+          26.6736267,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "120",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 11786367370,
+        "amenity": "school",
+        "name": "Mohanmaya Secondary School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.9706534,
+          26.6394863,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "121",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 11786367371,
+        "amenity": "clinic",
+        "name": "Dhanvantari Ayurved Clinic",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 8.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 8.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#F77F00",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.989885,
+          26.6426973,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "122",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 11786378269,
+        "amenity": "school",
+        "name": "Sahara Sacos Shikshya Sadan",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.9639804,
+          26.6418034,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "123",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 11934570470,
+        "amenity": "hospital",
+        "name": "Kathmandu Institute of Child Health (KIOCH)",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "high_risk_100m",
+        "height": 14.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 14.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#E63946",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.7041342,
+          26.656964,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "124",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 12887888601,
+        "amenity": "school",
+        "name": "Devi secondary school",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.9955633,
+          26.6471441,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "125",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 12897681727,
+        "amenity": "hospital",
+        "name": "Shivagunj Health Center",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 14.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 14.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#E63946",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.8396031,
+          26.5746629,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "126",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 13005844200,
+        "amenity": "school",
+        "name": "Dikshyanta Shikshya Niketan",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.840132,
+          26.5713158,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "127",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 13008734910,
+        "amenity": "school",
+        "name": "Shree Nawakiran Vidhya Mandir",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "high_risk_100m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.8333571,
+          26.5703772,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "128",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 13008734911,
+        "amenity": "school",
+        "name": "Angelic Academy",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.8293437,
+          26.5726911,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "129",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 13473044801,
+        "amenity": "clinic",
+        "name": "Arjundhara Municipality Ward - 2 Health Clinic",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 8.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 8.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#F77F00",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.9531567,
+          26.7616283,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "130",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 13657669301,
+        "amenity": "clinic",
+        "name": "Arjundhara Municipality Ward - 7 Health Clinic",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 8.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 8.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#F77F00",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.9864506,
+          26.6842806,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "131",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 13694839902,
+        "amenity": "clinic",
+        "name": "Arjundhara Municipality Ward - 11 (Bus Park) Health Clinic",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 8.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 8.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#F77F00",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          88.0047868,
+          26.6516847,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "132",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 13694840001,
+        "amenity": "clinic",
+        "name": "Arjundhara Municipality Ward - 11 Health Clinic",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 8.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 8.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#F77F00",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          88.0284642,
+          26.6690709,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "133",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 13700518001,
+        "amenity": "clinic",
+        "name": "Arjundhara Municipality Ward - 1 Health Clinic",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 8.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 8.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#F77F00",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          88.0018601,
+          26.7312565,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "134",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 13700664701,
+        "amenity": "school",
+        "name": "Shree Singhadevi Secondary School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.9993067,
+          26.7294833,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "135",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 13731697501,
+        "amenity": "hospital",
+        "name": "Purvanchal Cancer Hospital",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "high_risk_100m",
+        "height": 14.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 14.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#E63946",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.9977961,
+          26.64554,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "136",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 13848343101,
+        "amenity": "school",
+        "name": "Shri Arjundhara Secondary School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.9641317,
+          26.691645,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "137",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 13848343102,
+        "amenity": "school",
+        "name": "Sri Chandrodaya Primary School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          87.9964783,
+          26.709125,
+          0.5
+        ]
+      }
+    },
+    {
+      "id": "138",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 264506798,
+        "amenity": "hospital",
+        "name": "Mechi Eye Hospital",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 14.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 14.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#E63946",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.9905869,
+              26.6212102,
+              0.5
+            ],
+            [
+              87.9912467,
+              26.6211243,
+              0.5
+            ],
+            [
+              87.9912413,
+              26.6210915,
+              0.5
+            ],
+            [
+              87.9915685,
+              26.6210487,
+              0.5
+            ],
+            [
+              87.9914697,
+              26.6204452,
+              0.5
+            ],
+            [
+              87.9915346,
+              26.6204367,
+              0.5
+            ],
+            [
+              87.9915247,
+              26.620376,
+              0.5
+            ],
+            [
+              87.9913221,
+              26.6204025,
+              0.5
+            ],
+            [
+              87.9913593,
+              26.62063,
+              0.5
+            ],
+            [
+              87.9913822,
+              26.620627,
+              0.5
+            ],
+            [
+              87.9913959,
+              26.6207114,
+              0.5
+            ],
+            [
+              87.9913605,
+              26.620716,
+              0.5
+            ],
+            [
+              87.9914106,
+              26.6210236,
+              0.5
+            ],
+            [
+              87.9913321,
+              26.6210338,
+              0.5
+            ],
+            [
+              87.9913107,
+              26.6209025,
+              0.5
+            ],
+            [
+              87.9912395,
+              26.6209117,
+              0.5
+            ],
+            [
+              87.9912269,
+              26.6208345,
+              0.5
+            ],
+            [
+              87.9906232,
+              26.620913,
+              0.5
+            ],
+            [
+              87.990637,
+              26.6209978,
+              0.5
+            ],
+            [
+              87.9905541,
+              26.6210086,
+              0.5
+            ],
+            [
+              87.9905869,
+              26.6212102,
+              0.5
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "139",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 264561134,
+        "amenity": "school",
+        "name": "Shree Pashupati Higher Secondary Boarding School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.6363517,
+              26.6598158,
+              0.5
+            ],
+            [
+              87.636991,
+              26.6596778,
+              0.5
+            ],
+            [
+              87.6370559,
+              26.6598371,
+              0.5
+            ],
+            [
+              87.6371145,
+              26.6598488,
+              0.5
+            ],
+            [
+              87.6371276,
+              26.6600059,
+              0.5
+            ],
+            [
+              87.6369257,
+              26.6600525,
+              0.5
+            ],
+            [
+              87.637069,
+              26.6603057,
+              0.5
+            ],
+            [
+              87.6370364,
+              26.660329,
+              0.5
+            ],
+            [
+              87.6370462,
+              26.660428,
+              0.5
+            ],
+            [
+              87.6366591,
+              26.6604732,
+              0.5
+            ],
+            [
+              87.6366642,
+              26.6605423,
+              0.5
+            ],
+            [
+              87.6366189,
+              26.6605466,
+              0.5
+            ],
+            [
+              87.6364952,
+              26.6605562,
+              0.5
+            ],
+            [
+              87.636452,
+              26.6605611,
+              0.5
+            ],
+            [
+              87.6363517,
+              26.6598158,
+              0.5
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "140",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 264562327,
+        "amenity": "school",
+        "name": "Nepal Darshan Higher Secondary School",
+        "operator": "Bijay Karki",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.6340697,
+              26.6605644,
+              0.5
+            ],
+            [
+              87.6343769,
+              26.660611,
+              0.5
+            ],
+            [
+              87.6348083,
+              26.6606426,
+              0.5
+            ],
+            [
+              87.6350301,
+              26.6600193,
+              0.5
+            ],
+            [
+              87.6347046,
+              26.6599507,
+              0.5
+            ],
+            [
+              87.6342271,
+              26.65985,
+              0.5
+            ],
+            [
+              87.6341332,
+              26.6602762,
+              0.5
+            ],
+            [
+              87.6340697,
+              26.6605644,
+              0.5
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "141",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 264562329,
+        "amenity": "school",
+        "name": "Shree Radhika Primary School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.6316822,
+              26.6635389,
+              0.5
+            ],
+            [
+              87.6319024,
+              26.6630177,
+              0.5
+            ],
+            [
+              87.6311345,
+              26.6627988,
+              0.5
+            ],
+            [
+              87.6308214,
+              26.6627861,
+              0.5
+            ],
+            [
+              87.6308123,
+              26.6629575,
+              0.5
+            ],
+            [
+              87.6307903,
+              26.6633692,
+              0.5
+            ],
+            [
+              87.6316822,
+              26.6635389,
+              0.5
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "142",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 302529104,
+        "amenity": "school",
+        "name": "Namuna English School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.9252198,
+              26.5646587,
+              0.5
+            ],
+            [
+              87.9259235,
+              26.5646196,
+              0.5
+            ],
+            [
+              87.9262161,
+              26.5645986,
+              0.5
+            ],
+            [
+              87.9262236,
+              26.5646579,
+              0.5
+            ],
+            [
+              87.92662,
+              26.5646147,
+              0.5
+            ],
+            [
+              87.926546,
+              26.5641382,
+              0.5
+            ],
+            [
+              87.9265204,
+              26.564139,
+              0.5
+            ],
+            [
+              87.9264987,
+              26.5639956,
+              0.5
+            ],
+            [
+              87.9261678,
+              26.5640321,
+              0.5
+            ],
+            [
+              87.9258622,
+              26.5640675,
+              0.5
+            ],
+            [
+              87.9258608,
+              26.5641713,
+              0.5
+            ],
+            [
+              87.9256663,
+              26.5641842,
+              0.5
+            ],
+            [
+              87.9254407,
+              26.5641992,
+              0.5
+            ],
+            [
+              87.925299,
+              26.5641971,
+              0.5
+            ],
+            [
+              87.9252462,
+              26.564195,
+              0.5
+            ],
+            [
+              87.9251478,
+              26.5642035,
+              0.5
+            ],
+            [
+              87.9251646,
+              26.5642959,
+              0.5
+            ],
+            [
+              87.9252198,
+              26.5646587,
+              0.5
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "143",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 303571609,
+        "amenity": "school",
+        "name": "Moti Madhyamik School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.7839534,
+              26.6007602,
+              0.5
+            ],
+            [
+              87.7850085,
+              26.6005495,
+              0.5
+            ],
+            [
+              87.7849951,
+              26.6004731,
+              0.5
+            ],
+            [
+              87.7850209,
+              26.5999535,
+              0.5
+            ],
+            [
+              87.7847936,
+              26.5997503,
+              0.5
+            ],
+            [
+              87.7843735,
+              26.599818,
+              0.5
+            ],
+            [
+              87.7838639,
+              26.5999658,
+              0.5
+            ],
+            [
+              87.7836642,
+              26.5999535,
+              0.5
+            ],
+            [
+              87.783671,
+              26.6002553,
+              0.5
+            ],
+            [
+              87.7837675,
+              26.6005447,
+              0.5
+            ],
+            [
+              87.7838432,
+              26.600674,
+              0.5
+            ],
+            [
+              87.7839534,
+              26.6007602,
+              0.5
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "144",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 308832965,
+        "amenity": "school",
+        "name": "kankai boarding english high school.",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "inundated",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.9962546,
+              26.6462339,
+              0.5
+            ],
+            [
+              87.9962737,
+              26.6462348,
+              0.5
+            ],
+            [
+              87.996532,
+              26.6462362,
+              0.5
+            ],
+            [
+              87.9966126,
+              26.6462476,
+              0.5
+            ],
+            [
+              87.9966737,
+              26.6462479,
+              0.5
+            ],
+            [
+              87.9977566,
+              26.6462923,
+              0.5
+            ],
+            [
+              87.997916,
+              26.6463179,
+              0.5
+            ],
+            [
+              87.9983739,
+              26.6463508,
+              0.5
+            ],
+            [
+              87.9984066,
+              26.6461425,
+              0.5
+            ],
+            [
+              87.9983466,
+              26.6461418,
+              0.5
+            ],
+            [
+              87.9983412,
+              26.6459818,
+              0.5
+            ],
+            [
+              87.9981939,
+              26.645979,
+              0.5
+            ],
+            [
+              87.9976871,
+              26.6459196,
+              0.5
+            ],
+            [
+              87.996661,
+              26.6459306,
+              0.5
+            ],
+            [
+              87.9962742,
+              26.6459448,
+              0.5
+            ],
+            [
+              87.9962619,
+              26.6461181,
+              0.5
+            ],
+            [
+              87.9962546,
+              26.6462339,
+              0.5
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "145",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 309513137,
+        "amenity": "school",
+        "name": "Shree Kankai Gayatri Prathamik Vidyalay",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.8795798,
+              26.653986,
+              0.5
+            ],
+            [
+              87.8797999,
+              26.6539033,
+              0.5
+            ],
+            [
+              87.8802317,
+              26.653741,
+              0.5
+            ],
+            [
+              87.8806856,
+              26.6535265,
+              0.5
+            ],
+            [
+              87.8803779,
+              26.653036,
+              0.5
+            ],
+            [
+              87.8801634,
+              26.6530829,
+              0.5
+            ],
+            [
+              87.8800707,
+              26.6531556,
+              0.5
+            ],
+            [
+              87.8800243,
+              26.6532324,
+              0.5
+            ],
+            [
+              87.8799555,
+              26.6533846,
+              0.5
+            ],
+            [
+              87.8798067,
+              26.6534708,
+              0.5
+            ],
+            [
+              87.8797032,
+              26.6534961,
+              0.5
+            ],
+            [
+              87.8795016,
+              26.6535847,
+              0.5
+            ],
+            [
+              87.879573,
+              26.6537145,
+              0.5
+            ],
+            [
+              87.8794318,
+              26.6537765,
+              0.5
+            ],
+            [
+              87.8795297,
+              26.6539545,
+              0.5
+            ],
+            [
+              87.8795798,
+              26.653986,
+              0.5
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "146",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 335976603,
+        "amenity": "school",
+        "name": "Harikul Higher Secondary School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.8929372,
+              26.645336,
+              0.5
+            ],
+            [
+              87.8928219,
+              26.645384,
+              0.5
+            ],
+            [
+              87.8926127,
+              26.6450651,
+              0.5
+            ],
+            [
+              87.8933756,
+              26.6452124,
+              0.5
+            ],
+            [
+              87.8937177,
+              26.6458562,
+              0.5
+            ],
+            [
+              87.8933449,
+              26.6459641,
+              0.5
+            ],
+            [
+              87.8929372,
+              26.645336,
+              0.5
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "147",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 343108113,
+        "amenity": "school",
+        "name": "Balkalyan Boarding School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.9610613,
+              26.6388185,
+              0.5
+            ],
+            [
+              87.9609233,
+              26.6383514,
+              0.5
+            ],
+            [
+              87.9613298,
+              26.6381844,
+              0.5
+            ],
+            [
+              87.9614612,
+              26.6383062,
+              0.5
+            ],
+            [
+              87.9616584,
+              26.6383561,
+              0.5
+            ],
+            [
+              87.9617567,
+              26.6384564,
+              0.5
+            ],
+            [
+              87.9610613,
+              26.6388185,
+              0.5
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "148",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 362188593,
+        "amenity": "school",
+        "name": "Unnamed School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.9938064,
+              26.6870678,
+              0.5
+            ],
+            [
+              87.9936566,
+              26.6869893,
+              0.5
+            ],
+            [
+              87.993586,
+              26.6870589,
+              0.5
+            ],
+            [
+              87.9932262,
+              26.6867871,
+              0.5
+            ],
+            [
+              87.9928972,
+              26.686382,
+              0.5
+            ],
+            [
+              87.9927719,
+              26.6861634,
+              0.5
+            ],
+            [
+              87.9927104,
+              26.6859132,
+              0.5
+            ],
+            [
+              87.9930339,
+              26.6857497,
+              0.5
+            ],
+            [
+              87.9937366,
+              26.685788,
+              0.5
+            ],
+            [
+              87.9937742,
+              26.6860373,
+              0.5
+            ],
+            [
+              87.993801,
+              26.6863392,
+              0.5
+            ],
+            [
+              87.9938761,
+              26.6866987,
+              0.5
+            ],
+            [
+              87.9939727,
+              26.6869431,
+              0.5
+            ],
+            [
+              87.9938064,
+              26.6870678,
+              0.5
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "149",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 416530710,
+        "amenity": "police",
+        "name": "Dainiya Police Station",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 10.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 10.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#1D3557",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.5486236,
+              26.4536089,
+              0.5
+            ],
+            [
+              87.5483891,
+              26.4536041,
+              0.5
+            ],
+            [
+              87.5483985,
+              26.4534385,
+              0.5
+            ],
+            [
+              87.5485178,
+              26.4534397,
+              0.5
+            ],
+            [
+              87.5486967,
+              26.4534462,
+              0.5
+            ],
+            [
+              87.5486236,
+              26.4536089,
+              0.5
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "150",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 416555445,
+        "amenity": "school",
+        "name": "Shree Adarsha HS School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.5478191,
+              26.4517707,
+              0.5
+            ],
+            [
+              87.5483172,
+              26.4516991,
+              0.5
+            ],
+            [
+              87.5485754,
+              26.451662,
+              0.5
+            ],
+            [
+              87.5485181,
+              26.4511536,
+              0.5
+            ],
+            [
+              87.5484842,
+              26.4509136,
+              0.5
+            ],
+            [
+              87.5481038,
+              26.4509524,
+              0.5
+            ],
+            [
+              87.5481279,
+              26.4511229,
+              0.5
+            ],
+            [
+              87.5477551,
+              26.4511865,
+              0.5
+            ],
+            [
+              87.5478191,
+              26.4517707,
+              0.5
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "151",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 416599712,
+        "amenity": "school",
+        "name": "BP Primary School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.532668,
+              26.4606462,
+              0.5
+            ],
+            [
+              87.5326606,
+              26.4601643,
+              0.5
+            ],
+            [
+              87.5329489,
+              26.4601456,
+              0.5
+            ],
+            [
+              87.5329677,
+              26.4602423,
+              0.5
+            ],
+            [
+              87.5328906,
+              26.460462,
+              0.5
+            ],
+            [
+              87.532847,
+              26.4606403,
+              0.5
+            ],
+            [
+              87.532668,
+              26.4606462,
+              0.5
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "152",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 416601143,
+        "amenity": "school",
+        "name": "Jana Kalyan Primary School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.5353433,
+              26.4430287,
+              0.5
+            ],
+            [
+              87.5354667,
+              26.4430297,
+              0.5
+            ],
+            [
+              87.5356517,
+              26.4430311,
+              0.5
+            ],
+            [
+              87.5356705,
+              26.4427141,
+              0.5
+            ],
+            [
+              87.5353513,
+              26.4427021,
+              0.5
+            ],
+            [
+              87.5353433,
+              26.4430287,
+              0.5
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "153",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 416605023,
+        "amenity": "school",
+        "name": "Bishal Enghlish Shool",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.5474366,
+              26.4550823,
+              0.5
+            ],
+            [
+              87.5476245,
+              26.4550716,
+              0.5
+            ],
+            [
+              87.5476217,
+              26.454961,
+              0.5
+            ],
+            [
+              87.5474299,
+              26.4549658,
+              0.5
+            ],
+            [
+              87.5474366,
+              26.4550823,
+              0.5
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "154",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 416605025,
+        "amenity": "school",
+        "name": "Madarsa Islamia Rashidia",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.5495169,
+              26.4144891,
+              0.5
+            ],
+            [
+              87.549765,
+              26.4144751,
+              0.5
+            ],
+            [
+              87.5498814,
+              26.4143764,
+              0.5
+            ],
+            [
+              87.5500418,
+              26.4140924,
+              0.5
+            ],
+            [
+              87.5496573,
+              26.4140487,
+              0.5
+            ],
+            [
+              87.5495254,
+              26.4142721,
+              0.5
+            ],
+            [
+              87.5495169,
+              26.4144891,
+              0.5
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "155",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 416605026,
+        "amenity": "school",
+        "name": "Model English School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.5476262,
+              26.4545335,
+              0.5
+            ],
+            [
+              87.5473884,
+              26.4545271,
+              0.5
+            ],
+            [
+              87.5472757,
+              26.454524,
+              0.5
+            ],
+            [
+              87.5472703,
+              26.4542898,
+              0.5
+            ],
+            [
+              87.54761,
+              26.454286,
+              0.5
+            ],
+            [
+              87.5476262,
+              26.4545335,
+              0.5
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "156",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 416605027,
+        "amenity": "school",
+        "name": "Shree Janata Primary School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.5592572,
+              26.4106117,
+              0.5
+            ],
+            [
+              87.5596018,
+              26.4105384,
+              0.5
+            ],
+            [
+              87.5594744,
+              26.410243,
+              0.5
+            ],
+            [
+              87.5589916,
+              26.4102706,
+              0.5
+            ],
+            [
+              87.5591727,
+              26.410464,
+              0.5
+            ],
+            [
+              87.5592572,
+              26.4106117,
+              0.5
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "157",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 416605813,
+        "amenity": "police",
+        "name": "Sikti Police Station",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 10.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 10.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#1D3557",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.5528742,
+              26.4125927,
+              0.5
+            ],
+            [
+              87.5528053,
+              26.4123916,
+              0.5
+            ],
+            [
+              87.5527655,
+              26.4122756,
+              0.5
+            ],
+            [
+              87.5529667,
+              26.4122137,
+              0.5
+            ],
+            [
+              87.5530391,
+              26.4121915,
+              0.5
+            ],
+            [
+              87.5530936,
+              26.4123924,
+              0.5
+            ],
+            [
+              87.5533452,
+              26.4123385,
+              0.5
+            ],
+            [
+              87.5534083,
+              26.4125619,
+              0.5
+            ],
+            [
+              87.5531615,
+              26.4126279,
+              0.5
+            ],
+            [
+              87.5531245,
+              26.4125242,
+              0.5
+            ],
+            [
+              87.5528742,
+              26.4125927,
+              0.5
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "158",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 433321440,
+        "amenity": "school",
+        "name": "AIMS Academy",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.9901901,
+              26.6817397,
+              0.5
+            ],
+            [
+              87.9905544,
+              26.6816646,
+              0.5
+            ],
+            [
+              87.9906011,
+              26.6815895,
+              0.5
+            ],
+            [
+              87.9905357,
+              26.6812724,
+              0.5
+            ],
+            [
+              87.9904423,
+              26.6810053,
+              0.5
+            ],
+            [
+              87.9901154,
+              26.6811889,
+              0.5
+            ],
+            [
+              87.9899847,
+              26.681239,
+              0.5
+            ],
+            [
+              87.9898446,
+              26.6814476,
+              0.5
+            ],
+            [
+              87.9898632,
+              26.6816312,
+              0.5
+            ],
+            [
+              87.9898819,
+              26.6817731,
+              0.5
+            ],
+            [
+              87.9901901,
+              26.6817397,
+              0.5
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "159",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 489400520,
+        "amenity": "school",
+        "name": "birat jyoti english boarding school",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.9919192,
+              26.6207922,
+              0.5
+            ],
+            [
+              87.991942,
+              26.6204709,
+              0.5
+            ],
+            [
+              87.9919617,
+              26.6204626,
+              0.5
+            ],
+            [
+              87.9928173,
+              26.6203978,
+              0.5
+            ],
+            [
+              87.9928897,
+              26.6210286,
+              0.5
+            ],
+            [
+              87.9923055,
+              26.6210308,
+              0.5
+            ],
+            [
+              87.992284,
+              26.6207982,
+              0.5
+            ],
+            [
+              87.9919192,
+              26.6207922,
+              0.5
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "160",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 517947097,
+        "amenity": "clinic",
+        "name": "Shivagunj Pharmacy",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 8.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 8.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#F77F00",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.8359897,
+              26.5702949,
+              0.5
+            ],
+            [
+              87.8359656,
+              26.5702086,
+              0.5
+            ],
+            [
+              87.8359028,
+              26.5702226,
+              0.5
+            ],
+            [
+              87.8359269,
+              26.570309,
+              0.5
+            ],
+            [
+              87.8359897,
+              26.5702949,
+              0.5
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "161",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 519374616,
+        "amenity": "school",
+        "name": "Siddhartha Boarding Secondery School",
+        "operator": "Tej Kumar Shrestha",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.7047788,
+              26.6644191,
+              0.5
+            ],
+            [
+              87.7048179,
+              26.6644628,
+              0.5
+            ],
+            [
+              87.7046383,
+              26.6645911,
+              0.5
+            ],
+            [
+              87.7047046,
+              26.6646652,
+              0.5
+            ],
+            [
+              87.7048991,
+              26.6645263,
+              0.5
+            ],
+            [
+              87.7048918,
+              26.6645182,
+              0.5
+            ],
+            [
+              87.7050744,
+              26.6643878,
+              0.5
+            ],
+            [
+              87.7051467,
+              26.6644688,
+              0.5
+            ],
+            [
+              87.7049542,
+              26.6646063,
+              0.5
+            ],
+            [
+              87.7048618,
+              26.6646723,
+              0.5
+            ],
+            [
+              87.7047112,
+              26.6647798,
+              0.5
+            ],
+            [
+              87.7045407,
+              26.6645891,
+              0.5
+            ],
+            [
+              87.7047788,
+              26.6644191,
+              0.5
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "162",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 519392097,
+        "amenity": "school",
+        "name": "Gansh Nimabi School Ground",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              88.0123329,
+              26.7457648,
+              0.5
+            ],
+            [
+              88.0125931,
+              26.7458797,
+              0.5
+            ],
+            [
+              88.0127004,
+              26.745724,
+              0.5
+            ],
+            [
+              88.0127942,
+              26.7456258,
+              0.5
+            ],
+            [
+              88.0128988,
+              26.7455492,
+              0.5
+            ],
+            [
+              88.0129605,
+              26.7456115,
+              0.5
+            ],
+            [
+              88.013065,
+              26.7455576,
+              0.5
+            ],
+            [
+              88.0130035,
+              26.7454893,
+              0.5
+            ],
+            [
+              88.0130305,
+              26.7454715,
+              0.5
+            ],
+            [
+              88.0131006,
+              26.745413,
+              0.5
+            ],
+            [
+              88.01321,
+              26.7453384,
+              0.5
+            ],
+            [
+              88.0128881,
+              26.7450486,
+              0.5
+            ],
+            [
+              88.0127636,
+              26.7451422,
+              0.5
+            ],
+            [
+              88.0128334,
+              26.7452013,
+              0.5
+            ],
+            [
+              88.0127134,
+              26.7453142,
+              0.5
+            ],
+            [
+              88.0126896,
+              26.7453552,
+              0.5
+            ],
+            [
+              88.012644,
+              26.7453336,
+              0.5
+            ],
+            [
+              88.0123329,
+              26.7457648,
+              0.5
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "163",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 519716811,
+        "amenity": "police",
+        "name": "Area Police Office Birtamod",
+        "operator": "Nepal Police",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 10.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 10.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#1D3557",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.9961331,
+              26.6429589,
+              0.5
+            ],
+            [
+              87.9962375,
+              26.6429849,
+              0.5
+            ],
+            [
+              87.9962872,
+              26.6428257,
+              0.5
+            ],
+            [
+              87.9959604,
+              26.6427443,
+              0.5
+            ],
+            [
+              87.9959346,
+              26.6428269,
+              0.5
+            ],
+            [
+              87.9960026,
+              26.6428438,
+              0.5
+            ],
+            [
+              87.9959856,
+              26.6428982,
+              0.5
+            ],
+            [
+              87.9960422,
+              26.6429122,
+              0.5
+            ],
+            [
+              87.9960556,
+              26.6428692,
+              0.5
+            ],
+            [
+              87.9961535,
+              26.6428936,
+              0.5
+            ],
+            [
+              87.9961331,
+              26.6429589,
+              0.5
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "164",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 519867696,
+        "amenity": "school",
+        "name": "Unnamed School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              88.0337111,
+              26.6620178,
+              0.5
+            ],
+            [
+              88.0337158,
+              26.6618976,
+              0.5
+            ],
+            [
+              88.0337736,
+              26.6618994,
+              0.5
+            ],
+            [
+              88.0337721,
+              26.6619393,
+              0.5
+            ],
+            [
+              88.0338582,
+              26.6619419,
+              0.5
+            ],
+            [
+              88.0338551,
+              26.6620223,
+              0.5
+            ],
+            [
+              88.0337111,
+              26.6620178,
+              0.5
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "165",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 519961256,
+        "amenity": "school",
+        "name": "Unnamed School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.8907528,
+              26.444893,
+              0.5
+            ],
+            [
+              87.8907199,
+              26.4451321,
+              0.5
+            ],
+            [
+              87.8907227,
+              26.4453381,
+              0.5
+            ],
+            [
+              87.8909116,
+              26.4453847,
+              0.5
+            ],
+            [
+              87.89095,
+              26.4452473,
+              0.5
+            ],
+            [
+              87.8909774,
+              26.4450377,
+              0.5
+            ],
+            [
+              87.8910157,
+              26.4449102,
+              0.5
+            ],
+            [
+              87.8907528,
+              26.444893,
+              0.5
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "166",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 520081605,
+        "amenity": "school",
+        "name": "Deepshika Montessori school",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.6356411,
+              26.6529827,
+              0.5
+            ],
+            [
+              87.6357794,
+              26.6529459,
+              0.5
+            ],
+            [
+              87.6357693,
+              26.6529157,
+              0.5
+            ],
+            [
+              87.6358071,
+              26.6529056,
+              0.5
+            ],
+            [
+              87.6357775,
+              26.6528168,
+              0.5
+            ],
+            [
+              87.6356187,
+              26.652859,
+              0.5
+            ],
+            [
+              87.6356334,
+              26.652903,
+              0.5
+            ],
+            [
+              87.6356161,
+              26.6529075,
+              0.5
+            ],
+            [
+              87.6356411,
+              26.6529827,
+              0.5
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "167",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 520218013,
+        "amenity": "school",
+        "name": "Unnamed School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.6349236,
+              26.6624759,
+              0.5
+            ],
+            [
+              87.6349085,
+              26.6622283,
+              0.5
+            ],
+            [
+              87.6351635,
+              26.6622159,
+              0.5
+            ],
+            [
+              87.6351785,
+              26.6624635,
+              0.5
+            ],
+            [
+              87.6349236,
+              26.6624759,
+              0.5
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "168",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 521226573,
+        "amenity": "school",
+        "name": "Unnamed School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "high_risk_100m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.8784733,
+              27.0351488,
+              0.5
+            ],
+            [
+              87.8788112,
+              27.0346853,
+              0.5
+            ],
+            [
+              87.8790151,
+              27.0346996,
+              0.5
+            ],
+            [
+              87.8789878,
+              27.0350483,
+              0.5
+            ],
+            [
+              87.8789695,
+              27.0352814,
+              0.5
+            ],
+            [
+              87.8787026,
+              27.0352814,
+              0.5
+            ],
+            [
+              87.8784733,
+              27.0351488,
+              0.5
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "169",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 1001754186,
+        "amenity": "school",
+        "name": "Eastern Star Sec. English Boarding School",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.7044019,
+              26.6585899,
+              0.5
+            ],
+            [
+              87.7044542,
+              26.6590369,
+              0.5
+            ],
+            [
+              87.7045702,
+              26.6591618,
+              0.5
+            ],
+            [
+              87.7045561,
+              26.6592466,
+              0.5
+            ],
+            [
+              87.7044355,
+              26.6593928,
+              0.5
+            ],
+            [
+              87.7044368,
+              26.6595271,
+              0.5
+            ],
+            [
+              87.7044381,
+              26.6596158,
+              0.5
+            ],
+            [
+              87.7041163,
+              26.6596158,
+              0.5
+            ],
+            [
+              87.7039446,
+              26.6591316,
+              0.5
+            ],
+            [
+              87.7040626,
+              26.6589494,
+              0.5
+            ],
+            [
+              87.7040412,
+              26.6588823,
+              0.5
+            ],
+            [
+              87.7040733,
+              26.6586809,
+              0.5
+            ],
+            [
+              87.7044019,
+              26.6585899,
+              0.5
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "170",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 1001754187,
+        "amenity": "hospital",
+        "name": "Om Mechi Hospital",
+        "operator": "public/private",
+        "emergency": "yes",
+        "impact_status": "moderate_risk_500m",
+        "height": 14.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 14.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#E63946",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.7034135,
+              26.65882,
+              0.5
+            ],
+            [
+              87.7035262,
+              26.6590788,
+              0.5
+            ],
+            [
+              87.7035657,
+              26.6591616,
+              0.5
+            ],
+            [
+              87.7039446,
+              26.6592275,
+              0.5
+            ],
+            [
+              87.7039164,
+              26.6592936,
+              0.5
+            ],
+            [
+              87.70395,
+              26.6595678,
+              0.5
+            ],
+            [
+              87.7038226,
+              26.6595595,
+              0.5
+            ],
+            [
+              87.7038065,
+              26.6597083,
+              0.5
+            ],
+            [
+              87.7037904,
+              26.6598711,
+              0.5
+            ],
+            [
+              87.703569,
+              26.6598267,
+              0.5
+            ],
+            [
+              87.703569,
+              26.6595606,
+              0.5
+            ],
+            [
+              87.7035449,
+              26.6594384,
+              0.5
+            ],
+            [
+              87.7033076,
+              26.6588391,
+              0.5
+            ],
+            [
+              87.7034135,
+              26.65882,
+              0.5
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "171",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 1214964104,
+        "amenity": "police",
+        "name": "\u0908\u0932\u093e\u0915\u093e \u092a\u094d\u0930\u0939\u0930\u0940 \u0915\u093e\u0930\u094d\u092f\u0932\u092f \u0915\u0947\u091a\u0928\u093e",
+        "operator": "\u0928\u0947\u092a\u093e\u0932 \u092a\u094d\u0930\u0939\u0930\u0940",
+        "emergency": "no",
+        "impact_status": "high_risk_100m",
+        "height": 10.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 10.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#1D3557",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.9971246,
+              26.3877033,
+              0.5
+            ],
+            [
+              87.9972709,
+              26.3877252,
+              0.5
+            ],
+            [
+              87.9972892,
+              26.3876596,
+              0.5
+            ],
+            [
+              87.9972038,
+              26.3876487,
+              0.5
+            ],
+            [
+              87.9972018,
+              26.3876196,
+              0.5
+            ],
+            [
+              87.9971408,
+              26.3876196,
+              0.5
+            ],
+            [
+              87.9971286,
+              26.3876615,
+              0.5
+            ],
+            [
+              87.9971246,
+              26.3877033,
+              0.5
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "172",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 1214964105,
+        "amenity": "police",
+        "name": "Police Building",
+        "operator": "\u0928\u0947\u092a\u093e\u0932 \u092a\u094d\u0930\u0939\u0930\u0940",
+        "emergency": "no",
+        "impact_status": "high_risk_100m",
+        "height": 10.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 10.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#1D3557",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.9969296,
+              26.3877424,
+              0.5
+            ],
+            [
+              87.9970605,
+              26.3877611,
+              0.5
+            ],
+            [
+              87.9970682,
+              26.3876665,
+              0.5
+            ],
+            [
+              87.9969997,
+              26.3876548,
+              0.5
+            ],
+            [
+              87.9969927,
+              26.3877003,
+              0.5
+            ],
+            [
+              87.9969434,
+              26.3876976,
+              0.5
+            ],
+            [
+              87.9969357,
+              26.3877169,
+              0.5
+            ],
+            [
+              87.9969296,
+              26.3877424,
+              0.5
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "173",
+      "type": "Feature",
+      "properties": {
+        "osm_id": 1235221107,
+        "amenity": "school",
+        "name": "Sisne school ground",
+        "operator": "public/private",
+        "emergency": "no",
+        "impact_status": "moderate_risk_500m",
+        "height": 9.0,
+        "elevation_offset": 0.5,
+        "extrudedHeight": 9.5,
+        "clampToGround": false,
+        "classificationType": "NONE",
+        "marker-color": "#457B9D",
+        "marker-size": "medium"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.9991669,
+              26.7292261,
+              0.5
+            ],
+            [
+              87.9994833,
+              26.7294214,
+              0.5
+            ],
+            [
+              88.0001733,
+              26.7288392,
+              0.5
+            ],
+            [
+              88.0000056,
+              26.7287293,
+              0.5
+            ],
+            [
+              87.9998867,
+              26.7286875,
+              0.5
+            ],
+            [
+              87.9997699,
+              26.7286515,
+              0.5
+            ],
+            [
+              87.9995045,
+              26.7288222,
+              0.5
+            ],
+            [
+              87.9993261,
+              26.7289891,
+              0.5
+            ],
+            [
+              87.9992497,
+              26.7291104,
+              0.5
+            ],
+            [
+              87.9991669,
+              26.7292261,
+              0.5
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

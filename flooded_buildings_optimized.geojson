@@ -1,0 +1,995 @@
+{
+  "type": "FeatureCollection",
+  "name": "flooded_buildings_optimized",
+  "crs": {
+    "type": "name",
+    "properties": {
+      "name": "urn:ogc:def:crs:OGC:1.3:CRS84"
+    }
+  },
+  "optimization_metadata": {
+    "algorithm": "Douglas-Peucker Simplification",
+    "tolerance_degrees": 2e-05,
+    "approx_ground_tolerance_m": 2.2,
+    "coordinate_precision_decimals": 6,
+    "preserve_topology": true,
+    "optimized_at": "2026-10-20T10:29:09.124977Z"
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "id": "6245",
+      "properties": {
+        "osm_id": 518803080,
+        "settlement": "Birtamod",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 135.8,
+        "impact_status": "inundated",
+        "flood_poly_id": 3722
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.994922,
+              26.645354
+            ],
+            [
+              87.994918,
+              26.64527
+            ],
+            [
+              87.995065,
+              26.645265
+            ],
+            [
+              87.99507,
+              26.645348
+            ],
+            [
+              87.994922,
+              26.645354
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "6246",
+      "properties": {
+        "osm_id": 518803081,
+        "settlement": "Birtamod",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 125.2,
+        "impact_status": "inundated",
+        "flood_poly_id": 3718
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.99507,
+              26.645348
+            ],
+            [
+              87.995065,
+              26.645284
+            ],
+            [
+              87.995242,
+              26.645273
+            ],
+            [
+              87.995247,
+              26.645337
+            ],
+            [
+              87.99507,
+              26.645348
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "6248",
+      "properties": {
+        "osm_id": 518803083,
+        "settlement": "Birtamod",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 260.7,
+        "impact_status": "inundated",
+        "flood_poly_id": 3729
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.995238,
+              26.644939
+            ],
+            [
+              87.995438,
+              26.644947
+            ],
+            [
+              87.995433,
+              26.645067
+            ],
+            [
+              87.99523,
+              26.645055
+            ],
+            [
+              87.995238,
+              26.644939
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "6427",
+      "properties": {
+        "osm_id": 519102103,
+        "settlement": "Birtamod",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 261.4,
+        "impact_status": "inundated",
+        "flood_poly_id": 3707
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.998584,
+              26.646621
+            ],
+            [
+              87.998589,
+              26.646336
+            ],
+            [
+              87.99867,
+              26.646336
+            ],
+            [
+              87.99867,
+              26.646621
+            ],
+            [
+              87.998584,
+              26.646621
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "6430",
+      "properties": {
+        "osm_id": 519102108,
+        "settlement": "Birtamod",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 239.8,
+        "impact_status": "inundated",
+        "flood_poly_id": 3736
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.997498,
+              26.64478
+            ],
+            [
+              87.997522,
+              26.644622
+            ],
+            [
+              87.997575,
+              26.644622
+            ],
+            [
+              87.997561,
+              26.644728
+            ],
+            [
+              87.997617,
+              26.644737
+            ],
+            [
+              87.997636,
+              26.644623
+            ],
+            [
+              87.997693,
+              26.644627
+            ],
+            [
+              87.99767,
+              26.644793
+            ],
+            [
+              87.997498,
+              26.64478
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "6479",
+      "properties": {
+        "osm_id": 519110988,
+        "settlement": "Birtamod",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 154.3,
+        "impact_status": "inundated",
+        "flood_poly_id": 3826
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.990661,
+              26.63979
+            ],
+            [
+              87.990651,
+              26.639727
+            ],
+            [
+              87.990866,
+              26.639699
+            ],
+            [
+              87.990876,
+              26.639762
+            ],
+            [
+              87.990661,
+              26.63979
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "6484",
+      "properties": {
+        "osm_id": 519110995,
+        "settlement": "Birtamod",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 129.2,
+        "impact_status": "inundated",
+        "flood_poly_id": 3826
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.990731,
+              26.639873
+            ],
+            [
+              87.990687,
+              26.639819
+            ],
+            [
+              87.990905,
+              26.639799
+            ],
+            [
+              87.990911,
+              26.639857
+            ],
+            [
+              87.990731,
+              26.639873
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "6622",
+      "properties": {
+        "osm_id": 519273632,
+        "settlement": "Birtamod",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 82.2,
+        "impact_status": "inundated",
+        "flood_poly_id": 3840
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.991646,
+              26.638882
+            ],
+            [
+              87.991629,
+              26.638828
+            ],
+            [
+              87.991759,
+              26.6388
+            ],
+            [
+              87.991774,
+              26.638854
+            ],
+            [
+              87.991646,
+              26.638882
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "6984",
+      "properties": {
+        "osm_id": 519354323,
+        "settlement": "Birtamod",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 158.4,
+        "impact_status": "inundated",
+        "flood_poly_id": 3722
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.994858,
+              26.645198
+            ],
+            [
+              87.994849,
+              26.645071
+            ],
+            [
+              87.994737,
+              26.645077
+            ],
+            [
+              87.994745,
+              26.645204
+            ],
+            [
+              87.994858,
+              26.645198
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "6987",
+      "properties": {
+        "osm_id": 519354326,
+        "settlement": "Birtamod",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 118.0,
+        "impact_status": "inundated",
+        "flood_poly_id": 3722
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.994734,
+              26.645366
+            ],
+            [
+              87.994733,
+              26.645289
+            ],
+            [
+              87.994871,
+              26.645288
+            ],
+            [
+              87.994872,
+              26.645365
+            ],
+            [
+              87.994734,
+              26.645366
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "7220",
+      "properties": {
+        "osm_id": 519624560,
+        "settlement": "Birtamod",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 136.4,
+        "impact_status": "inundated",
+        "flood_poly_id": 3692
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.996903,
+              26.647435
+            ],
+            [
+              87.996995,
+              26.64744
+            ],
+            [
+              87.997004,
+              26.647306
+            ],
+            [
+              87.996912,
+              26.647301
+            ],
+            [
+              87.996903,
+              26.647435
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "7221",
+      "properties": {
+        "osm_id": 519624562,
+        "settlement": "Birtamod",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 146.0,
+        "impact_status": "inundated",
+        "flood_poly_id": 3692
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.997013,
+              26.647403
+            ],
+            [
+              87.997109,
+              26.647406
+            ],
+            [
+              87.997114,
+              26.647268
+            ],
+            [
+              87.997018,
+              26.647265
+            ],
+            [
+              87.997013,
+              26.647403
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "7227",
+      "properties": {
+        "osm_id": 519624572,
+        "settlement": "Birtamod",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 125.3,
+        "impact_status": "inundated",
+        "flood_poly_id": 3696
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.996969,
+              26.647164
+            ],
+            [
+              87.997103,
+              26.647171
+            ],
+            [
+              87.997109,
+              26.647087
+            ],
+            [
+              87.996974,
+              26.64708
+            ],
+            [
+              87.996969,
+              26.647164
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "7353",
+      "properties": {
+        "osm_id": 519722187,
+        "settlement": "Birtamod",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 165.6,
+        "impact_status": "inundated",
+        "flood_poly_id": 3707
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.998545,
+              26.646226
+            ],
+            [
+              87.99855,
+              26.646153
+            ],
+            [
+              87.998347,
+              26.646142
+            ],
+            [
+              87.998342,
+              26.646215
+            ],
+            [
+              87.998545,
+              26.646226
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "8914",
+      "properties": {
+        "osm_id": 963126675,
+        "settlement": "Birtamod",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 240.8,
+        "impact_status": "inundated",
+        "flood_poly_id": 3864
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.979889,
+              26.635572
+            ],
+            [
+              87.980004,
+              26.635572
+            ],
+            [
+              87.980004,
+              26.635383
+            ],
+            [
+              87.979889,
+              26.635383
+            ],
+            [
+              87.979889,
+              26.635572
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "9508",
+      "properties": {
+        "osm_id": 1007106851,
+        "settlement": "Birtamod",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 300.3,
+        "impact_status": "inundated",
+        "flood_poly_id": 3769
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.987016,
+              26.64258
+            ],
+            [
+              87.987002,
+              26.64246
+            ],
+            [
+              87.987235,
+              26.642445
+            ],
+            [
+              87.987249,
+              26.642556
+            ],
+            [
+              87.987016,
+              26.64258
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "10305",
+      "properties": {
+        "osm_id": 1299032260,
+        "settlement": "Birtamod",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 38.2,
+        "impact_status": "inundated",
+        "flood_poly_id": 3769
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.987058,
+              26.642651
+            ],
+            [
+              87.987122,
+              26.642646
+            ],
+            [
+              87.987116,
+              26.642592
+            ],
+            [
+              87.987053,
+              26.642597
+            ],
+            [
+              87.987058,
+              26.642651
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "10387",
+      "properties": {
+        "osm_id": 1299040420,
+        "settlement": "Birtamod",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 186.3,
+        "impact_status": "inundated",
+        "flood_poly_id": 3733
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.99615,
+              26.6449
+            ],
+            [
+              87.996363,
+              26.644894
+            ],
+            [
+              87.99636,
+              26.644814
+            ],
+            [
+              87.996147,
+              26.64482
+            ],
+            [
+              87.99615,
+              26.6449
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "10388",
+      "properties": {
+        "osm_id": 1299040450,
+        "settlement": "Birtamod",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 117.0,
+        "impact_status": "inundated",
+        "flood_poly_id": 3733
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.996187,
+              26.644967
+            ],
+            [
+              87.996397,
+              26.64495
+            ],
+            [
+              87.996392,
+              26.6449
+            ],
+            [
+              87.996182,
+              26.644916
+            ],
+            [
+              87.996187,
+              26.644967
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "17862",
+      "properties": {
+        "osm_id": 1059150110,
+        "settlement": "Damak",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 23.3,
+        "impact_status": "inundated",
+        "flood_poly_id": 3569
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.704179,
+              26.656476
+            ],
+            [
+              87.704215,
+              26.656457
+            ],
+            [
+              87.704186,
+              26.656414
+            ],
+            [
+              87.70415,
+              26.656434
+            ],
+            [
+              87.704179,
+              26.656476
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "26886",
+      "properties": {
+        "osm_id": 527373982,
+        "settlement": "Pathari Shanishchare",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 167.1,
+        "impact_status": "inundated",
+        "flood_poly_id": 3515
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.560337,
+              26.661352
+            ],
+            [
+              87.560431,
+              26.661384
+            ],
+            [
+              87.560463,
+              26.661309
+            ],
+            [
+              87.560503,
+              26.661314
+            ],
+            [
+              87.56052,
+              26.661221
+            ],
+            [
+              87.560448,
+              26.661202
+            ],
+            [
+              87.560389,
+              26.661325
+            ],
+            [
+              87.560354,
+              26.661312
+            ],
+            [
+              87.560337,
+              26.661352
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "30917",
+      "properties": {
+        "osm_id": 519936800,
+        "settlement": "Bhadrapur",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 48.0,
+        "impact_status": "inundated",
+        "flood_poly_id": 5719
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              88.085713,
+              26.542573
+            ],
+            [
+              88.085709,
+              26.54251
+            ],
+            [
+              88.08564,
+              26.542513
+            ],
+            [
+              88.085644,
+              26.542576
+            ],
+            [
+              88.085713,
+              26.542573
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "39547",
+      "properties": {
+        "osm_id": 991044364,
+        "settlement": "Rangeli",
+        "building": "yes",
+        "name": "Unnamed",
+        "amenity": "none",
+        "area_sqm": 20.2,
+        "impact_status": "inundated",
+        "flood_poly_id": 7866
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.49934,
+              26.460279
+            ],
+            [
+              87.499343,
+              26.46031
+            ],
+            [
+              87.499402,
+              26.460305
+            ],
+            [
+              87.499399,
+              26.460274
+            ],
+            [
+              87.49934,
+              26.460279
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

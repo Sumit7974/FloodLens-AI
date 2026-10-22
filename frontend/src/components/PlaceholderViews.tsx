@@ -90,13 +90,13 @@ export const PlaceholderViews: React.FC<PlaceholderViewsProps> = ({
 
           <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 space-y-2">
             <span className="text-[10px] font-bold uppercase text-slate-400">
-              Model Calibration Confidence
+              Model Calibration Metadata
             </span>
-            <div className="text-2xl font-mono font-bold text-emerald-400">
-              88.4% (Tier 1)
+            <div className="text-sm font-mono font-bold text-emerald-400">
+              LSTM-GNN v1.2
             </div>
             <p className="text-[11px] text-slate-400">
-              Calibrated against 12 live telemetry gauges + historical Koshi monsoon datasets.
+              Trained on 2017–2024 Terai Monsoons | Calibrated against telemetry gauges.
             </p>
           </div>
         </div>
@@ -144,7 +144,7 @@ export const PlaceholderViews: React.FC<PlaceholderViewsProps> = ({
                   <td className="p-2.5 font-semibold text-white">Gobargadha Sandbar</td>
                   <td className="p-2.5 font-mono text-rose-400">2.1m – 2.9m</td>
                   <td className="p-2.5 font-mono">1,400 citizens</td>
-                  <td className="p-2.5 text-rose-300">Swift Boat Rescue Underway</td>
+                  <td className="p-2.5 text-rose-300">Highland Evacuation Triage Underway</td>
                   <td className="p-2.5">
                     <span className="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 text-[10px] font-bold uppercase">
                       Critical

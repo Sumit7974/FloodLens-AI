@@ -1,0 +1,475 @@
+{
+  "report_title": "FloodLens AI \u2014 Koshi River Basin Master Disaster Exposure & Damage Assessment",
+  "generated_at": "2026-10-20T10:15:48.162961Z",
+  "disaster_event": {
+    "name": "August 2017 South Asian Monsoon Flood Disaster",
+    "study_area": "Koshi River Basin & Eastern Terai Plains, Nepal",
+    "bounding_box_wgs84": [
+      86.5,
+      26.2,
+      88.2,
+      27.8
+    ],
+    "projected_coordinate_system": "EPSG:32645 (WGS 84 / UTM Zone 45N)"
+  },
+  "executive_summary": {
+    "total_flood_extent_km2": 48.01,
+    "total_flood_extent_hectares": 4800.6,
+    "total_optical_flood_polygons": 16967,
+    "sar_radar_change_pixel_count": 6122,
+    "sar_radar_change_percentage": 3.53,
+    "settlements_in_hazard_corridor_1500m": 164,
+    "buildings_directly_inundated": 23,
+    "total_inundated_building_footprint_sqm": 3379.5,
+    "critical_facilities_exposed": 174,
+    "critical_facilities_directly_inundated": 1,
+    "critical_facilities_high_risk_100m": 13,
+    "transportation_lifeline_segments_cut": 59,
+    "total_submerged_road_length_km": 115.36,
+    "submerged_bridges_count": 30
+  },
+  "settlement_exposure": {
+    "total_settlements_evaluated": 2375,
+    "settlements_within_1500m_corridor": 164,
+    "key_affected_settlements_sample": [
+      "Kursakanta",
+      "Dighalbank",
+      "Chaarali",
+      "Birtamod",
+      "Damak",
+      "Sikti",
+      "Bikeybhanjan",
+      "Surunga",
+      "Kala Pokhri",
+      "Pathari Shanishchare",
+      "Bhadrapur",
+      "Birta Bazaar",
+      "Madhumalla",
+      "Rangeli",
+      "Kutidada"
+    ],
+    "buffer_radius_meters": 1500
+  },
+  "building_exposure": {
+    "total_buildings_evaluated": 40476,
+    "directly_inundated_count": 23,
+    "total_footprint_area_sqm": 3379.5,
+    "total_footprint_area_hectares": 0.338,
+    "settlement_distribution": {
+      "Birtamod": {
+        "building_count": 19,
+        "total_footprint_sqm": 3120.9
+      },
+      "Damak": {
+        "building_count": 1,
+        "total_footprint_sqm": 23.3
+      },
+      "Pathari Shanishchare": {
+        "building_count": 1,
+        "total_footprint_sqm": 167.1
+      },
+      "Bhadrapur": {
+        "building_count": 1,
+        "total_footprint_sqm": 48.0
+      },
+      "Rangeli": {
+        "building_count": 1,
+        "total_footprint_sqm": 20.2
+      }
+    }
+  },
+  "critical_facility_exposure": {
+    "total_facilities_evaluated": 2403,
+    "total_exposed_facilities": 174,
+    "exposure_tier_breakdown": {
+      "inundated": 1,
+      "high_risk_100m": 13,
+      "moderate_risk_500m": 160
+    },
+    "amenity_type_breakdown": {
+      "school": {
+        "total": 132,
+        "inundated": 1,
+        "high_risk_100m": 3,
+        "moderate_risk_500m": 128
+      },
+      "hospital": {
+        "total": 22,
+        "inundated": 0,
+        "high_risk_100m": 8,
+        "moderate_risk_500m": 14
+      },
+      "clinic": {
+        "total": 12,
+        "inundated": 0,
+        "high_risk_100m": 0,
+        "moderate_risk_500m": 12
+      },
+      "police": {
+        "total": 8,
+        "inundated": 0,
+        "high_risk_100m": 2,
+        "moderate_risk_500m": 6
+      }
+    },
+    "urgent_priority_hotspots": [
+      {
+        "osm_id": 4554995990,
+        "name": "B&C Hospital Pvt. Ltd.",
+        "amenity": "hospital",
+        "status": "high_risk_100m",
+        "coordinates": [
+          87.9980958,
+          26.6448607
+        ]
+      },
+      {
+        "osm_id": 4581979389,
+        "name": "Mangalbare Hospital",
+        "amenity": "hospital",
+        "status": "high_risk_100m",
+        "coordinates": [
+          87.6038438,
+          26.6654297
+        ]
+      },
+      {
+        "osm_id": 4631720892,
+        "name": "B & C Teaching Hospital",
+        "amenity": "hospital",
+        "status": "high_risk_100m",
+        "coordinates": [
+          87.997455,
+          26.6447115
+        ]
+      },
+      {
+        "osm_id": 4631721492,
+        "name": "Kankai Hospital",
+        "amenity": "hospital",
+        "status": "high_risk_100m",
+        "coordinates": [
+          87.9973121,
+          26.6443882
+        ]
+      },
+      {
+        "osm_id": 8028053331,
+        "name": "Government Hospital, Bibiganj",
+        "amenity": "hospital",
+        "status": "high_risk_100m",
+        "coordinates": [
+          87.7635149,
+          26.3696016
+        ]
+      },
+      {
+        "osm_id": 9802045868,
+        "name": "Young Kids Montessori Pre-School",
+        "amenity": "school",
+        "status": "high_risk_100m",
+        "coordinates": [
+          87.6045994,
+          26.6646494
+        ]
+      },
+      {
+        "osm_id": 10301918328,
+        "name": "Damak Red Cross Society",
+        "amenity": "hospital",
+        "status": "high_risk_100m",
+        "coordinates": [
+          87.7038742,
+          26.6565794
+        ]
+      },
+      {
+        "osm_id": 11934570470,
+        "name": "Kathmandu Institute of Child Health (KIOCH)",
+        "amenity": "hospital",
+        "status": "high_risk_100m",
+        "coordinates": [
+          87.7041342,
+          26.656964
+        ]
+      },
+      {
+        "osm_id": 13008734910,
+        "name": "Shree Nawakiran Vidhya Mandir",
+        "amenity": "school",
+        "status": "high_risk_100m",
+        "coordinates": [
+          87.8333571,
+          26.5703772
+        ]
+      },
+      {
+        "osm_id": 13731697501,
+        "name": "Purvanchal Cancer Hospital",
+        "amenity": "hospital",
+        "status": "high_risk_100m",
+        "coordinates": [
+          87.9977961,
+          26.64554
+        ]
+      },
+      {
+        "osm_id": 308832965,
+        "name": "kankai boarding english high school.",
+        "amenity": "school",
+        "status": "inundated",
+        "coordinates": [
+          [
+            [
+              87.9962546,
+              26.6462339
+            ],
+            [
+              87.9962737,
+              26.6462348
+            ],
+            [
+              87.996532,
+              26.6462362
+            ],
+            [
+              87.9966126,
+              26.6462476
+            ],
+            [
+              87.9966737,
+              26.6462479
+            ],
+            [
+              87.9977566,
+              26.6462923
+            ],
+            [
+              87.997916,
+              26.6463179
+            ],
+            [
+              87.9983739,
+              26.6463508
+            ],
+            [
+              87.9984066,
+              26.6461425
+            ],
+            [
+              87.9983466,
+              26.6461418
+            ],
+            [
+              87.9983412,
+              26.6459818
+            ],
+            [
+              87.9981939,
+              26.645979
+            ],
+            [
+              87.9976871,
+              26.6459196
+            ],
+            [
+              87.996661,
+              26.6459306
+            ],
+            [
+              87.9962742,
+              26.6459448
+            ],
+            [
+              87.9962619,
+              26.6461181
+            ],
+            [
+              87.9962546,
+              26.6462339
+            ]
+          ]
+        ]
+      },
+      {
+        "osm_id": 521226573,
+        "name": "Unnamed School",
+        "amenity": "school",
+        "status": "high_risk_100m",
+        "coordinates": [
+          [
+            [
+              87.8784733,
+              27.0351488
+            ],
+            [
+              87.8788112,
+              27.0346853
+            ],
+            [
+              87.8790151,
+              27.0346996
+            ],
+            [
+              87.8789878,
+              27.0350483
+            ],
+            [
+              87.8789695,
+              27.0352814
+            ],
+            [
+              87.8787026,
+              27.0352814
+            ],
+            [
+              87.8784733,
+              27.0351488
+            ]
+          ]
+        ]
+      },
+      {
+        "osm_id": 1214964104,
+        "name": "\u0908\u0932\u093e\u0915\u093e \u092a\u094d\u0930\u0939\u0930\u0940 \u0915\u093e\u0930\u094d\u092f\u0932\u092f \u0915\u0947\u091a\u0928\u093e",
+        "amenity": "police",
+        "status": "high_risk_100m",
+        "coordinates": [
+          [
+            [
+              87.9971246,
+              26.3877033
+            ],
+            [
+              87.9972709,
+              26.3877252
+            ],
+            [
+              87.9972892,
+              26.3876596
+            ],
+            [
+              87.9972038,
+              26.3876487
+            ],
+            [
+              87.9972018,
+              26.3876196
+            ],
+            [
+              87.9971408,
+              26.3876196
+            ],
+            [
+              87.9971286,
+              26.3876615
+            ],
+            [
+              87.9971246,
+              26.3877033
+            ]
+          ]
+        ]
+      },
+      {
+        "osm_id": 1214964105,
+        "name": "Police Building",
+        "amenity": "police",
+        "status": "high_risk_100m",
+        "coordinates": [
+          [
+            [
+              87.9969296,
+              26.3877424
+            ],
+            [
+              87.9970605,
+              26.3877611
+            ],
+            [
+              87.9970682,
+              26.3876665
+            ],
+            [
+              87.9969997,
+              26.3876548
+            ],
+            [
+              87.9969927,
+              26.3877003
+            ],
+            [
+              87.9969434,
+              26.3876976
+            ],
+            [
+              87.9969357,
+              26.3877169
+            ],
+            [
+              87.9969296,
+              26.3877424
+            ]
+          ]
+        ]
+      }
+    ]
+  },
+  "transportation_network_exposure": {
+    "total_road_features_evaluated": 1556,
+    "severed_segments_count": 59,
+    "total_submerged_length_m": 115357.5,
+    "total_submerged_length_km": 115.36,
+    "submerged_bridges_count": 30,
+    "highway_classification_breakdown": {
+      "primary": {
+        "segment_count": 12,
+        "total_length_m": 23070.3,
+        "total_length_km": 23.07,
+        "bridges_submerged": 6
+      },
+      "trunk": {
+        "segment_count": 18,
+        "total_length_m": 43027.5,
+        "total_length_km": 43.03,
+        "bridges_submerged": 12
+      },
+      "tertiary": {
+        "segment_count": 20,
+        "total_length_m": 23914.0,
+        "total_length_km": 23.91,
+        "bridges_submerged": 9
+      },
+      "secondary": {
+        "segment_count": 7,
+        "total_length_m": 22253.8,
+        "total_length_km": 22.25,
+        "bridges_submerged": 3
+      },
+      "secondary_link": {
+        "segment_count": 2,
+        "total_length_m": 3091.9,
+        "total_length_km": 3.09,
+        "bridges_submerged": 0
+      }
+    },
+    "critical_national_corridors_impacted": [
+      {
+        "route": "Mahendra Highway (H01 / NH01)",
+        "role": "Primary East-West Trans-Nepal Strategic Lifeline",
+        "impact": "18 trunk segments severed, 43.03 km submerged, 12 bridges cut"
+      },
+      {
+        "route": "Mechi Highway (H07 / NH02)",
+        "role": "North-South Arterial connecting Hill districts to Terai",
+        "impact": "12 primary segments severed, 23.07 km submerged, 6 bridges cut"
+      }
+    ]
+  },
+  "routing_and_logistics_implications": {
+    "impassable_hazard_routes_file": "hazard_routes.geojson",
+    "status": "IMPASSABLE / BLOCKED",
+    "detour_mandatory": true,
+    "recommended_relief_strategy": "Establish emergency helicopter drop zones at high-elevation primary schools; deploy military Bailey bridges along Mahendra Highway km 45-88 corridor."
+  }
+}

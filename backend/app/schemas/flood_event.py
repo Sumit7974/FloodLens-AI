@@ -143,9 +143,29 @@ class FloodReportResponse(BaseModel):
     )
     status: str = Field(
         default="summary_available",
-        description="summary_available, pending_generation, or generated",
+        description="summary_available, pending_generation, generated, or incomplete_evidence",
     )
     download_url: Optional[str] = Field(
         default=None,
         description="Download URL to physical report artifact; null when no downloadable artifact is generated",
+    )
+    settlements_evaluated: Optional[int] = Field(
+        default=None,
+        description="Total mapped settlements evaluated in study area",
+    )
+    settlements_data_status: Optional[str] = Field(
+        default=None,
+        description="Status of settlement spatial evaluation (completed, no_settlement_data, no_extent_available)",
+    )
+    assets_data_status: Optional[str] = Field(
+        default=None,
+        description="Status of asset exposure evaluation (completed, no_assets_available, no_extent_available)",
+    )
+    data_limitations: List[str] = Field(
+        default_factory=list,
+        description="Explicit caveats regarding physical exposure vs structural damage and population bounds",
+    )
+    data_provenance: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Underlying satellite scenes and GIS layer sources synthesized",
     )

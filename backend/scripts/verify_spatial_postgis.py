@@ -221,6 +221,19 @@ def verify_postgis():
             for row in explain_output:
                 print(f"    {row[0]}")
 
+            # Test 4f: Day 4 Candidate Route x Road Hazard ST_Intersects Screening
+            route_wkt = "LINESTRING(85.14 25.55, 85.14 25.65)"
+            res_route_rh = conn.execute(
+                text("""
+                    SELECT ST_Intersects(rh.geometry, ST_GeomFromText(:route_wkt, 4326))
+                    FROM road_hazards rh
+                    WHERE rh.id = :hazard_id;
+                """),
+                {"route_wkt": route_wkt, "hazard_id": hazard_id},
+            ).scalar()
+            print(f"[+] Spatial query ST_Intersects (Candidate Route x Road Hazard): {res_route_rh} (Expected: True)")
+            assert res_route_rh is True, "Candidate route road hazard intersection check failed"
+
         except Exception as exc:
             try:
                 conn.rollback()
