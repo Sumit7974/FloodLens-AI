@@ -25,7 +25,7 @@ import type {
 interface ResponseOperationsProps {
   currentScene: BenchmarkScene;
   requests: HelpRequest[];
-  onUpdateRequestStatus: (requestId: string, status: AuthorityHandoffStatus, authorityNote?: string) => void;
+  onUpdateRequestStatus: (requestId: string, status: AuthorityHandoffStatus, authorityNote?: string) => Promise<boolean> | boolean;
 }
 
 export const ResponseOperations: React.FC<ResponseOperationsProps> = ({
@@ -94,10 +94,9 @@ export const ResponseOperations: React.FC<ResponseOperationsProps> = ({
     setTimeout(() => setFeedback(null), 3500);
   };
 
-  const handleUpdateLifecycle = (status: AuthorityHandoffStatus, note: string) => {
-    onUpdateRequestStatus(selectedRequest.id, status, note);
-    notify(`Incident #${selectedRequest.id} updated: ${status.replace(/_/g, ' ')}`);
-    floodLensClient.updateAssistanceStatus(selectedRequest.id, status, note).catch(() => {});
+  const handleUpdateLifecycle = async (status: AuthorityHandoffStatus, note: string) => {
+    const saved = await onUpdateRequestStatus(selectedRequest.id, status, note);
+    notify(saved ? `Demo/test status recorded for #${selectedRequest.id}; no dispatch.` : `NOT SAVED: #${selectedRequest.id}. Review backend authentication.`);
   };
 
   const copyCoordinates = (coords: [number, number]) => {
@@ -122,7 +121,7 @@ export const ResponseOperations: React.FC<ResponseOperationsProps> = ({
         urgency: selectedRequest.urgency,
         urgency_score: selectedRequest.urgency_score || 'Priority 1',
         souls_threatened: selectedRequest.people_count,
-        reported_depth_dem_estimate: selectedRequest.estimated_water_depth || '1.8m',
+        reported_depth_dem_estimate: selectedRequest.estimated_water_depth || 'UNAVAILABLE (no verified depth)',
       },
       citizen_requester: {
         name: selectedRequest.requester_name,
