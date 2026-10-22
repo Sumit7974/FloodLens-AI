@@ -45,6 +45,23 @@ class TestDay5BaselineFreeze:
         assert len(manifest["primary_dataset_sha256"]) == 64
         assert len(manifest["frozen_artifacts"]) == 5  # 1 dataset + 3 models + 1 metadata
 
+    def test_model_artifacts_match_frozen_sha256_even_without_dataset(self):
+        """CI always checks frozen models and metadata; the raw reanalysis CSV is external."""
+        with open(MANIFEST_PATH, "r", encoding="utf-8") as f:
+            manifest = json.load(f)
+        for item in manifest["frozen_artifacts"]:
+            if item["artifact_type"] == "dataset":
+                continue
+            target = REPO_ROOT / item["relative_path"]
+            assert target.is_file(), f"Missing frozen model/metadata: {target}"
+            assert compute_sha256(target) == item["sha256_checksum"], (
+                f"Frozen model/metadata checksum mismatch: {item['relative_path']}"
+            )
+
+    @pytest.mark.skipif(
+        not DATASET_PATH.is_file(),
+        reason="Historical ERA5/GloFAS processed CSV is excluded from Git; full frozen-dataset integrity requires its original bytes.",
+    )
     def test_baseline_dataset_and_models_integrity(self):
         is_intact, discrepancies = verify_frozen_baseline_integrity()
         assert is_intact is True, f"Integrity violations detected: {discrepancies}"
@@ -54,8 +71,16 @@ class TestDay5BaselineFreeze:
         # Create a modified manifest with a corrupted hash
         with open(MANIFEST_PATH, "r", encoding="utf-8") as f:
             manifest = json.load(f)
-        manifest["frozen_artifacts"][0]["sha256_checksum"] = "0" * 64
-        
+        # Use an isolated artifact so this security regression test runs even when
+        # the external frozen historical dataset is not installed on CI.
+        fixture = tmp_path / "frozen_artifact.txt"
+        fixture.write_text("authentic", encoding="utf-8")
+        manifest["frozen_artifacts"] = [{
+            "relative_path": str(fixture.resolve()),
+            "sha256_checksum": "0" * 64,
+            "artifact_type": "fixture",
+        }]
+
         tampered_manifest_path = tmp_path / "tampered_manifest.json"
         with open(tampered_manifest_path, "w", encoding="utf-8") as f:
             json.dump(manifest, f)
@@ -68,6 +93,7 @@ class TestDay5BaselineFreeze:
 class TestDay5TemporalLeakageAudit:
     """Verifies that the temporal data-leakage audit correctly identifies lookahead and calendar aggregation flaws."""
 
+    @pytest.mark.skipif(not DATASET_PATH.is_file(), reason="Real reanalysis CSV unavailable; existing leakage audit report validated separately.")
     def test_audit_report_identifies_leaks(self):
         df = pd.read_csv(DATASET_PATH)
         records, preprocessing_audit = audit_feature_temporal_integrity(df)
@@ -104,6 +130,7 @@ class TestDay5TemporalLeakageAudit:
 class TestDay5ChronologicalSplits:
     """Verifies strict chronological ordering and non-overlap for train, validation, and test splits."""
 
+    @pytest.mark.skipif(not DATASET_PATH.is_file(), reason="Chronological checks for actual reanalysis dataset require its original external CSV.")
     def test_chronological_splits_strictly_ordered(self):
         assert DATASET_PATH.exists()
         df = pd.read_csv(DATASET_PATH)
