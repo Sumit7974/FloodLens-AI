@@ -108,7 +108,7 @@ def test_run_predicted_vs_observed_analysis_end_to_end(tmp_path: Path):
 
     assert isinstance(report, PredictedVsObservedReport)
     assert report.total_evaluations_count == 6  # +1h, +3h, +6h for both multiclass and binary
-    assert report.summary_verdict == "PASS_ON_HELD_OUT_TEST_DATA"
+    assert report.summary_verdict == "PASS_ON_SYNTHETIC_TEST_DATA"
 
     # Verify unobserved depth is explicitly audited
     assert "continuous_floodwater_depth_m" in report.unobserved_targets_audit
