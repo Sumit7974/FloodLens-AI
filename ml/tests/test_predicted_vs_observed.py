@@ -100,11 +100,15 @@ def test_comparison_record_concordance():
 
 def test_run_predicted_vs_observed_analysis_end_to_end(tmp_path: Path):
     """Run full evaluation against repository dataset and verify held-out separation."""
-    report = run_predicted_vs_observed_analysis(reports_dir=tmp_path)
+    synthetic = Path(__file__).resolve().parents[2] / "ml" / "data" / "synthetic" / "synthetic_koshi_event.csv"
+    assert synthetic.is_file(), "Versioned synthetic demo fixture is required."
+    report = run_predicted_vs_observed_analysis(
+        data_path=synthetic, reports_dir=tmp_path, model_version="baseline-v1",
+    )
 
     assert isinstance(report, PredictedVsObservedReport)
     assert report.total_evaluations_count == 6  # +1h, +3h, +6h for both multiclass and binary
-    assert report.summary_verdict == "PASS_ON_HELD_OUT_TEST_DATA"
+    assert report.summary_verdict == "PASS_ON_SYNTHETIC_TEST_DATA"
 
     # Verify unobserved depth is explicitly audited
     assert "continuous_floodwater_depth_m" in report.unobserved_targets_audit

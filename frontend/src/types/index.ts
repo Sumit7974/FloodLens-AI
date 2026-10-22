@@ -1,6 +1,6 @@
-export type RiskLevel = 'LOW' | 'MODERATE' | 'HIGH' | 'EXTREME';
+export type RiskLevel = 'LOW' | 'MODERATE' | 'HIGH' | 'EXTREME' | 'UNKNOWN';
 
-export type AlertSeverity = 'ADVISORY' | 'WATCH' | 'WARNING' | 'EMERGENCY';
+export type AlertSeverity = 'ADVISORY' | 'WATCH' | 'WARNING' | 'EMERGENCY' | 'UNSPECIFIED';
 
 export type AlertStatus = 'DRAFT' | 'PENDING_APPROVAL' | 'APPROVED' | 'DISPATCHED' | 'CANCELLED';
 
@@ -152,7 +152,11 @@ export type NavigationItemId =
   | 'satellite-intel'
   | 'response-ops'
   | 'alert-dispatcher'
-  | 'model-analytics';
+  | 'model-analytics'
+  | 'environmental-monitoring'
+  | 'emergency-facilities'
+  | 'route-assessment'
+  | 'historical-reports';
 
 export interface NavigationItem {
   id: NavigationItemId;

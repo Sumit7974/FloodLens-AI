@@ -18,6 +18,7 @@ import {
   KOSHI_TELEMETRY_GAUGES,
 } from '../../data/geospatialData';
 import type { HelpRequest } from '../../types';
+import { DEMO_MODE, type ObservedExtentFeature, type FacilityItem } from '../../services/backendApi';
 
 export interface GeospatialTerrainMapProps {
   center?: [number, number]; // [lng, lat]
@@ -25,12 +26,16 @@ export interface GeospatialTerrainMapProps {
   pitch?: number;
   bearing?: number;
   activeHorizon?: 'Now' | '1h' | '3h' | '6h';
+  observedExtent?: ObservedExtentFeature | null;
   showInundation?: boolean;
   showForecast?: boolean;
   showGauges?: boolean;
   showIncidents?: boolean;
   showInfrastructure?: boolean;
   showShelters?: boolean;
+  candidateRoute?: [number, number][]; // LineString [lng, lat]
+  facilities?: FacilityItem[];
+  onSelectFacility?: (facility: FacilityItem) => void;
   incidents?: HelpRequest[];
   selectedIncidentId?: string | null;
   onSelectIncident?: (id: string) => void;
@@ -137,12 +142,16 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
   pitch = 55,
   bearing = -15,
   activeHorizon = '3h',
+  observedExtent = null,
   showInundation = true,
   showForecast = true,
   showGauges = true,
   showIncidents = true,
   showInfrastructure = true,
   showShelters = true,
+  candidateRoute = [],
+  facilities = [],
+  onSelectFacility,
   incidents = [],
   selectedIncidentId = null,
   onSelectIncident,
@@ -275,7 +284,7 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
           'horizon-color': '#091a32',
           'fog-color': '#040d1a',
         } as any);
-      } catch (e) {
+      } catch {
         // Soft fallback
       }
 
@@ -334,14 +343,10 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
     if (!map.getSource('observed-inundation-src')) {
       map.addSource('observed-inundation-src', {
         type: 'geojson',
-        data: {
-          type: 'Feature',
-          properties: { name: 'Observed Sentinel Water Mask', areaKm2: 28.4 },
-          geometry: {
-            type: 'Polygon',
-            coordinates: [observedCoords],
-          },
-        },
+        data: DEMO_MODE ? {
+          type: 'Feature', properties: { name: 'Illustrative fixture only', areaKm2: 28.4 },
+          geometry: { type: 'Polygon', coordinates: [observedCoords] },
+        } : { type: 'FeatureCollection', features: [] },
       });
 
       map.addLayer({
@@ -378,14 +383,10 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
     if (!map.getSource('forecast-horizon-src')) {
       map.addSource('forecast-horizon-src', {
         type: 'geojson',
-        data: {
-          type: 'Feature',
-          properties: { horizon: activeHorizon },
-          geometry: {
-            type: 'Polygon',
-            coordinates: [activeCoords],
-          },
-        },
+        data: DEMO_MODE ? {
+          type: 'Feature', properties: { horizon: activeHorizon, source: 'illustrative' },
+          geometry: { type: 'Polygon', coordinates: [activeCoords] },
+        } : { type: 'FeatureCollection', features: [] },
       });
 
       map.addLayer({
@@ -414,7 +415,7 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
     if (!map.getSource('road-cuts-src')) {
       map.addSource('road-cuts-src', {
         type: 'geojson',
-        data: INFRASTRUCTURE_ROAD_CUTS,
+        data: DEMO_MODE ? INFRASTRUCTURE_ROAD_CUTS : { type: 'FeatureCollection', features: [] },
       });
 
       map.addLayer({
@@ -428,7 +429,75 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
         },
       });
     }
-  }, [activeHorizon]);
+
+    // 4. Candidate Route LineString Layer
+    if (!map.getSource('candidate-route-src')) {
+      const hasRoute = candidateRoute && candidateRoute.length >= 2;
+      map.addSource('candidate-route-src', {
+        type: 'geojson',
+        data: hasRoute
+          ? {
+              type: 'Feature',
+              properties: { name: 'Candidate Route' },
+              geometry: { type: 'LineString', coordinates: candidateRoute },
+            }
+          : { type: 'FeatureCollection', features: [] },
+      });
+
+      map.addLayer({
+        id: 'candidate-route-casing',
+        type: 'line',
+        source: 'candidate-route-src',
+        paint: {
+          'line-color': '#000000',
+          'line-width': 7,
+          'line-opacity': 0.75,
+        },
+      });
+
+      map.addLayer({
+        id: 'candidate-route-line',
+        type: 'line',
+        source: 'candidate-route-src',
+        paint: {
+          'line-color': '#f59e0b',
+          'line-width': 4,
+          'line-dasharray': [2, 1],
+        },
+      });
+    }
+  }, [activeHorizon, candidateRoute]);
+
+  // Update candidate route line dynamically
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapLoaded) return;
+
+    const src = map.getSource('candidate-route-src') as maplibregl.GeoJSONSource | undefined;
+    if (src) {
+      const hasRoute = candidateRoute && candidateRoute.length >= 2;
+      src.setData(
+        hasRoute
+          ? {
+              type: 'Feature',
+              properties: { name: 'Candidate Route' },
+              geometry: { type: 'LineString', coordinates: candidateRoute },
+            }
+          : { type: 'FeatureCollection', features: [] }
+      );
+      if (hasRoute) {
+        const lons = candidateRoute.map((p) => p[0]);
+        const lats = candidateRoute.map((p) => p[1]);
+        map.fitBounds(
+          [
+            [Math.min(...lons), Math.min(...lats)],
+            [Math.max(...lons), Math.max(...lats)],
+          ],
+          { padding: 50, maxZoom: 13, duration: 800 }
+        );
+      }
+    }
+  }, [candidateRoute, mapLoaded]);
 
   // Update horizon layer dynamically as activeHorizon changes
   useEffect(() => {
@@ -442,14 +511,7 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
           ? toGeoJsonCoords(HORIZON_FORECASTS['1h'].polygonCoords)
           : toGeoJsonCoords(HORIZON_FORECASTS[activeHorizon as '1h' | '3h' | '6h']?.polygonCoords || HORIZON_FORECASTS['3h'].polygonCoords);
 
-      src.setData({
-        type: 'Feature',
-        properties: { horizon: activeHorizon },
-        geometry: {
-          type: 'Polygon',
-          coordinates: [activeCoords],
-        },
-      });
+      src.setData(DEMO_MODE ? { type: 'Feature', properties: { horizon: activeHorizon, source: 'illustrative' }, geometry: { type: 'Polygon', coordinates: [activeCoords] } } : { type: 'FeatureCollection', features: [] });
 
       const horizonColor =
         activeHorizon === '6h' ? '#ef4444' : activeHorizon === '3h' ? '#f97316' : '#f59e0b';
@@ -463,30 +525,54 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
     }
   }, [activeHorizon, mapLoaded]);
 
+  // Real PostGIS event-linked extent replaces illustration in backend mode.
+  useEffect(() => {
+    if (DEMO_MODE || !mapLoaded) return;
+    const map = mapRef.current;
+    const source = map?.getSource('observed-inundation-src') as maplibregl.GeoJSONSource | undefined;
+    if (!source) return;
+    source.setData(observedExtent ? (observedExtent as any) : { type: 'FeatureCollection', features: [] });
+    if (!observedExtent?.geometry || !map) return;
+    const pairs: number[][] = [];
+    const walk = (node: unknown): void => {
+      if (!Array.isArray(node)) return;
+      if (node.length >= 2 && typeof node[0] === 'number' && typeof node[1] === 'number') {
+        const lon = node[0]; const lat = node[1];
+        if (Number.isFinite(lon) && Number.isFinite(lat) && Math.abs(lon) <= 180 && Math.abs(lat) <= 90) pairs.push([lon, lat]);
+        return;
+      }
+      node.forEach(walk);
+    };
+    walk(observedExtent.geometry.coordinates);
+    if (!pairs.length) return;
+    const lons = pairs.map(p => p[0]); const lats = pairs.map(p => p[1]);
+    map.fitBounds([[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]], { padding: 45, maxZoom: 12, duration: 900 });
+  }, [observedExtent, mapLoaded]);
+
   // Dynamic layer visibility, wipe opacity, and verification layer styles
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapLoaded) return;
 
     if (map.getLayer('observed-inundation-fill')) {
-      map.setLayoutProperty('observed-inundation-fill', 'visibility', showInundation ? 'visible' : 'none');
+      map.setLayoutProperty('observed-inundation-fill', 'visibility', showInundation && (DEMO_MODE || Boolean(observedExtent)) ? 'visible' : 'none');
       if (mode === 'satellite') {
         map.setPaintProperty('observed-inundation-fill', 'fill-opacity', (wipePosition / 100) * 0.55);
       }
     }
     if (map.getLayer('observed-inundation-stroke')) {
-      map.setLayoutProperty('observed-inundation-stroke', 'visibility', showInundation ? 'visible' : 'none');
+      map.setLayoutProperty('observed-inundation-stroke', 'visibility', showInundation && (DEMO_MODE || Boolean(observedExtent)) ? 'visible' : 'none');
     }
     if (map.getLayer('forecast-horizon-fill')) {
-      map.setLayoutProperty('forecast-horizon-fill', 'visibility', showForecast ? 'visible' : 'none');
+      map.setLayoutProperty('forecast-horizon-fill', 'visibility', DEMO_MODE && showForecast ? 'visible' : 'none');
     }
     if (map.getLayer('forecast-horizon-stroke')) {
-      map.setLayoutProperty('forecast-horizon-stroke', 'visibility', showForecast ? 'visible' : 'none');
+      map.setLayoutProperty('forecast-horizon-stroke', 'visibility', DEMO_MODE && showForecast ? 'visible' : 'none');
     }
     if (map.getLayer('road-cuts-lines')) {
-      map.setLayoutProperty('road-cuts-lines', 'visibility', showInfrastructure ? 'visible' : 'none');
+      map.setLayoutProperty('road-cuts-lines', 'visibility', DEMO_MODE && showInfrastructure ? 'visible' : 'none');
     }
-  }, [showInundation, showForecast, showInfrastructure, mode, wipePosition, verificationLayers, mapLoaded]);
+  }, [showInundation, showForecast, showInfrastructure, mode, wipePosition, verificationLayers, observedExtent, mapLoaded]);
 
   // Manage Interactive Markers (Gauges, Incidents, Shelters, Settlements)
   useEffect(() => {
@@ -498,7 +584,7 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
     markersRef.current = [];
 
     // 1. Gauges
-    if (showGauges) {
+    if (DEMO_MODE && showGauges) {
       KOSHI_TELEMETRY_GAUGES.forEach((gauge) => {
         const el = document.createElement('div');
         el.className = 'group cursor-pointer transform -translate-x-1/2 -translate-y-1/2 transition-transform hover:scale-110';
@@ -570,7 +656,7 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
             location: req.location_name,
             category: req.category,
             urgency: req.urgency,
-            depth: req.estimated_water_depth || '1.8m (Fast Current)',
+            depth: req.estimated_water_depth || 'Not measured',
             status: req.status || req.handoff_status,
             coords: [req.coordinates[1], req.coordinates[0]],
             peopleCount: req.people_count,
@@ -587,8 +673,51 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
       });
     }
 
-    // 3. Shelters & High Ground
-    if (showShelters) {
+    // 3. Emergency Facilities (Shelters & Hospitals)
+    if (facilities && facilities.length > 0) {
+      facilities.forEach((fac) => {
+        if (fac.longitude == null || fac.latitude == null) return;
+        const el = document.createElement('div');
+        const isHospital = fac.type === 'hospital';
+        const isVerified = fac.verification_status === 'verified';
+        const isDemo = fac.verification_status === 'demo_labeled';
+        const color = isVerified ? 'bg-emerald-500' : isDemo ? 'bg-sky-500' : 'bg-rose-500';
+        const borderColor = isVerified ? 'border-emerald-300' : isDemo ? 'border-sky-300' : 'border-rose-300';
+        el.className = 'cursor-pointer group transform -translate-x-1/2 -translate-y-1/2 hover:scale-125 transition-transform z-20';
+        el.innerHTML = `
+          <div class="relative flex items-center justify-center">
+            <div class="w-6 h-6 rounded-full ${color} border-2 ${borderColor} flex items-center justify-center text-[10px] font-bold text-white shadow-lg">
+              ${isHospital ? 'H' : 'S'}
+            </div>
+            <div class="absolute left-7 bg-[#060e1d]/95 border border-[#1e3a5f] px-2 py-0.5 rounded text-[10px] font-mono font-bold text-white whitespace-nowrap shadow-md pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-30">
+              ${fac.name} (${fac.type})
+            </div>
+          </div>
+        `;
+
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          setActivePopupData({
+            type: 'FACILITY',
+            title: fac.name,
+            facilityType: fac.type,
+            verification: fac.verification_status,
+            capacity: fac.capacity ? `${fac.capacity} (${isHospital ? 'beds' : 'persons'})` : 'Unrecorded',
+            contact: fac.contact_info || 'None recorded',
+            source: fac.source || 'Database',
+            limitations: fac.limitations,
+            coords: [fac.longitude, fac.latitude],
+          });
+          if (onSelectFacility) onSelectFacility(fac);
+        });
+
+        const marker = new maplibregl.Marker({ element: el })
+          .setLngLat([fac.longitude, fac.latitude])
+          .addTo(map);
+
+        markersRef.current.push(marker);
+      });
+    } else if (DEMO_MODE && showShelters) {
       KOSHI_SHELTERS.forEach((shelter) => {
         const el = document.createElement('div');
         el.className = 'cursor-pointer group transform -translate-x-1/2 -translate-y-1/2 hover:scale-110';
@@ -620,7 +749,7 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
     }
 
     // 4. Settlement Labels
-    KOSHI_SETTLEMENTS.forEach((settlement) => {
+    if (DEMO_MODE) KOSHI_SETTLEMENTS.forEach((settlement) => {
       const el = document.createElement('div');
       el.className = 'pointer-events-none transform -translate-x-1/2 -translate-y-1/2';
       el.innerHTML = `
@@ -636,7 +765,7 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
 
       markersRef.current.push(marker);
     });
-  }, [mapLoaded, showGauges, showIncidents, showShelters, incidents, selectedIncidentId, onSelectIncident, onSelectGauge]);
+  }, [mapLoaded, showGauges, showIncidents, showShelters, facilities, onSelectFacility, incidents, selectedIncidentId, onSelectIncident, onSelectGauge]);
 
   // Center on selected incident if provided
   useEffect(() => {
@@ -654,6 +783,8 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
   }, [selectedIncidentId, incidents, mapLoaded]);
 
   // Camera flyTo when center, zoom, pitch, or bearing change externally (e.g. benchmark scene selector)
+  const centerLng = center[0];
+  const centerLat = center[1];
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapLoaded) return;
@@ -665,7 +796,7 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
       duration: 1500,
       essential: true,
     });
-  }, [center[0], center[1], zoom, pitch, bearing, mapLoaded]);
+  }, [centerLng, centerLat, center, zoom, pitch, bearing, mapLoaded]);
 
   // Toggle 3D Terrain / 2D Ortho Mode
   const toggle3DMode = () => {
@@ -779,7 +910,7 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
         <div className="inline-flex items-center gap-3.5 px-3.5 py-2 rounded-xl bg-zinc-950/85 border border-zinc-800/80 text-xs font-mono text-zinc-200 backdrop-blur-md pointer-events-auto shadow-sm">
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 inline-block shadow-[0_0_6px_rgba(34,211,238,0.5)]" />
-            <span className="text-xs font-semibold text-zinc-200">OBSERVED INUNDATION</span>
+            <span className="text-xs font-semibold text-zinc-200">{DEMO_MODE ? 'DEMO FLOOD MASK' : observedExtent ? 'BACKEND OBSERVED EXTENT' : 'NO OBSERVED EXTENT'}</span>
           </div>
 
           <span className="text-zinc-700 select-none">|</span>
@@ -792,7 +923,7 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
                   activeHorizon === '6h' ? '#ef4444' : activeHorizon === '3h' ? '#f97316' : '#f59e0b',
               }}
             />
-            <span className="text-xs font-semibold text-zinc-200">+{activeHorizon} FORECAST</span>
+            <span className="text-xs font-semibold text-zinc-200">+{activeHorizon} {DEMO_MODE ? 'ILLUSTRATION' : 'FORECAST'}</span>
           </div>
 
           <span className="text-zinc-700 select-none hidden sm:inline">|</span>
@@ -805,7 +936,7 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
 
         {/* Projection Spec */}
         <div className="px-3.5 py-2 rounded-xl bg-zinc-950/85 border border-zinc-800/80 text-xs font-mono text-zinc-300 backdrop-blur-md pointer-events-auto shadow-sm font-medium">
-          <span>EPSG:4326 // KOSHI DEM 30M RESOLUTION</span>
+          <span>{DEMO_MODE ? 'DEMO EPSG:4326 // KOSHI DEM 30M RESOLUTION' : 'BACKEND EPSG:4326 · NOT FOR NAVIGATION'}</span>
         </div>
       </div>
 
@@ -897,6 +1028,41 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
                 <div className="flex justify-between">
                   <span className="text-slate-400">Emergency Phone:</span>
                   <span className="text-slate-300">{activePopupData.contact}</span>
+                </div>
+              </>
+            )}
+
+            {activePopupData.type === 'FACILITY' && (
+              <>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Facility Type:</span>
+                  <span className="font-bold text-white capitalize">{activePopupData.facilityType}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400">Verification:</span>
+                  <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold uppercase ${
+                    activePopupData.verification === 'verified'
+                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                      : activePopupData.verification === 'demo_labeled'
+                      ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40'
+                      : 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                  }`}>
+                    {activePopupData.verification}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Recorded Capacity:</span>
+                  <span className="text-white font-bold">{activePopupData.capacity}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Contact liaison:</span>
+                  <span className="text-cyan-300 font-bold">{activePopupData.contact}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Source:</span>
+                  <span className="text-slate-300 truncate max-w-[130px]" title={activePopupData.source}>
+                    {activePopupData.source}
+                  </span>
                 </div>
               </>
             )}

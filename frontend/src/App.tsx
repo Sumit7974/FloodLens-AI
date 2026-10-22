@@ -2,10 +2,17 @@ import { useState, useEffect, useRef } from 'react';
 import { AlertDispatcher } from './components/AlertDispatcher';
 import { CommandOverview } from './components/CommandOverview';
 import { Header } from './components/Header';
+import { BackendAccessPanel } from './components/BackendAccessPanel';
+import { BackendSatelliteEvidence } from './components/BackendSatelliteEvidence';
+import { BackendPredictionPanel, BackendAnalyticsPanel } from './components/BackendResearchPanels';
 import { ModelAnalytics } from './components/ModelAnalytics';
 import { PredictionCentre } from './components/PredictionCentre';
 import { ResponseOperations } from './components/ResponseOperations';
 import { SatelliteIntelligence } from './components/SatelliteIntelligence';
+import { EnvironmentalMonitoring } from './components/EnvironmentalMonitoring';
+import { EmergencyFacilities } from './components/EmergencyFacilities';
+import { RouteAssessment } from './components/RouteAssessment';
+import { HistoricalReports } from './components/HistoricalReports';
 import { Sidebar } from './components/Sidebar';
 import { ParticlesComponent } from './components/ui/particles-bg';
 import {
@@ -16,6 +23,8 @@ import {
   MOCK_METRICS,
 } from './data/mockData';
 import { ApiService } from './services/apiService';
+import { DEMO_MODE, getAssistanceQueue, listDemoAlerts, updateAssistance, subscribeAuthorityEvents, type AuthSession } from './services/backendApi';
+import { toHelpRequest, toUiAlert } from './services/backendMappers';
 import type {
   Alert,
   AuthorityHandoffStatus,
@@ -33,8 +42,8 @@ export function App() {
   const [currentScene, setCurrentScene] = useState<BenchmarkScene>(BENCHMARK_SCENES[0]);
 
   // Operational State
-  const [requests, setRequests] = useState<HelpRequest[]>(MOCK_HELP_REQUESTS);
-  const [alerts, setAlerts] = useState<Alert[]>(MOCK_ACTIVE_ALERTS);
+  const [requests, setRequests] = useState<HelpRequest[]>(DEMO_MODE ? MOCK_HELP_REQUESTS : []);
+  const [alerts, setAlerts] = useState<Alert[]>(DEMO_MODE ? MOCK_ACTIVE_ALERTS : []);
   const [metrics, setMetrics] = useState<MetricSummary>(MOCK_METRICS);
 
   // Model Version State (Promotable via ModelAnalytics)
@@ -42,6 +51,9 @@ export function App() {
 
   // Backend Connection Health State
   const [isBackendConnected, setIsBackendConnected] = useState(false);
+  const [authSession, setAuthSession] = useState<AuthSession | null>(null);
+  const [websocketConnected, setWebsocketConnected] = useState(false);
+  const [dataSyncError, setDataSyncError] = useState('');
 
   // Live Simulation State
   const [isLiveSimulation, setIsLiveSimulation] = useState(false);
@@ -78,15 +90,59 @@ export function App() {
     };
   }, []);
 
+  // REST is the source of truth. WebSocket events only trigger refetch/resynchronization.
+  // No operational dispatch or live telemetry occurs in this application.
+  useEffect(() => {
+    if (DEMO_MODE || !authSession) {
+      setWebsocketConnected(false);
+      return;
+    }
+    let mounted = true;
+    const sync = async () => {
+      try {
+        const [queue, backendAlerts] = await Promise.all([getAssistanceQueue(), listDemoAlerts()]);
+        if (!mounted) return;
+        setRequests(queue.map(toHelpRequest));
+        setAlerts(backendAlerts.map(toUiAlert));
+        setDataSyncError('');
+      } catch (error) {
+        if (mounted) setDataSyncError(error instanceof Error ? error.message : 'Backend sync failed');
+      }
+    };
+    void sync();
+    const stop = subscribeAuthorityEvents(event => {
+      if (['resync.instructions', 'connection.established', 'assistance.created', 'assistance.updated', 'alert.approved', 'alert.published'].includes(event.type)) {
+        void sync();
+      }
+    }, connected => {
+      if (mounted) setWebsocketConnected(connected);
+    });
+    return () => {
+      mounted = false;
+      stop();
+    };
+  }, [authSession]);
+
+  const handleAuthSessionChange = (next: AuthSession | null) => {
+    setAuthSession(next);
+    setDataSyncError('');
+    if (!next && !DEMO_MODE) {
+      setRequests([]);
+      setAlerts([]);
+    }
+  };
+
   // Multi-scenario benchmark switcher
   const handleSelectScene = (scene: BenchmarkScene) => {
     setCurrentScene(scene);
     const scenarioData =
       BENCHMARK_SCENARIOS_DATA[scene.id] || BENCHMARK_SCENARIOS_DATA['koshi-basin-primary'];
-    setMetrics(scenarioData.metrics);
-    setRequests(scenarioData.requests);
-    setAlerts(scenarioData.alerts);
-    showToast(`Switched active event benchmark to: ${scene.name}`);
+    if (DEMO_MODE) {
+      setMetrics(scenarioData.metrics);
+      setRequests(scenarioData.requests);
+      setAlerts(scenarioData.alerts);
+    }
+    showToast(`Selected historical benchmark view: ${scene.name}. Only actual backend records are authoritative.`);
   };
 
   // Anonymized Simulation Presets (Citizen privacy compliance)
@@ -209,72 +265,66 @@ export function App() {
     return () => clearInterval(interval);
   }, [isLiveSimulation]);
 
-  // Transmit standardized incident dossier to District Emergency Operation Center (DEOC)
-  const handleHandoffRequest = (
-    requestId: string,
-    authorityTarget: string = 'DEOC Sunsari'
-  ) => {
-    setRequests((prev) =>
-      prev.map((r) =>
-        r.id === requestId
-          ? {
-              ...r,
-              status: 'TRANSMITTED_TO_DEOC',
-              handoff_status: 'TRANSMITTED_TO_DEOC',
-              authority_handoff_target: authorityTarget,
-              activity_log: [
-                ...(r.activity_log || []),
-                {
-                  timestamp: 'Just now',
-                  action: `Standardized incident packet transmitted to ${authorityTarget}`,
-                  author: 'EOC Duty Officer',
-                },
-              ],
-            }
-          : r
-      )
-    );
-    showToast(`Authority Handoff Transmitted: DEOC packet dispatched for ticket #${requestId}`);
+  // A recorded historical-demo acknowledgement is not a real-world DEOC dispatch.
+  const handleHandoffRequest = async (requestId: string, _authorityTarget = 'DEOC Sunsari'): Promise<boolean> => {
+    if (DEMO_MODE) {
+      setRequests(prev => prev.map(r => r.id === requestId
+        ? { ...r, status: 'SIMULATED_AUTHORITY_ACK', handoff_status: 'SIMULATED_AUTHORITY_ACK' }
+        : r));
+      showToast(`DEMO ONLY: Local acknowledgement recorded for ${requestId}. No responders contacted.`);
+      return true;
+    }
+    try {
+      const saved = await updateAssistance(requestId, 'acknowledged', 'Acknowledged in FloodLens historical/test system. No operational dispatch.');
+      setRequests(prev => prev.map(r => r.id === requestId ? toHelpRequest(saved) : r));
+      showToast(`Backend record ${requestId} acknowledged. No rescue team was dispatched.`);
+      return true;
+    } catch (error) {
+      showToast(`NOT SAVED: ${error instanceof Error ? error.message : 'Backend action failed'}`);
+      return false;
+    }
   };
 
-  const handleUpdateRequestStatus = (
+  const handleUpdateRequestStatus = async (
     requestId: string,
     status: AuthorityHandoffStatus,
     authorityNote?: string
-  ) => {
-    setRequests((prev) =>
-      prev.map((r) => {
-        if (r.id !== requestId) return r;
-        return {
-          ...r,
-          status: status as any,
-          handoff_status: status,
-          activity_log: [
-            ...(r.activity_log || []),
-            {
-              timestamp: 'Just now',
-              action: `Authority status updated to ${status}${authorityNote ? `: ${authorityNote}` : ''}`,
-              author: 'EOC Duty Officer',
-            },
-          ],
-        };
-      })
-    );
-    showToast(`Ticket #${requestId} updated to ${status.replace(/_/g, ' ')}`);
+  ): Promise<boolean> => {
+    if (DEMO_MODE) {
+      setRequests(prev => prev.map(r => r.id === requestId
+        ? { ...r, status, handoff_status: status }
+        : r));
+      showToast(`DEMO ONLY: Local status ${status.replace(/_/g, ' ')} recorded; no external action.`);
+      return true;
+    }
+    const backendStatus =
+      status === 'RESOLVED' ? 'resolved' :
+      status === 'ACKNOWLEDGED_BY_AUTHORITY' || status === 'TRANSMITTED_TO_DEOC' ? 'acknowledged' :
+      status === 'SIMULATED_AUTHORITY_ACK' ? 'in_progress' : 'pending';
+    try {
+      const saved = await updateAssistance(requestId, backendStatus, authorityNote);
+      setRequests(prev => prev.map(r => r.id === requestId ? toHelpRequest(saved) : r));
+      showToast(`Saved backend status: ${saved.status}. Test-only record, not operational dispatch.`);
+      return true;
+    } catch (error) {
+      showToast(`NOT SAVED: ${error instanceof Error ? error.message : 'Backend update failed'}`);
+      return false;
+    }
   };
 
   const handleBroadcastAlert = (newAlert: Alert) => {
     setAlerts((prev) => [newAlert, ...prev]);
-    showToast(
-      `Simulated Alert Record Logged: ${newAlert.code} registered in EOC simulation audit log`
-    );
+    showToast(newAlert.status === 'DRAFT'
+      ? `Backend DEMO draft ${newAlert.code} created. Explicit approval is required before any test dispatch.`
+      : `DEMO ONLY: Simulation record ${newAlert.code} updated (no operational warnings issued).`);
   };
 
-  const handleCancelAlert = (alertId: string) => {
-    setAlerts((prev) =>
-      prev.map((a) => (a.id === alertId ? { ...a, status: 'CANCELLED' } : a))
-    );
-    showToast(`Alert #${alertId} has been superseded / cancelled in audit log`);
+  const handleCancelAlert = (_alertId: string) => {
+    showToast('Action unsupported: Alert cancellation is not supported by the backend architecture. Dispatched alerts are permanent audit records.');
+  };
+
+  const handleAlertUpdated = (updated: Alert) => {
+    setAlerts(prev => prev.map(a => a.id === updated.id ? updated : a));
   };
 
   const handleBroadcastRevision = (alertId: string) => {
@@ -284,7 +334,7 @@ export function App() {
 
   const handleDeployModel = (newVersion: string) => {
     setDeployedModelVersion(newVersion);
-    showToast(`Active EOC Production inference engine updated to: ${newVersion}`);
+    showToast(`UI demo selection: ${newVersion}. No model was deployed or retrained.`);
   };
 
   return (
@@ -304,8 +354,9 @@ export function App() {
         criticalZoneCount={3}
         lastUpdatedText="Updated 4m ago"
         isLiveSimulation={isLiveSimulation}
-        isBackendConnected={isBackendConnected}
+        isBackendConnected={!DEMO_MODE && isBackendConnected}
         onToggleLiveSimulation={() => {
+          if (!DEMO_MODE) { showToast('Backend mode does not simulate external flood data or alerts.'); return; }
           setIsLiveSimulation(!isLiveSimulation);
           showToast(
             !isLiveSimulation
@@ -313,9 +364,16 @@ export function App() {
               : 'Live Simulation Stream paused'
           );
         }}
-        onTriggerSimulationEvent={triggerSimulationEvent}
+        onTriggerSimulationEvent={() => DEMO_MODE ? triggerSimulationEvent() : showToast('Surge injection is disabled in backend mode. This screen never starts real alerts.')}
       />
 
+      <BackendAccessPanel session={authSession} backendOnline={isBackendConnected} websocketOnline={websocketConnected} onSessionChange={handleAuthSessionChange} />
+      {!DEMO_MODE && (
+        <div className="border-b border-sky-800/50 bg-slate-950 px-5 py-2 text-xs text-amber-200" role="status">
+          Displayed overview metrics, benchmark maps and depth values are illustrative until a verified historical GIS/ML dataset is loaded.
+          {dataSyncError && <span className="ml-2 text-rose-300">AUTHORITY SYNC FAILED: {dataSyncError}</span>}
+        </div>
+      )}
       {/* Main Body Shell: Sidebar + Content Area */}
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {/* Sidebar Navigation */}
@@ -344,7 +402,7 @@ export function App() {
               />
             )}
 
-            {activeTab === 'prediction-centre' && (
+            {activeTab === 'prediction-centre' && (DEMO_MODE ? (
               <PredictionCentre
                 currentScene={currentScene}
                 onNavigateToDispatcher={(payload) => {
@@ -353,17 +411,17 @@ export function App() {
                   setActiveTab('alert-dispatcher');
                 }}
               />
-            )}
+            ) : <BackendPredictionPanel />)}
 
-            {activeTab === 'satellite-intel' && (
+            {activeTab === 'satellite-intel' && (DEMO_MODE ? (
               <SatelliteIntelligence
                 currentScene={currentScene}
                 onSendToResponseOps={() => {
-                  showToast('Satellite flood mask sent to Incident Coordination queue');
+                  showToast('Navigated to coordination view. No satellite data was transferred.');
                   setActiveTab('response-ops');
                 }}
               />
-            )}
+            ) : <BackendSatelliteEvidence />)}
 
             {activeTab === 'response-ops' && (
               <ResponseOperations
@@ -379,16 +437,33 @@ export function App() {
                 activeAlerts={alerts}
                 onBroadcastAlert={handleBroadcastAlert}
                 onCancelAlert={handleCancelAlert}
+                onAlertUpdated={handleAlertUpdated}
                 initialPayload={prefilledAdvisory}
               />
             )}
 
-            {activeTab === 'model-analytics' && (
+            {activeTab === 'model-analytics' && (DEMO_MODE ? (
               <ModelAnalytics
                 currentScene={currentScene}
                 deployedModelVersion={deployedModelVersion}
                 onDeployModel={handleDeployModel}
               />
+            ) : <BackendAnalyticsPanel />)}
+
+            {activeTab === 'environmental-monitoring' && (
+              <EnvironmentalMonitoring currentScene={currentScene} />
+            )}
+
+            {activeTab === 'emergency-facilities' && (
+              <EmergencyFacilities currentScene={currentScene} />
+            )}
+
+            {activeTab === 'route-assessment' && (
+              <RouteAssessment currentScene={currentScene} />
+            )}
+
+            {activeTab === 'historical-reports' && (
+              <HistoricalReports currentScene={currentScene} />
             )}
           </div>
         </main>
