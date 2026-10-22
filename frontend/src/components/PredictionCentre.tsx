@@ -8,7 +8,6 @@ import {
   FileText,
   Gauge,
   Layers,
-  Send,
   TrendingUp,
   Users,
   Waves,
@@ -23,6 +22,7 @@ import { GeospatialTerrainMap } from './map/GeospatialTerrainMap';
 import { DataStatusBadge } from './common/DataStatusBadge';
 import { floodLensClient } from '../services/floodLensClient';
 import type { GaugeStation } from '../types/apiContracts';
+import { InteractiveHoverButton } from '@/components/ui/interactive-hover-button';
 import type { BenchmarkScene } from '../types';
 
 interface PredictionCentreProps {
@@ -659,13 +659,12 @@ export const PredictionCentre: React.FC<PredictionCentreProps> = ({
 
             {/* Quick Action: Draft Technical Advisory Button */}
             <div className="pt-2 border-t border-zinc-800">
-              <button
+              <InteractiveHoverButton
+                text={`DRAFT TECHNICAL ADVISORY (${horizon.toUpperCase()})`}
                 onClick={() => setShowAdvisoryModal(true)}
-                className="w-full py-2.5 px-4 rounded-md bg-cyan-600 hover:bg-cyan-500 active:bg-cyan-700 text-white font-mono font-bold text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-2 shadow-sm"
-              >
-                <FileText className="w-3.5 h-3.5" />
-                <span>DRAFT TECHNICAL ADVISORY ({horizon.toUpperCase()})</span>
-              </button>
+                className="w-full py-2.5 text-xs font-mono tracking-wider border-cyan-500/50 bg-cyan-950/40 text-cyan-200"
+                dotColor="bg-cyan-500 group-hover:bg-cyan-500"
+              />
             </div>
           </div>
         </div>
@@ -755,13 +754,12 @@ export const PredictionCentre: React.FC<PredictionCentreProps> = ({
                 >
                   CANCEL
                 </button>
-                <button
+                <InteractiveHoverButton
+                  text="FORWARD TO DISPATCHER"
                   onClick={handleProceedToDispatcher}
-                  className="px-4 py-1.5 rounded-md bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold tracking-wider uppercase border border-cyan-500 transition-all cursor-pointer flex items-center gap-1.5"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>FORWARD TO ALERT DISPATCHER</span>
-                </button>
+                  className="w-56 py-1.5 text-xs font-mono tracking-wider border-cyan-500/50 bg-cyan-950/40 text-cyan-200"
+                  dotColor="bg-cyan-500 group-hover:bg-cyan-500"
+                />
               </div>
             </div>
           </div>

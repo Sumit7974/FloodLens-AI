@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import type { BenchmarkScene } from '../types';
 import { FloodLensLogo } from './FloodLensLogo';
+import { InteractiveHoverButton } from '@/components/ui/interactive-hover-button';
 
 interface HeaderProps {
   benchmarkScenes: BenchmarkScene[];
@@ -127,14 +128,13 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* Clean High-Intent Emergency Action Button */}
-          <button
+          <InteractiveHoverButton
+            text="TRIGGER SURGE"
             onClick={onTriggerSimulationEvent}
-            className="inline-flex items-center gap-2 rounded-md px-3.5 py-1.5 bg-amber-600 hover:bg-amber-500 active:bg-amber-700 text-white text-xs font-mono font-bold tracking-wider uppercase border border-amber-500/40 shadow-sm transition-all cursor-pointer"
             title={isLiveSimulation ? 'Simulation active - Trigger surge' : 'Trigger flood surge event'}
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-            <span>TRIGGER SURGE</span>
-          </button>
+            className="w-44 border-amber-500/50 bg-amber-950/40 text-amber-300 font-mono text-xs uppercase tracking-wider shadow-[0_0_12px_rgba(245,158,11,0.25)] hover:border-amber-400 py-1.5"
+            dotColor="bg-amber-500 group-hover:bg-amber-500"
+          />
         </div>
       </div>
     </header>

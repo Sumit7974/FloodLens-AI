@@ -14,6 +14,7 @@ import { GeospatialTerrainMap } from './map/GeospatialTerrainMap';
 import type { Alert, AlertSeverity, BenchmarkScene } from '../types';
 import { DataStatusBadge } from './common/DataStatusBadge';
 import { floodLensClient } from '../services/floodLensClient';
+import { InteractiveHoverButton } from '@/components/ui/interactive-hover-button';
 
 interface AlertDispatcherProps {
   currentScene: BenchmarkScene;
@@ -517,13 +518,12 @@ export const AlertDispatcher: React.FC<AlertDispatcherProps> = ({
 
             {/* Trigger Button */}
             <div className="pt-2">
-              <button
+              <InteractiveHoverButton
+                text="AUTHORIZE SIMULATION DISPATCH"
                 onClick={() => setShowConfirmModal(true)}
-                className="w-full py-2.5 px-4 rounded-full bg-gradient-to-r from-rose-600 via-red-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-mono font-bold text-xs uppercase tracking-wider border border-rose-400 shadow-[0_0_15px_rgba(244,63,94,0.4)] transition-all cursor-pointer flex items-center justify-center gap-2"
-              >
-                <Send className="w-3.5 h-3.5" />
-                <span>AUTHORIZE SIMULATION DRILL DISPATCH</span>
-              </button>
+                className="w-full py-2.5 text-xs font-mono tracking-wider border-rose-500/50 bg-rose-950/40 text-rose-200"
+                dotColor="bg-rose-600 group-hover:bg-rose-600"
+              />
             </div>
           </div>
         </div>
@@ -663,13 +663,12 @@ export const AlertDispatcher: React.FC<AlertDispatcherProps> = ({
               >
                 CANCEL &amp; EDIT
               </button>
-              <button
+              <InteractiveHoverButton
+                text="CONFIRM SIMULATION LOG"
                 onClick={handleConfirmBroadcast}
-                className="px-5 py-1.5 rounded-full bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white text-xs font-bold font-mono tracking-wider uppercase border border-rose-400 shadow-[0_0_12px_rgba(244,63,94,0.4)] transition-all cursor-pointer flex items-center gap-1.5"
-              >
-                <Send className="w-3.5 h-3.5" />
-                <span>CONFIRM SIMULATION LOG</span>
-              </button>
+                className="w-60 py-1.5 text-xs font-mono tracking-wider border-rose-500/50 bg-rose-950/40 text-rose-200"
+                dotColor="bg-rose-600 group-hover:bg-rose-600"
+              />
             </div>
           </div>
         </div>

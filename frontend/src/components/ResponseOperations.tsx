@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Check,
   CheckCircle,
   Copy,
   Download,
   LifeBuoy,
   Search,
-  Send,
   Shield,
   ShieldAlert,
 } from 'lucide-react';
@@ -14,6 +12,7 @@ import { KOSHI_SHELTERS } from '../data/geospatialData';
 import { GeospatialTerrainMap } from './map/GeospatialTerrainMap';
 import { DataStatusBadge } from './common/DataStatusBadge';
 import { floodLensClient } from '../services/floodLensClient';
+import { InteractiveHoverButton } from '@/components/ui/interactive-hover-button';
 import type {
   AuthorityHandoffStatus,
   BenchmarkScene,
@@ -419,31 +418,29 @@ export const ResponseOperations: React.FC<ResponseOperationsProps> = ({
                     </span>
 
                     <div className="grid grid-cols-2 gap-2 text-xs">
-                      <button
+                      <InteractiveHoverButton
+                        text="FORWARD TO DEOC"
                         onClick={() =>
                           handleUpdateLifecycle(
                             'TRANSMITTED_TO_DEOC',
                             'Transmitted standardized incident packet to DEOC Sunsari'
                           )
                         }
-                        className="py-2 px-3 rounded-md bg-sky-600 hover:bg-sky-500 text-white font-bold text-[11px] uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-[0_0_10px_rgba(14,165,233,0.3)]"
-                      >
-                        <Send className="w-3.5 h-3.5" />
-                        <span>FORWARD TO DEOC</span>
-                      </button>
+                        className="w-full py-2 text-[10px] font-mono tracking-wider border-sky-500/50 bg-sky-950/40 text-sky-200"
+                        dotColor="bg-sky-500 group-hover:bg-sky-500"
+                      />
 
-                      <button
+                      <InteractiveHoverButton
+                        text="SIMULATE ACK"
                         onClick={() =>
                           handleUpdateLifecycle(
                             'SIMULATED_AUTHORITY_ACK',
                             'Simulated authority receipt recorded in DEOC test log'
                           )
                         }
-                        className="py-2 px-3 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-[0_0_10px_rgba(16,185,129,0.3)]"
-                      >
-                        <Check className="w-3.5 h-3.5" />
-                        <span>SIMULATE AUTHORITY ACK</span>
-                      </button>
+                        className="w-full py-2 text-[10px] font-mono tracking-wider border-emerald-500/50 bg-emerald-950/40 text-emerald-200"
+                        dotColor="bg-emerald-500 group-hover:bg-emerald-500"
+                      />
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 text-xs pt-1">

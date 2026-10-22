@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   AlertCircle,
   BrainCircuit,
-  Check,
   CheckCircle,
   Download,
   GitCommit,
@@ -15,6 +14,7 @@ import {
 import { GeospatialTerrainMap } from './map/GeospatialTerrainMap';
 import { DataStatusBadge } from './common/DataStatusBadge';
 import { floodLensClient } from '../services/floodLensClient';
+import { InteractiveHoverButton } from '@/components/ui/interactive-hover-button';
 import type { BenchmarkScene } from '../types';
 
 interface ModelAnalyticsProps {
@@ -480,13 +480,12 @@ export const ModelAnalytics: React.FC<ModelAnalyticsProps> = ({
               >
                 Cancel
               </button>
-              <button
+              <InteractiveHoverButton
+                text="Confirm Weight Update"
                 onClick={handleConfirmDeploy}
-                className="px-4 py-1.5 rounded-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold uppercase tracking-wider border border-emerald-400 transition-all cursor-pointer flex items-center gap-1.5"
-              >
-                <Check className="w-3.5 h-3.5" />
-                <span>Confirm Weight Update</span>
-              </button>
+                className="w-56 py-1.5 text-xs font-mono tracking-wider border-emerald-500/50 bg-emerald-950/40 text-emerald-200"
+                dotColor="bg-emerald-500 group-hover:bg-emerald-500"
+              />
             </div>
           </div>
         </div>

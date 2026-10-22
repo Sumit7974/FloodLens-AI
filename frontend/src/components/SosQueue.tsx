@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import {
   CheckCircle,
-  Eye,
   FileText,
-  Send,
   X
 } from 'lucide-react';
 import type { HelpRequest } from '../types';
+import { InteractiveHoverButton } from '@/components/ui/interactive-hover-button';
 
 interface SosQueueProps {
   requests: HelpRequest[];
@@ -128,13 +127,12 @@ export const SosQueue: React.FC<SosQueueProps> = ({
                 </div>
 
                 <div className="relative flex-shrink-0">
-                  <button
+                  <InteractiveHoverButton
+                    text="VIEW INCIDENT"
                     onClick={() => handleOpenDossier(req)}
-                    className="px-3.5 py-1.5 rounded-full bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-500 hover:to-blue-500 text-white text-[11px] font-bold font-mono uppercase tracking-wider border border-sky-400/60 shadow-[0_0_12px_rgba(56,189,248,0.35)] hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                    <span>VIEW INCIDENT</span>
-                  </button>
+                    className="w-36 py-1.5 text-[10px] font-mono tracking-wider border-sky-500/40 bg-sky-950/30 text-sky-200"
+                    dotColor="bg-sky-500 group-hover:bg-sky-500"
+                  />
                 </div>
               </div>
             );
@@ -262,14 +260,13 @@ export const SosQueue: React.FC<SosQueueProps> = ({
                   CLOSE
                 </button>
 
-                <button
+                <InteractiveHoverButton
+                  text="PREPARE HANDOFF"
                   onClick={() => handleTriggerHandoff(activeDossierRequest.id)}
                   disabled={!!handoffSuccessMsg}
-                  className="px-4 py-1.5 rounded-full bg-gradient-to-r from-[#e86e25] to-[#f97316] hover:from-[#d15d18] hover:to-[#ea580c] text-white text-xs font-bold tracking-wider uppercase border border-[#ff9d5c] shadow-[0_0_12px_rgba(232,110,37,0.4)] transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>PREPARE AUTHORITY HANDOFF</span>
-                </button>
+                  className="w-48 py-1.5 text-xs font-mono tracking-wider border-orange-500/50 bg-orange-950/40 text-orange-200"
+                  dotColor="bg-orange-500 group-hover:bg-orange-500"
+                />
               </div>
             </div>
           </div>

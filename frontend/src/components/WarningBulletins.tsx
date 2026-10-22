@@ -4,9 +4,9 @@ import {
   CheckCircle2,
   MapPin,
   Radio,
-  Send,
 } from 'lucide-react';
 import type { Alert } from '../types';
+import { InteractiveHoverButton } from '@/components/ui/interactive-hover-button';
 
 interface WarningBulletinsProps {
   alerts: Alert[];
@@ -130,13 +130,12 @@ export const WarningBulletins: React.FC<WarningBulletinsProps> = ({
             AUTHORITY: <strong className="text-white">{latestAlert.approved_by}</strong>
           </span>
 
-          <button
+          <InteractiveHoverButton
+            text="DRAFT REVISION"
             onClick={() => onBroadcastRevision && onBroadcastRevision(latestAlert.id)}
-            className="px-3 py-1.5 rounded-full bg-[#336099]/25 hover:bg-[#336099]/45 border border-[#336099]/60 text-[#7dd3fc] font-bold text-[10px] font-mono tracking-wider uppercase transition flex items-center gap-1.5 cursor-pointer"
-          >
-            <Send className="w-3 h-3" />
-            DRAFT REVISION
-          </button>
+            className="w-36 py-1.5 text-[10px] font-mono tracking-wider border-sky-500/40 bg-sky-950/30 text-sky-200"
+            dotColor="bg-sky-500 group-hover:bg-sky-500"
+          />
         </div>
       </div>
     </div>
