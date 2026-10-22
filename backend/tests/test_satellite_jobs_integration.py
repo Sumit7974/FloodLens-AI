@@ -26,8 +26,15 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-import rasterio
-from rasterio.transform import from_origin
+
+try:
+    import rasterio
+    from rasterio.transform import from_origin
+    HAS_RASTERIO = True
+except ImportError:
+    HAS_RASTERIO = False
+    rasterio = None
+
 from fastapi import status
 from fastapi.testclient import TestClient
 from shapely.geometry import MultiPolygon, Polygon, shape
@@ -119,6 +126,8 @@ def test_flood_event(db_session: Session) -> FloodEvent:
 @pytest.fixture
 def small_geotiff_fixture(tmp_path: Path) -> Path:
     """Create a minimal synthetic GeoTIFF flood mask (100x100 pixels, UTM Zone 45N)."""
+    if not HAS_RASTERIO or rasterio is None:
+        pytest.skip("rasterio is not installed")
     file_path = tmp_path / "synthetic_flood_mask.tif"
     width, height = 100, 100
     # 10m resolution in UTM Zone 45N near Koshi basin
