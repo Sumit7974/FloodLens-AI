@@ -8,86 +8,119 @@ interface MetricCardsProps {
 
 export const MetricCards: React.FC<MetricCardsProps> = ({ metrics }) => {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3.5">
-      {/* 1. Flood Threat Level: Vibrant Safety Orange & Emergency Ruby Theme */}
-      <div className="rounded-lg bg-gradient-to-br from-[#1c0d0a]/90 via-[#10192b]/85 to-[#081020]/90 border border-[#e86e25]/50 hover:border-[#e86e25] p-4 flex flex-col justify-between h-full space-y-3 shadow-[0_4px_20px_rgba(232,110,37,0.18)] transition-all duration-200 hover:shadow-[0_4px_25px_rgba(232,110,37,0.3)]">
-        <div className="flex items-center justify-between">
-          <span className="font-micro text-[11px] uppercase tracking-[1.2px] text-[#fb923c] font-bold flex items-center gap-1.5">
-            <AlertTriangle className="w-3.5 h-3.5 text-[#e86e25]" />
-            SURGE THREAT LEVEL
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 mb-4">
+      {/* 1. Flood Threat Level */}
+      <div className="rounded-xl border border-zinc-800/80 bg-zinc-950/80 backdrop-blur-md p-4 sm:p-5 h-full flex flex-col justify-between transition-colors shadow-sm">
+        {/* Header Section */}
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <span className="text-xs font-semibold tracking-wider uppercase text-zinc-400 flex items-center gap-1.5">
+            <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+            <span>SURGE THREAT LEVEL</span>
           </span>
-          <span className="w-2 h-2 rounded-full bg-[#e86e25] animate-ping"></span>
+          <span className="flex h-2 w-2 relative shrink-0">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500" />
+          </span>
         </div>
-        <div>
-          <h3 className="font-display text-2xl lg:text-3xl font-bold text-white tracking-wider uppercase flex items-baseline gap-2">
-            <span>{metrics.floodThreat.level}</span>
-          </h3>
+
+        {/* Value Section */}
+        <div className="my-auto py-1">
+          <div className="text-3xl sm:text-4xl font-extrabold tracking-tight font-mono text-white uppercase">
+            {metrics.floodThreat.level}
+          </div>
         </div>
-        <p className="font-mono text-[11px] text-[#fdba74] uppercase pt-2 border-t border-[#e86e25]/25 truncate" title={metrics.floodThreat.description}>
-          Chatara: 8.18m / Danger: 8.00m — Elevated
-        </p>
+
+        {/* Footer Section */}
+        <div className="text-[11px] font-medium text-zinc-400 tracking-wide mt-2 pt-2 border-t border-zinc-800/40 flex items-center justify-between">
+          <span className="whitespace-nowrap truncate" title={metrics.floodThreat.description}>
+            Chatara: 8.18m / Danger: 8.00m — Elevated
+          </span>
+        </div>
       </div>
 
-      {/* 2. Population at Risk: Electric Cyan & Deep Ocean Hydro Theme */}
-      <div className="rounded-lg bg-gradient-to-br from-[#061e33]/90 via-[#0a1e35]/85 to-[#081020]/90 border border-[#0ea5e9]/50 hover:border-[#0ea5e9] p-4 flex flex-col justify-between h-full space-y-3 shadow-[0_4px_20px_rgba(14,165,233,0.18)] transition-all duration-200 hover:shadow-[0_4px_25px_rgba(14,165,233,0.3)]">
-        <div className="flex items-center justify-between">
-          <span className="font-micro text-[11px] uppercase tracking-[1.2px] text-[#38bdf8] font-bold flex items-center gap-1.5">
-            <Users className="w-3.5 h-3.5 text-[#0ea5e9]" />
-            EXPOSED POPULATION
+      {/* 2. Population at Risk */}
+      <div className="rounded-xl border border-zinc-800/80 bg-zinc-950/80 backdrop-blur-md p-4 sm:p-5 h-full flex flex-col justify-between transition-colors shadow-sm">
+        {/* Header Section */}
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <span className="text-xs font-semibold tracking-wider uppercase text-zinc-400 flex items-center gap-1.5">
+            <Users className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+            <span>EXPOSED POPULATION</span>
           </span>
-          <span className="w-2 h-2 rounded-full bg-[#0ea5e9]"></span>
+          <span className="w-2 h-2 rounded-full bg-cyan-400 shrink-0" />
         </div>
-        <div>
-          <h3 className="font-display text-2xl lg:text-3xl font-bold text-white tracking-wider uppercase">
+
+        {/* Value Section */}
+        <div className="my-auto py-1">
+          <div className="text-3xl sm:text-4xl font-extrabold tracking-tight font-mono text-white">
             ~{metrics.populationAtRisk.total.toLocaleString()}
-          </h3>
+          </div>
         </div>
-        <p className="font-mono text-[11px] text-[#7dd3fc] uppercase pt-2 border-t border-[#0ea5e9]/25 truncate" title="Calculated from overlay of DEM flood envelope onto ward settlement census">
-          DEM flood envelope overlay onto ward census
-        </p>
+
+        {/* Footer Section */}
+        <div className="text-[11px] font-medium text-zinc-400 tracking-wide mt-2 pt-2 border-t border-zinc-800/40 flex items-center justify-between">
+          <span className="whitespace-nowrap truncate" title="Calculated from overlay of DEM flood envelope onto ward settlement census">
+            DEM flood envelope overlay onto census
+          </span>
+        </div>
       </div>
 
-      {/* 3. Open Assistance Requests: Amber Warning & Rescue Beacon Theme */}
-      <div className="rounded-lg bg-gradient-to-br from-[#211707]/90 via-[#181d2d]/85 to-[#081020]/90 border border-[#f59e0b]/50 hover:border-[#f59e0b] p-4 flex flex-col justify-between h-full space-y-3 shadow-[0_4px_20px_rgba(245,158,11,0.18)] transition-all duration-200 hover:shadow-[0_4px_25px_rgba(245,158,11,0.3)]">
-        <div className="flex items-center justify-between">
-          <span className="font-micro text-[11px] uppercase tracking-[1.2px] text-[#fbbf24] font-bold flex items-center gap-1.5">
-            <LifeBuoy className="w-3.5 h-3.5 text-[#f59e0b]" />
-            ASSISTANCE REPORTS
+      {/* 3. Open Assistance Requests */}
+      <div className="rounded-xl border border-zinc-800/80 bg-zinc-950/80 backdrop-blur-md p-4 sm:p-5 h-full flex flex-col justify-between transition-colors shadow-sm">
+        {/* Header Section */}
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <span className="text-xs font-semibold tracking-wider uppercase text-zinc-400 flex items-center gap-1.5">
+            <LifeBuoy className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+            <span>ASSISTANCE REPORTS</span>
           </span>
-          <span className="px-2 py-0.5 rounded-full bg-[#f59e0b]/20 border border-[#f59e0b]/50 text-[#fde68a] text-[10px] font-mono font-bold">
-            ACTIVE
+          <span className="text-[10px] font-mono font-medium text-rose-400 shrink-0">
+            {metrics.openRequests.critical > 0 ? `${metrics.openRequests.critical} CRITICAL` : 'ACTIVE'}
           </span>
         </div>
-        <div>
-          <h3 className="font-display text-2xl lg:text-3xl font-bold text-white tracking-wider uppercase">
-            {metrics.openRequests.total} <span className="text-xs font-semibold text-[#fde68a]">LOGGED</span>
-          </h3>
+
+        {/* Value Section */}
+        <div className="my-auto py-1">
+          <div className="text-3xl sm:text-4xl font-extrabold tracking-tight font-mono text-white flex items-baseline gap-2">
+            <span>{metrics.openRequests.total}</span>
+            <span className="text-sm font-sans font-semibold text-zinc-400 uppercase">LOGGED</span>
+          </div>
         </div>
-        <p className="font-mono text-[11px] text-[#fde68a] uppercase pt-2 border-t border-[#f59e0b]/25 truncate">
-          {metrics.openRequests.total} Reports Logged | {metrics.openRequests.critical} Critical Risk
-        </p>
+
+        {/* Footer Section */}
+        <div className="text-[11px] font-medium text-zinc-400 tracking-wide mt-2 pt-2 border-t border-zinc-800/40 flex items-center justify-between">
+          <span className="whitespace-nowrap truncate">
+            {metrics.openRequests.total} Reports · {metrics.openRequests.critical} Critical Risk
+          </span>
+        </div>
       </div>
 
-      {/* 4. Sensor Health: Luminous Emerald & Vital Nominal Status Theme */}
-      <div className="rounded-lg bg-gradient-to-br from-[#06241a]/90 via-[#0a1f29]/85 to-[#081020]/90 border border-[#10b981]/50 hover:border-[#10b981] p-4 flex flex-col justify-between h-full space-y-3 shadow-[0_4px_20px_rgba(16,185,129,0.18)] transition-all duration-200 hover:shadow-[0_4px_25px_rgba(16,185,129,0.3)]">
-        <div className="flex items-center justify-between">
-          <span className="font-micro text-[11px] uppercase tracking-[1.2px] text-[#34d399] font-bold flex items-center gap-1.5">
-            <Activity className="w-3.5 h-3.5 text-[#10b981]" />
-            TELEMETRY UPLINK
+      {/* 4. Telemetry Health */}
+      <div className="rounded-xl border border-zinc-800/80 bg-zinc-950/80 backdrop-blur-md p-4 sm:p-5 h-full flex flex-col justify-between transition-colors shadow-sm">
+        {/* Header Section */}
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <span className="text-xs font-semibold tracking-wider uppercase text-zinc-400 flex items-center gap-1.5">
+            <Activity className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+            <span>TELEMETRY UPLINK</span>
           </span>
-          <span className="px-2 py-0.5 rounded-full bg-[#10b981]/20 border border-[#10b981]/50 text-[#a7f3d0] text-[10px] font-mono font-bold flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-            [DEMO BENCHMARK DATASET]
+          <span className="inline-flex items-center gap-1 text-[10px] font-mono text-emerald-400 font-medium shrink-0">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+            ONLINE
           </span>
         </div>
-        <div>
-          <h3 className="font-display text-2xl lg:text-3xl font-bold text-white tracking-wider uppercase">
-            {metrics.sensorHealth.reporting}/{metrics.sensorHealth.total} <span className="text-xs font-semibold text-[#a7f3d0]">ONLINE</span>
-          </h3>
+
+        {/* Value Section */}
+        <div className="my-auto py-1">
+          <div className="text-3xl sm:text-4xl font-extrabold tracking-tight font-mono text-white flex items-baseline gap-2">
+            <span>{metrics.sensorHealth.reporting}/{metrics.sensorHealth.total}</span>
+            <span className="text-sm font-sans font-semibold text-zinc-400 uppercase">ACTIVE</span>
+          </div>
         </div>
-        <p className="font-mono text-[11px] text-[#a7f3d0] uppercase pt-2 border-t border-[#10b981]/25 truncate" title="12/12 Gauges Online [LoRa/Gov Hydro]">
-          12/12 Gauges Online [LoRa/Gov Hydro]
-        </p>
+
+        {/* Footer Section */}
+        <div className="text-[11px] font-medium text-zinc-400 tracking-wide mt-2 pt-2 border-t border-zinc-800/40 flex items-center justify-between">
+          <span className="whitespace-nowrap truncate" title="12/12 Gauges Online [LoRa/Gov Hydro]">
+            12/12 Gauges Online · LoRa &amp; Gov Hydro
+          </span>
+        </div>
       </div>
     </div>
   );

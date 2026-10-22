@@ -714,99 +714,105 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
       {/* Map Canvas Container */}
       <div ref={mapContainerRef} className="w-full h-full" />
 
-      {/* Top Floating Telemetry HUD */}
-      <div className="absolute top-3 left-3 z-10 flex flex-wrap items-center gap-2 pointer-events-auto">
-        {/* Terrain Mode Switcher Badge */}
+      {/* Top Floating Telemetry HUD: Docked Segmented Toolbar */}
+      <div className="absolute top-3 left-3 z-10 inline-flex items-center bg-zinc-950/80 backdrop-blur-md rounded-xl p-1 border border-zinc-800/80 shadow-md pointer-events-auto gap-1">
+        {/* Terrain Mode Switcher */}
         <button
           onClick={toggle3DMode}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono font-bold tracking-wider uppercase border transition-all cursor-pointer backdrop-blur-md shadow-lg ${
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-mono font-semibold tracking-wider uppercase transition-all cursor-pointer ${
             is3D
-              ? 'bg-gradient-to-r from-sky-600/90 to-blue-700/90 border-sky-400 text-white shadow-[0_0_12px_rgba(56,189,248,0.4)]'
-              : 'bg-black/80 border-[#1e3a5f] text-slate-300 hover:text-white'
+              ? 'bg-cyan-950/40 text-cyan-400 shadow-sm'
+              : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60'
           }`}
           title="Toggle 3D Digital Elevation Model vs 2D Orthographic View"
         >
-          <Layers className="w-3.5 h-3.5 text-sky-300" />
-          <span>{is3D ? '3D TERRAIN (DEM 1.5x)' : '2D ORTHO VIEW'}</span>
+          <Layers className="w-3.5 h-3.5" />
+          <span>{is3D ? '3D TERRAIN' : '2D ORTHO'}</span>
         </button>
 
         {/* Keyless Basemap Switcher: Carto Dark vs Esri Satellite */}
         <button
           onClick={() => setBasemap((prev) => (prev === 'dark' ? 'satellite' : 'dark'))}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono font-bold tracking-wider uppercase border transition-all cursor-pointer backdrop-blur-md shadow-lg ${
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-mono font-semibold tracking-wider uppercase transition-all cursor-pointer ${
             basemap === 'satellite' || mode === 'satellite'
-              ? 'bg-gradient-to-r from-emerald-600/90 to-teal-700/90 border-emerald-400 text-white shadow-[0_0_12px_rgba(16,185,129,0.4)]'
-              : 'bg-black/80 border-[#1e3a5f] text-slate-300 hover:text-white'
+              ? 'bg-cyan-950/40 text-cyan-400 shadow-sm'
+              : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60'
           }`}
           title="Toggle between CartoDB Dark Matter and Esri World Imagery Satellite"
         >
-          <Satellite className="w-3.5 h-3.5 text-emerald-300" />
+          <Satellite className="w-3.5 h-3.5" />
           <span>{basemap === 'satellite' || mode === 'satellite' ? 'ESRI SATELLITE' : 'CARTO DARK'}</span>
         </button>
+
+        <div className="h-4 w-px bg-zinc-800 mx-0.5" />
 
         {/* Camera Orientation Quick Actions */}
         <button
           onClick={handleResetNorth}
-          className="p-1.5 rounded-full bg-black/80 hover:bg-[#0c1d38] border border-[#1e3a5f] text-sky-400 hover:text-white transition-colors cursor-pointer backdrop-blur-md shadow"
+          className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60 transition-colors cursor-pointer"
           title="Reset Camera Bearing to True North"
         >
-          <Compass className="w-4 h-4" />
+          <Compass className="w-3.5 h-3.5" />
         </button>
 
         <button
           onClick={handleResetView}
-          className="p-1.5 rounded-full bg-black/80 hover:bg-[#0c1d38] border border-[#1e3a5f] text-slate-300 hover:text-white transition-colors cursor-pointer backdrop-blur-md shadow"
+          className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60 transition-colors cursor-pointer"
           title="Reset Camera Center & Zoom"
         >
-          <RotateCcw className="w-4 h-4" />
+          <RotateCcw className="w-3.5 h-3.5" />
         </button>
 
         {/* Fullscreen Expand */}
         <button
           onClick={() => setIsFullscreen(!isFullscreen)}
-          className="p-1.5 rounded-full bg-black/80 hover:bg-[#0c1d38] border border-[#1e3a5f] text-slate-300 hover:text-white transition-colors cursor-pointer backdrop-blur-md shadow"
+          className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60 transition-colors cursor-pointer"
           title={isFullscreen ? 'Exit Fullscreen' : 'Expand Geospatial Canvas'}
         >
-          {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+          {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
         </button>
       </div>
 
       {/* Bottom Information Legend & Coordinates Bar */}
-      <div className="absolute bottom-2 left-3 right-3 z-10 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
-        {/* Layer Legend Pills */}
-        <div className="flex items-center gap-2 pointer-events-auto flex-wrap">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/80 border border-[#1e3a5f] text-[10px] font-mono text-white backdrop-blur-md">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#00e5ff] shadow-[0_0_6px_#00e5ff]"></span>
-            <span>OBSERVED INUNDATION</span>
+      <div className="absolute bottom-3 left-3 right-3 z-10 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+        {/* Layer Legend in a Single Clean Strip */}
+        <div className="inline-flex items-center gap-3 px-3 py-1.5 rounded-xl bg-zinc-950/80 border border-zinc-800/80 text-xs font-mono text-zinc-300 backdrop-blur-md pointer-events-auto shadow-sm">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-cyan-400 inline-block" />
+            <span className="text-[11px] text-zinc-300">OBSERVED INUNDATION</span>
           </div>
 
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/80 border border-[#1e3a5f] text-[10px] font-mono text-white backdrop-blur-md">
+          <span className="text-zinc-700 select-none">|</span>
+
+          <div className="flex items-center gap-1.5">
             <span
-              className="w-2.5 h-2.5 rounded-full"
+              className="w-2 h-2 rounded-full inline-block"
               style={{
                 backgroundColor:
                   activeHorizon === '6h' ? '#ef4444' : activeHorizon === '3h' ? '#f97316' : '#f59e0b',
               }}
-            ></span>
-            <span>+{activeHorizon} FORECAST HORIZON</span>
+            />
+            <span className="text-[11px] text-zinc-300">+{activeHorizon} FORECAST</span>
           </div>
 
-          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/80 border border-[#1e3a5f] text-[10px] font-mono text-rose-300 backdrop-blur-md">
-            <span className="w-3 h-0.5 bg-rose-500 border border-rose-300"></span>
-            <span>ROAD CUTS / OVERBANK</span>
+          <span className="text-zinc-700 select-none hidden sm:inline">|</span>
+
+          <div className="hidden sm:flex items-center gap-1.5">
+            <span className="w-2.5 h-0.5 bg-rose-500 inline-block" />
+            <span className="text-[11px] text-rose-300">ROAD CUTS / DYKES</span>
           </div>
         </div>
 
         {/* Projection Spec */}
-        <div className="px-2.5 py-1 rounded-full bg-black/80 border border-[#1e3a5f] text-[10px] font-mono text-slate-400 backdrop-blur-md pointer-events-auto">
+        <div className="px-3 py-1.5 rounded-xl bg-zinc-950/80 border border-zinc-800/80 text-[11px] font-mono text-zinc-400 backdrop-blur-md pointer-events-auto shadow-sm">
           <span>EPSG:4326 // KOSHI DEM 30M RESOLUTION</span>
         </div>
       </div>
 
       {/* Contextual Tactical Detail Popup */}
       {activePopupData && (
-        <div className="absolute top-14 right-3 z-20 w-72 rounded-lg bg-[#071326]/95 border border-[#38bdf8]/80 p-3.5 text-xs font-mono text-white shadow-[0_8px_32px_rgba(0,0,0,0.8)] backdrop-blur-xl animate-in fade-in slide-in-from-top-2">
-          <div className="flex items-start justify-between pb-2 border-b border-[#1e3a5f]">
+        <div className="absolute top-14 right-3 z-20 w-72 rounded-xl bg-zinc-950/90 border border-zinc-800/80 p-3.5 text-xs font-mono text-white shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-top-2">
+          <div className="flex items-start justify-between pb-2 border-b border-zinc-800">
             <div className="flex items-center gap-1.5">
               {activePopupData.type === 'INCIDENT' ? (
                 <LifeBuoy className="w-4 h-4 text-rose-400" />

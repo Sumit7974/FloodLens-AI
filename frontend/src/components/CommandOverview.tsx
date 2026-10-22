@@ -43,20 +43,21 @@ export const CommandOverview: React.FC<CommandOverviewProps> = ({
 
   return (
     <div className="space-y-3.5">
-      {/* Event Context Strip with Luminous Badges */}
-      <div className="rounded-lg bg-gradient-to-r from-[#071326]/90 via-[#0b1e36]/85 to-[#071326]/90 border border-[#1e3a5f]/80 px-4 py-2.5 flex flex-wrap items-center justify-between text-xs font-mono shadow-[0_4px_16px_rgba(0,0,0,0.5)] gap-2">
+      {/* Event Context Strip with Sleek Minimalist Dividers */}
+      <div className="rounded-lg bg-[#0a0a0a] border border-zinc-800 px-4 py-2.5 flex flex-wrap items-center justify-between text-xs font-mono shadow-sm gap-2">
         <div className="flex items-center gap-2.5 flex-wrap">
-          <span className="px-2 py-0.5 rounded bg-[#38bdf8]/15 border border-[#38bdf8]/40 text-[#38bdf8] font-bold text-[10px] tracking-wider uppercase">
+          <span className="px-2 py-0.5 rounded text-[10px] font-mono font-medium bg-zinc-900 border border-zinc-800 text-zinc-400 uppercase">
             EVENT SCENARIO
           </span>
-          <span className="text-white font-bold text-xs uppercase tracking-wide">{benchmarkScene.name}</span>
-          <span className="text-[#38bdf8]/40">•</span>
-          <span className="text-[#94a3b8]">{benchmarkScene.date_range.toUpperCase()}</span>
+          <span className="text-white font-semibold text-xs tracking-normal">{benchmarkScene.name}</span>
+          <span className="text-zinc-700 select-none">·</span>
+          <span className="text-zinc-400">{benchmarkScene.date_range.toUpperCase()}</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           <DataStatusBadge status={dataStatus} />
-          <span className="px-2.5 py-1 rounded bg-[#e86e25]/20 border border-[#e86e25]/40 text-[#fdba74] font-bold text-[11px] font-mono flex items-center gap-1.5 shadow-[0_0_10px_rgba(232,110,37,0.2)]">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#e86e25] animate-pulse"></span>
+          <span className="text-zinc-700 select-none">|</span>
+          <span className="text-zinc-300 font-medium text-xs font-mono flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
             <span>PEAK DISCHARGE: {benchmarkScene.peak_discharge_m3s.toLocaleString()} M³/S</span>
           </span>
         </div>

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Activity,
   AlertTriangle,
   BrainCircuit,
   CheckCircle,
@@ -209,36 +208,36 @@ export const PredictionCentre: React.FC<PredictionCentreProps> = ({
   return (
     <div className="space-y-4">
       {/* 1. TOP CONTROL BAR */}
-      <div className="p-4 rounded-lg bg-[#071326]/85 border border-[#1e3a5f]/80 shadow-[0_4px_20px_rgba(0,0,0,0.5)] backdrop-blur-xl space-y-3.5">
+      <div className="p-4 sm:p-5 rounded-xl bg-zinc-950/80 border border-zinc-800/80 backdrop-blur-md space-y-4 shadow-sm">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           <div>
             <div className="flex items-center gap-2.5 flex-wrap">
-              <div className="p-2 rounded bg-amber-500/20 border border-amber-500/40 text-amber-400">
-                <TrendingUp className="w-4 h-4 text-amber-400" />
+              <div className="p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300">
+                <TrendingUp className="w-4 h-4 text-cyan-400" />
               </div>
               <div>
-                <h1 className="font-display text-base font-bold text-white tracking-[1.4px] uppercase flex items-center gap-2">
+                <h1 className="font-sans text-base font-bold text-white tracking-normal uppercase flex items-center gap-2 flex-wrap">
                   Prediction Centre — Multi-Horizon Hydrological Forecasting
-                  <span className="px-2 py-0.5 rounded-full bg-[#38bdf8]/15 border border-[#38bdf8]/40 text-[#38bdf8] text-[9px] font-mono font-bold tracking-wider">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-mono font-medium bg-zinc-900 border border-zinc-800 text-zinc-400">
                     DECISION SUPPORT ONLY
                   </span>
                   <DataStatusBadge status={apiStatus} />
                 </h1>
-                <p className="font-mono text-[10px] text-[#38bdf8] uppercase tracking-wider mt-0.5 font-semibold">
+                <p className="font-mono text-xs text-zinc-400 uppercase tracking-wider mt-0.5">
                   PHYSICS-INFORMED GRAPH NEURAL NETWORK // {currentScene.name} ({currentScene.district})
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Interactive Time-Horizon Switcher: Now, +1h, +3h, +6h */}
-          <div className="flex items-center gap-1.5 p-1 bg-[#060e1d] border border-[#1e3a5f] rounded-full flex-wrap">
+          {/* Interactive Time-Horizon Switcher: Segmented Control Bar */}
+          <div className="inline-flex items-center p-1 bg-black/80 border border-zinc-800 rounded-lg gap-1 flex-wrap">
             <button
               onClick={() => setHorizon('Now')}
-              className={`flex items-center gap-1.5 px-3 py-1 text-xs font-mono font-bold uppercase rounded-full transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono font-bold uppercase rounded-md transition-all cursor-pointer ${
                 horizon === 'Now'
-                  ? 'bg-gradient-to-r from-sky-600 to-cyan-600 text-white shadow-[0_0_10px_rgba(14,165,233,0.4)]'
-                  : 'text-[#94a3b8] hover:text-white'
+                  ? 'bg-cyan-950/50 text-cyan-400 border border-cyan-800/60 shadow-sm'
+                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50'
               }`}
             >
               <Clock className="w-3 h-3 text-cyan-300" />
@@ -248,10 +247,10 @@ export const PredictionCentre: React.FC<PredictionCentreProps> = ({
 
             <button
               onClick={() => setHorizon('1h')}
-              className={`flex items-center gap-1.5 px-3 py-1 text-xs font-mono font-bold uppercase rounded-full transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono font-bold uppercase rounded-md transition-all cursor-pointer ${
                 horizon === '1h'
-                  ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-[0_0_10px_rgba(16,185,129,0.4)]'
-                  : 'text-[#94a3b8] hover:text-white'
+                  ? 'bg-emerald-950/50 text-emerald-400 border border-emerald-800/60 shadow-sm'
+                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50'
               }`}
             >
               <Clock className="w-3 h-3 text-emerald-300" />
@@ -261,23 +260,23 @@ export const PredictionCentre: React.FC<PredictionCentreProps> = ({
 
             <button
               onClick={() => setHorizon('3h')}
-              className={`flex items-center gap-1.5 px-3 py-1 text-xs font-mono font-bold uppercase rounded-full transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono font-bold uppercase rounded-md transition-all cursor-pointer ${
                 horizon === '3h'
-                  ? 'bg-gradient-to-r from-[#e86e25] to-[#f97316] text-white shadow-[0_0_10px_rgba(232,110,37,0.4)]'
-                  : 'text-[#94a3b8] hover:text-white'
+                  ? 'bg-amber-950/50 text-amber-400 border border-amber-800/60 shadow-sm'
+                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50'
               }`}
             >
-              <Clock className="w-3 h-3 text-[#fed7aa]" />
+              <Clock className="w-3 h-3 text-amber-300" />
               <span>+3 HOURS</span>
               <span className="text-[9px] opacity-80">(HIGH)</span>
             </button>
 
             <button
               onClick={() => setHorizon('6h')}
-              className={`flex items-center gap-1.5 px-3 py-1 text-xs font-mono font-bold uppercase rounded-full transition-all cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono font-bold uppercase rounded-md transition-all cursor-pointer ${
                 horizon === '6h'
-                  ? 'bg-gradient-to-r from-rose-600 to-red-600 text-white shadow-[0_0_10px_rgba(244,63,94,0.4)]'
-                  : 'text-[#94a3b8] hover:text-white'
+                  ? 'bg-rose-950/50 text-rose-400 border border-rose-800/60 shadow-sm'
+                  : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50'
               }`}
             >
               <AlertTriangle className="w-3 h-3 text-rose-300" />
@@ -287,54 +286,111 @@ export const PredictionCentre: React.FC<PredictionCentreProps> = ({
           </div>
         </div>
 
-        {/* Hydraulic Indicators & Model Metadata Strip */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 pt-3 border-t border-[#1e3a5f]/80 text-xs font-mono">
-          {/* Hydraulic Inflow Rate */}
-          <div className="p-2.5 rounded bg-[#0c1d38]/75 border border-[#0ea5e9]/40 space-y-0.5">
-            <span className="font-micro text-[9px] uppercase tracking-[0.96px] text-[#38bdf8] font-bold flex items-center gap-1">
-              <Waves className="w-3 h-3 text-[#38bdf8]" />
-              PREDICTED INFLOW
-            </span>
-            <div className="font-bold text-sm text-white">
-              {forecast.inflowCusecs.toLocaleString()} <span className="text-xs text-[#38bdf8]">CUSECS</span>
+        {/* Unified Metric Clusters (De-boxified into Clusters A & B with Hairline Dividers) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 pt-2">
+          {/* Cluster A: Hydraulic Inflow & Sluice Operations */}
+          <div className="rounded-xl bg-zinc-950/80 border border-zinc-800/80 backdrop-blur-md p-4 sm:p-5 flex flex-col justify-between space-y-3.5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-xs uppercase tracking-wider text-zinc-400 font-medium flex items-center gap-2">
+                <Waves className="w-3.5 h-3.5 text-cyan-400" />
+                HYDRAULIC INFLOW &amp; SLUICE OPS
+              </span>
+              <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wide">
+                ARUN + TAMOR BASIN
+              </span>
             </div>
-            <p className="text-[9px] text-[#94a3b8] uppercase">ARUN + TAMOR BASIN</p>
+
+            <div>
+              <div className="text-3xl sm:text-4xl font-extrabold tracking-tight font-mono text-white flex items-baseline gap-2">
+                <span>{forecast.inflowCusecs.toLocaleString()}</span>
+                <span className="text-sm font-sans font-semibold text-cyan-400 uppercase">CUSECS</span>
+              </div>
+            </div>
+
+            {/* Hairline Divider with Sluice & Outflow stats */}
+            <div className="border-t border-zinc-800/80 pt-3 grid grid-cols-2 gap-3 text-xs font-mono">
+              <div className="space-y-0.5">
+                <span className="text-[10px] uppercase tracking-wider text-zinc-400 font-medium block">
+                  BARRAGE SLUICE STATUS
+                </span>
+                <span className="text-sm font-semibold text-zinc-200 font-mono block">
+                  {forecast.damGatesOpen.toUpperCase()}
+                </span>
+              </div>
+              <div className="space-y-0.5 border-l border-zinc-800/80 pl-3">
+                <span className="text-[10px] uppercase tracking-wider text-zinc-400 font-medium block">
+                  OUTFLOW DISCHARGE
+                </span>
+                <span className="text-sm font-semibold text-zinc-200 font-mono block">
+                  94% CAPACITY
+                </span>
+              </div>
+            </div>
           </div>
 
-          {/* Dam Release Status */}
-          <div className="p-2.5 rounded bg-[#0c1d38]/75 border border-[#e86e25]/40 space-y-0.5">
-            <span className="font-micro text-[9px] uppercase tracking-[0.96px] text-[#fb923c] font-bold flex items-center gap-1">
-              <Activity className="w-3 h-3 text-[#e86e25]" />
-              BARRAGE SLUICE STATUS
-            </span>
-            <div className="font-bold text-sm text-[#fed7aa]">
-              {forecast.damGatesOpen.toUpperCase()}
+          {/* Cluster B: Crest Projection & Arrival */}
+          <div className="rounded-xl bg-zinc-950/80 border border-zinc-800/80 backdrop-blur-md p-4 sm:p-5 flex flex-col justify-between space-y-3.5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-xs uppercase tracking-wider text-zinc-400 font-medium flex items-center gap-2">
+                <Clock className="w-3.5 h-3.5 text-amber-400" />
+                CREST PROJECTION &amp; ARRIVAL
+              </span>
+              <span
+                className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded uppercase ${
+                  forecast.threatLevel === 'CRITICAL'
+                    ? 'text-rose-400 bg-rose-950/40 border border-rose-800/50'
+                    : 'text-amber-400 bg-amber-950/40 border border-amber-800/50'
+                }`}
+              >
+                {forecast.threatLevel} RISK
+              </span>
             </div>
-            <p className="text-[9px] text-[#94a3b8] uppercase">OUTFLOW: 94% CAPACITY</p>
+
+            <div>
+              <div className="text-3xl sm:text-4xl font-extrabold tracking-tight font-mono text-white">
+                {forecast.peakCrestEta.toUpperCase()}
+              </div>
+            </div>
+
+            {/* Hairline Divider with Spur Location, Flow Velocity & Hazard State */}
+            <div className="border-t border-zinc-800/80 pt-3 grid grid-cols-2 gap-3 text-xs font-mono">
+              <div className="space-y-0.5">
+                <span className="text-[10px] uppercase tracking-wider text-zinc-400 font-medium block">
+                  CRITICAL SPUR REACH
+                </span>
+                <span className="text-sm font-semibold text-zinc-200 font-mono block">
+                  SPUR 12+400
+                </span>
+              </div>
+              <div className="space-y-0.5 border-l border-zinc-800/80 pl-3">
+                <span className="text-[10px] uppercase tracking-wider text-zinc-400 font-medium block">
+                  CHANNEL VELOCITY
+                </span>
+                <span className="text-sm font-semibold text-zinc-200 font-mono block">
+                  3.4 M/S
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Cluster C: Model & Telemetry Provenance Footer Bar */}
+        <div className="rounded-xl bg-zinc-950/80 border border-zinc-800/80 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs font-mono text-zinc-400">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-zinc-500 flex items-center gap-1.5 font-medium">
+              <BrainCircuit className="w-3.5 h-3.5 text-emerald-400" />
+              MODEL PROVENANCE:
+            </span>
+            <span className="text-zinc-200 font-medium">LSTM-GNN v1.2</span>
+            <span className="text-zinc-700 select-none">·</span>
+            <span className="text-zinc-400">CALIBRATION: 2017–2024 MONSOONS</span>
+            <span className="text-zinc-700 select-none hidden sm:inline">·</span>
+            <span className="text-zinc-400 hidden sm:inline">COUPLING: SAINT-VENANT 1D/2D</span>
           </div>
 
-          {/* Crest Arrival ETA */}
-          <div className="p-2.5 rounded bg-[#0c1d38]/75 border border-[#f59e0b]/40 space-y-0.5">
-            <span className="font-micro text-[9px] uppercase tracking-[0.96px] text-[#fbbf24] font-bold flex items-center gap-1">
-              <Clock className="w-3 h-3 text-[#f59e0b]" />
-              PREDICTED CREST ETA
-            </span>
-            <div className="font-bold text-sm text-white">
-              {forecast.peakCrestEta.toUpperCase()}
-            </div>
-            <p className="text-[9px] text-[#94a3b8] uppercase">FLOW VELOCITY: 3.4 M/S</p>
-          </div>
-
-          {/* Model Specification */}
-          <div className="p-2.5 rounded bg-[#0c1d38]/75 border border-[#10b981]/40 space-y-0.5">
-            <span className="font-micro text-[9px] uppercase tracking-[0.96px] text-[#34d399] font-bold flex items-center gap-1">
-              <BrainCircuit className="w-3 h-3 text-[#10b981]" />
-              MODEL PROVENANCE
-            </span>
-            <div className="font-bold text-xs text-[#a7f3d0]">
-              LSTM-GNN v1.2 (2017–2024 MONSOONS)
-            </div>
-            <p className="text-[9px] text-[#94a3b8] uppercase">SAMPLE DEMO TELEMETRY // VALIDATED</p>
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+            <span className="text-zinc-300 font-medium">TELEMETRY UPLINK VALIDATED</span>
           </div>
         </div>
       </div>
@@ -343,65 +399,65 @@ export const PredictionCentre: React.FC<PredictionCentreProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-start">
         {/* LEFT COLUMN: 3D GEOSPATIAL MAP (7 cols on lg, 8 cols on xl) */}
         <div className="lg:col-span-7 xl:col-span-8 flex flex-col space-y-2">
-          {/* Layer Toggles Bar */}
-          <div className="p-3 rounded-lg bg-[#071326]/85 border border-[#1e3a5f]/80 flex flex-wrap items-center justify-between gap-2 text-xs">
+          {/* Layer Toggles Bar: Unified Segmented Control */}
+          <div className="p-2 sm:p-2.5 rounded-xl bg-zinc-950/80 border border-zinc-800/80 backdrop-blur-md flex flex-wrap items-center justify-between gap-2.5 text-xs">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-micro text-[9px] uppercase tracking-[0.96px] text-[#5a5a5f] flex items-center gap-1">
-                <Layers className="w-3.5 h-3.5 text-white" />
+              <span className="text-[10px] uppercase tracking-wider text-zinc-500 font-mono font-medium flex items-center gap-1.5 mr-1">
+                <Layers className="w-3.5 h-3.5 text-zinc-400" />
                 MAP LAYERS:
               </span>
 
-              {/* Iso-contours */}
-              <button
-                onClick={() => setShowIsoContours(!showIsoContours)}
-                className={`px-2.5 py-1 rounded-full text-[11px] font-mono font-bold uppercase transition-colors cursor-pointer border ${
-                  showIsoContours
-                    ? 'bg-sky-500/20 border-sky-400 text-sky-200'
-                    : 'bg-black/40 border-[#1e3a5f] text-slate-400 hover:text-white'
-                }`}
-              >
-                <span>FLOOD HORIZON ({horizon.toUpperCase()})</span>
-              </button>
+              {/* Segmented Control Bar */}
+              <div className="inline-flex items-center bg-black/80 backdrop-blur-md rounded-lg p-1 border border-zinc-800 gap-1 flex-wrap">
+                <button
+                  onClick={() => setShowIsoContours(!showIsoContours)}
+                  className={`px-3 py-1 rounded-md text-xs font-mono font-semibold uppercase transition-all cursor-pointer ${
+                    showIsoContours
+                      ? 'bg-cyan-950/40 text-cyan-400 shadow-sm'
+                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50'
+                  }`}
+                >
+                  FLOOD HORIZON ({horizon.toUpperCase()})
+                </button>
 
-              {/* Gauges */}
-              <button
-                onClick={() => setShowGauges(!showGauges)}
-                className={`px-2.5 py-1 rounded-full text-[11px] font-mono font-bold uppercase transition-colors cursor-pointer border ${
-                  showGauges
-                    ? 'bg-emerald-500/20 border-emerald-400 text-emerald-200'
-                    : 'bg-black/40 border-[#1e3a5f] text-slate-400 hover:text-white'
-                }`}
-              >
-                <span>GAUGES</span>
-              </button>
+                <button
+                  onClick={() => setShowGauges(!showGauges)}
+                  className={`px-3 py-1 rounded-md text-xs font-mono font-semibold uppercase transition-all cursor-pointer ${
+                    showGauges
+                      ? 'bg-cyan-950/40 text-cyan-400 shadow-sm'
+                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50'
+                  }`}
+                >
+                  GAUGES
+                </button>
 
-              {/* Infrastructure */}
-              <button
-                onClick={() => setShowInfrastructure(!showInfrastructure)}
-                className={`px-2.5 py-1 rounded-full text-[11px] font-mono font-bold uppercase transition-colors cursor-pointer border ${
-                  showInfrastructure
-                    ? 'bg-rose-500/20 border-rose-400 text-rose-200'
-                    : 'bg-black/40 border-[#1e3a5f] text-slate-400 hover:text-white'
-                }`}
-              >
-                <span>ROAD CUTS / DYKES</span>
-              </button>
+                <button
+                  onClick={() => setShowInfrastructure(!showInfrastructure)}
+                  className={`px-3 py-1 rounded-md text-xs font-mono font-semibold uppercase transition-all cursor-pointer ${
+                    showInfrastructure
+                      ? 'bg-cyan-950/40 text-cyan-400 shadow-sm'
+                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50'
+                  }`}
+                >
+                  ROAD CUTS / DYKES
+                </button>
 
-              {/* Shelters */}
-              <button
-                onClick={() => setShowShelters(!showShelters)}
-                className={`px-2.5 py-1 rounded-full text-[11px] font-mono font-bold uppercase transition-colors cursor-pointer border ${
-                  showShelters
-                    ? 'bg-purple-500/20 border-purple-400 text-purple-200'
-                    : 'bg-black/40 border-[#1e3a5f] text-slate-400 hover:text-white'
-                }`}
-              >
-                <span>HIGH GROUND REFUGES</span>
-              </button>
+                <button
+                  onClick={() => setShowShelters(!showShelters)}
+                  className={`px-3 py-1 rounded-md text-xs font-mono font-semibold uppercase transition-all cursor-pointer ${
+                    showShelters
+                      ? 'bg-cyan-950/40 text-cyan-400 shadow-sm'
+                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50'
+                  }`}
+                >
+                  HIGH GROUND REFUGES
+                </button>
+              </div>
             </div>
 
-            <div className="text-[11px] font-mono text-slate-400">
-              Center: <span className="text-cyan-400 font-semibold">26.65°N, 87.05°E</span>
+            <div className="text-xs font-mono text-zinc-400 flex items-center gap-1.5">
+              <span className="text-zinc-500">CENTER:</span>
+              <span className="text-zinc-200 font-medium">26.65°N, 87.05°E</span>
             </div>
           </div>
 
@@ -424,43 +480,43 @@ export const PredictionCentre: React.FC<PredictionCentreProps> = ({
         {/* RIGHT COLUMN: GAUGE HYDROGRAPH & ADVISORY GENERATOR */}
         <div className="lg:col-span-5 xl:col-span-4 space-y-3.5">
           {/* Gauge Hydrograph Card */}
-          <div className="p-4 rounded-lg bg-[#071326]/85 border border-[#1e3a5f]/80 shadow-[0_4px_20px_rgba(0,0,0,0.5)] backdrop-blur-xl space-y-3">
+          <div className="p-4 sm:p-5 rounded-xl bg-zinc-950/80 border border-zinc-800/80 backdrop-blur-md shadow-sm space-y-3.5">
             <div className="flex items-start justify-between">
               <div>
-                <span className="font-micro text-[10px] uppercase tracking-[0.96px] text-[#38bdf8] flex items-center gap-1 font-bold">
-                  <Gauge className="w-3.5 h-3.5 text-[#38bdf8]" />
+                <span className="text-[10px] uppercase tracking-wider text-zinc-400 flex items-center gap-1.5 font-medium">
+                  <Gauge className="w-3.5 h-3.5 text-cyan-400" />
                   GAUGE HYDROGRAPH COMPARISON
                 </span>
-                <h3 className="font-display text-sm font-bold text-white tracking-wider uppercase mt-0.5">
+                <h3 className="font-sans text-sm font-bold text-white tracking-normal uppercase mt-0.5">
                   {selectedGauge.name}
                 </h3>
               </div>
               <div className="flex items-center gap-2">
                 <DataStatusBadge status={telemetryStatus} />
-                <span className="px-2 py-0.5 rounded-full bg-rose-500/20 border border-rose-500/50 text-rose-300 font-mono text-[9px] font-bold">
+                <span className="px-2 py-0.5 rounded text-[10px] font-mono font-medium text-rose-400 bg-rose-950/40 border border-rose-800/50">
                   DANGER: {selectedGauge.dangerThreshold}M
                 </span>
               </div>
             </div>
 
-            {/* Station Selector: Chatara vs Koshi Barrage */}
-            <div className="grid grid-cols-2 gap-1.5 p-1 bg-black/60 border border-[#1e3a5f] rounded-lg text-xs font-mono">
+            {/* Station Selector: Chatara vs Koshi Barrage Segmented Control */}
+            <div className="grid grid-cols-2 gap-1 p-1 bg-black/80 border border-zinc-800 rounded-lg text-xs font-mono">
               <button
                 onClick={() => setActiveGaugeStation('chatara')}
-                className={`py-1 px-2 rounded font-bold text-[11px] uppercase transition-colors cursor-pointer ${
+                className={`py-1.5 px-2 rounded-md font-medium text-xs uppercase transition-colors cursor-pointer ${
                   activeGaugeStation === 'chatara'
-                    ? 'bg-sky-600 text-white'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'bg-zinc-800 text-white font-semibold shadow-sm'
+                    : 'text-zinc-400 hover:text-zinc-200'
                 }`}
               >
                 Chatara Hydro (Inflow)
               </button>
               <button
                 onClick={() => setActiveGaugeStation('barrage')}
-                className={`py-1 px-2 rounded font-bold text-[11px] uppercase transition-colors cursor-pointer ${
+                className={`py-1.5 px-2 rounded-md font-medium text-xs uppercase transition-colors cursor-pointer ${
                   activeGaugeStation === 'barrage'
-                    ? 'bg-sky-600 text-white'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'bg-zinc-800 text-white font-semibold shadow-sm'
+                    : 'text-zinc-400 hover:text-zinc-200'
                 }`}
               >
                 Koshi Barrage (Border)
@@ -468,16 +524,16 @@ export const PredictionCentre: React.FC<PredictionCentreProps> = ({
             </div>
 
             {/* Visual Bar Chart / Timeline */}
-            <div className="space-y-1.5 pt-1">
-              <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono uppercase">
+            <div className="space-y-2 pt-1">
+              <div className="flex items-center justify-between text-[10px] text-zinc-400 font-mono uppercase">
                 <span>STAGE ELEVATION (M)</span>
-                <span className="text-rose-400 font-bold">
+                <span className="text-rose-400 font-semibold">
                   DANGER LEVEL: {selectedGauge.dangerThreshold.toFixed(2)}M
                 </span>
               </div>
 
               {/* Chart Bars */}
-              <div className="grid grid-cols-7 gap-1.5 items-end h-28 pt-2 pb-1 border-b border-[#1e3a5f]">
+              <div className="grid grid-cols-7 gap-1.5 items-end h-28 pt-2 pb-1 border-b border-zinc-800">
                 {hydrographPoints.map((item, idx) => {
                   const isCurrent = item.type === 'CURRENT';
                   const isForecast = item.type === 'FORECAST';
@@ -496,16 +552,16 @@ export const PredictionCentre: React.FC<PredictionCentreProps> = ({
                       <div
                         className={`w-full rounded-xs transition-all ${
                           isCurrent
-                            ? 'bg-cyan-400 shadow-[0_0_8px_#38bdf8]'
+                            ? 'bg-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.4)]'
                             : isForecast
                             ? 'bg-rose-500/80 hover:bg-rose-500'
-                            : 'bg-[#1e3a5f] hover:bg-[#2b5286]'
+                            : 'bg-zinc-700 hover:bg-zinc-600'
                         }`}
                         style={{ height: `${heightPercent}%` }}
                       />
                       <span
                         className={`text-[9px] font-mono uppercase ${
-                          isCurrent ? 'text-cyan-400 font-bold' : 'text-slate-400'
+                          isCurrent ? 'text-cyan-400 font-bold' : 'text-zinc-500'
                         }`}
                       >
                         {item.time}
@@ -515,9 +571,9 @@ export const PredictionCentre: React.FC<PredictionCentreProps> = ({
                 })}
               </div>
 
-              <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono pt-1 uppercase">
+              <div className="flex items-center justify-between text-[10px] text-zinc-400 font-mono pt-1 uppercase">
                 <span className="flex items-center gap-1">
-                  <span className="w-2 h-2 bg-[#1e3a5f] rounded-xs"></span> HISTORICAL
+                  <span className="w-2 h-2 bg-zinc-700 rounded-xs"></span> HISTORICAL
                 </span>
                 <span className="flex items-center gap-1">
                   <span className="w-2 h-2 bg-cyan-400 rounded-xs"></span> CURRENT
@@ -530,68 +586,68 @@ export const PredictionCentre: React.FC<PredictionCentreProps> = ({
           </div>
 
           {/* Impact Estimation Matrix & Authority Advisory Generator */}
-          <div className="p-4 rounded-lg bg-[#071326]/85 border border-[#1e3a5f]/80 shadow-[0_4px_20px_rgba(0,0,0,0.5)] backdrop-blur-xl space-y-3">
+          <div className="p-4 sm:p-5 rounded-xl bg-zinc-950/80 border border-zinc-800/80 backdrop-blur-md shadow-sm space-y-3.5">
             <div className="flex items-center justify-between">
-              <h3 className="font-display text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-                <Users className="w-3.5 h-3.5 text-white" />
+              <h3 className="font-sans text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5 text-zinc-400" />
                 IMPACT MATRIX ({horizon.toUpperCase()})
               </h3>
-              <span className="px-2 py-0.5 rounded-full bg-rose-500/20 border border-rose-500/50 text-rose-300 text-[10px] font-mono font-bold">
+              <span className="px-2 py-0.5 rounded text-[10px] font-mono font-medium text-rose-400 bg-rose-950/40 border border-rose-800/50">
                 {forecast.threatLevel}
               </span>
             </div>
 
             {/* Quick Metrics */}
             <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-              <div className="p-2.5 bg-black/60 border border-[#1e3a5f] rounded">
-                <span className="font-micro text-[9px] uppercase tracking-[0.96px] text-slate-400 block">
+              <div className="p-3 bg-[#0d1117] border border-zinc-800 rounded-md">
+                <span className="text-[10px] uppercase tracking-wider text-zinc-400 font-medium block">
                   POPULATION THREATENED
                 </span>
-                <span className="font-display text-xl font-bold text-white block mt-0.5">
+                <span className="font-mono text-2xl font-bold text-white block mt-1 tracking-tight">
                   {forecast.populationAtRisk.toLocaleString()}
                 </span>
-                <span className="text-[9px] text-[#38bdf8] uppercase block mt-0.5 font-semibold">
-                  HIGH-VULNERABILITY REACHES
+                <span className="text-[10px] text-zinc-500 uppercase block mt-1">
+                  SETTLEMENT EXPOSURE
                 </span>
               </div>
 
-              <div className="p-2.5 bg-black/60 border border-[#1e3a5f] rounded">
-                <span className="font-micro text-[9px] uppercase tracking-[0.96px] text-slate-400 block">
+              <div className="p-3 bg-[#0d1117] border border-zinc-800 rounded-md">
+                <span className="text-[10px] uppercase tracking-wider text-zinc-400 font-medium block">
                   INUNDATION ENVELOPE
                 </span>
-                <span className="font-display text-xl font-bold text-white block mt-0.5">
-                  {forecast.inundationAreaKm2} <span className="font-mono text-xs font-normal text-slate-400">KM²</span>
+                <span className="font-mono text-2xl font-bold text-white block mt-1 tracking-tight">
+                  {forecast.inundationAreaKm2} <span className="font-sans text-xs font-normal text-zinc-400">KM²</span>
                 </span>
-                <span className="text-[9px] text-[#38bdf8] uppercase block mt-0.5 font-semibold">
-                  SURFACE WATER EXPANSION
+                <span className="text-[10px] text-zinc-500 uppercase block mt-1">
+                  SURFACE WATER SPREAD
                 </span>
               </div>
             </div>
 
             {/* High-Risk Wards List */}
             <div className="space-y-1.5 pt-1">
-              <span className="font-micro text-[10px] uppercase tracking-[0.96px] text-slate-400 block">
+              <span className="text-[10px] uppercase tracking-wider text-zinc-400 font-medium block">
                 THREATENED WARDS &amp; REACHES:
               </span>
               <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
                 {forecast.highRiskWards.map((ward, idx) => (
                   <div
                     key={idx}
-                    className="p-2 bg-black/60 border border-[#1e3a5f]/70 rounded flex items-center justify-between text-xs font-mono"
+                    className="p-2.5 bg-[#0d1117] border border-zinc-800/80 rounded-md flex items-center justify-between text-xs font-mono"
                   >
                     <div>
-                      <span className="font-bold text-white block text-[11px] uppercase">
+                      <span className="font-semibold text-white block text-xs">
                         {ward.name}
                       </span>
-                      <span className="text-[10px] text-slate-400">
-                        DEPTH: {ward.depthRange} // {ward.population.toLocaleString()} CITIZENS
+                      <span className="text-[10px] text-zinc-400">
+                        DEPTH: {ward.depthRange} · {ward.population.toLocaleString()} CITIZENS
                       </span>
                     </div>
                     <span
-                      className={`px-1.5 py-0.5 rounded text-[9px] font-bold ${
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
                         ward.hazard === 'CRITICAL'
-                          ? 'bg-rose-500/20 text-rose-300 border border-rose-500/50'
-                          : 'bg-amber-500/20 text-amber-300 border border-amber-500/50'
+                          ? 'bg-rose-950/40 text-rose-400 border border-rose-800/50'
+                          : 'bg-amber-950/40 text-amber-400 border border-amber-800/50'
                       }`}
                     >
                       {ward.hazard}
@@ -602,10 +658,10 @@ export const PredictionCentre: React.FC<PredictionCentreProps> = ({
             </div>
 
             {/* Quick Action: Draft Technical Advisory Button */}
-            <div className="pt-2 border-t border-[#1e3a5f]">
+            <div className="pt-2 border-t border-zinc-800">
               <button
                 onClick={() => setShowAdvisoryModal(true)}
-                className="w-full py-2.5 px-4 rounded-full bg-gradient-to-r from-sky-600 via-blue-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white font-mono font-bold text-xs uppercase tracking-wider border border-sky-400/60 shadow-[0_0_15px_rgba(56,189,248,0.35)] hover:scale-[1.01] transition-all cursor-pointer flex items-center justify-center gap-2"
+                className="w-full py-2.5 px-4 rounded-md bg-cyan-600 hover:bg-cyan-500 active:bg-cyan-700 text-white font-mono font-bold text-xs uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-2 shadow-sm"
               >
                 <FileText className="w-3.5 h-3.5" />
                 <span>DRAFT TECHNICAL ADVISORY ({horizon.toUpperCase()})</span>
@@ -618,24 +674,24 @@ export const PredictionCentre: React.FC<PredictionCentreProps> = ({
       {/* Structured Authority Advisory Modal */}
       {showAdvisoryModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in">
-          <div className="w-full max-w-2xl rounded-lg bg-[#071326] border border-[#1e3a5f] p-5 shadow-[0_12px_48px_rgba(0,0,0,0.85)] space-y-4 font-mono text-white max-h-[90vh] flex flex-col">
-            <div className="flex items-start justify-between pb-3 border-b border-[#1e3a5f]">
+          <div className="w-full max-w-2xl rounded-lg bg-[#0d1117] border border-zinc-800 p-5 shadow-2xl space-y-4 font-mono text-white max-h-[90vh] flex flex-col">
+            <div className="flex items-start justify-between pb-3 border-b border-zinc-800">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded bg-sky-500/20 border border-sky-500/40 text-sky-400">
+                <div className="p-2 rounded-md bg-zinc-900 border border-zinc-800 text-cyan-400">
                   <FileText className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-display text-sm font-bold text-white tracking-wider uppercase">
+                  <h3 className="font-sans text-sm font-bold text-white tracking-normal uppercase">
                     TECHNICAL SITUATION BULLETIN // DEOC SUNSARI &amp; MOHA
                   </h3>
-                  <p className="text-[10px] text-[#38bdf8] uppercase">
-                    STRUCTURED SITUATION ADVISORY GENERATOR &bull; {horizon} HORIZON
+                  <p className="text-[10px] text-zinc-400 uppercase">
+                    STRUCTURED SITUATION ADVISORY GENERATOR · {horizon} HORIZON
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setShowAdvisoryModal(false)}
-                className="text-slate-400 hover:text-white text-lg font-bold p-1 cursor-pointer"
+                className="text-zinc-400 hover:text-white text-lg font-bold p-1 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -643,50 +699,50 @@ export const PredictionCentre: React.FC<PredictionCentreProps> = ({
 
             {/* Scrollable Bulletin Preview */}
             <div className="flex-1 overflow-y-auto space-y-3 text-xs pr-1">
-              <div className="p-3 rounded bg-black/60 border border-[#1e3a5f]/80 space-y-1">
-                <span className="text-[10px] text-slate-400 uppercase block font-bold">
+              <div className="p-3 rounded-md bg-[#0a0a0a] border border-zinc-800/80 space-y-1">
+                <span className="text-[10px] text-zinc-400 uppercase block font-bold">
                   Intended Civil Protection Authorities:
                 </span>
-                <p className="text-slate-300 text-[11px]">
-                  Ministry of Home Affairs (MoHA) NEOC &bull; District Emergency Operation Centers (DEOCs Sunsari &amp; Saptari) &bull; Armed Police Force (APF) Disaster Management
+                <p className="text-zinc-300 text-[11px]">
+                  Ministry of Home Affairs (MoHA) NEOC · District Emergency Operation Centers (DEOCs Sunsari &amp; Saptari) · Armed Police Force (APF) Disaster Management
                 </p>
               </div>
 
-              <div className="p-3 rounded bg-black/60 border border-[#1e3a5f]/80 space-y-1">
-                <span className="text-[10px] text-slate-400 uppercase block font-bold">
+              <div className="p-3 rounded-md bg-[#0a0a0a] border border-zinc-800/80 space-y-1">
+                <span className="text-[10px] text-zinc-400 uppercase block font-bold">
                   Predicted Crest &amp; Hydrograph Summary:
                 </span>
                 <p className="text-white text-[11px]">
-                  Chatara Gauge: 8.18m (Danger: 8.00m) &bull; Inflow: {forecast.inflowCusecs.toLocaleString()} cusecs &bull; Barrage: {forecast.damGatesOpen} &bull; Predicted Crest ETA: <strong>{forecast.peakCrestEta}</strong>.
+                  Chatara Gauge: 8.18m (Danger: 8.00m) · Inflow: {forecast.inflowCusecs.toLocaleString()} cusecs · Barrage: {forecast.damGatesOpen} · Predicted Crest ETA: <strong>{forecast.peakCrestEta}</strong>.
                 </p>
               </div>
 
-              <div className="p-3 rounded bg-black/60 border border-[#1e3a5f]/80 space-y-1">
+              <div className="p-3 rounded-md bg-[#0a0a0a] border border-zinc-800/80 space-y-1">
                 <span className="text-[10px] text-rose-300 uppercase block font-bold">
                   At-Risk Road Cuts &amp; Embankment Scour Reaches:
                 </span>
-                <ul className="list-disc pl-4 space-y-0.5 text-slate-300 text-[11px]">
+                <ul className="list-disc pl-4 space-y-0.5 text-zinc-300 text-[11px]">
                   <li>East-West Highway Ch. 42+200 - 45+800: Inundation depths up to 0.9m.</li>
                   <li>Chatara Main Canal Dyke Embankment: Headworks backflow scour alert.</li>
                   <li>Koshi Embankment Spur km 12+400: Overtopping alert under 420,000 cusec discharge.</li>
                 </ul>
               </div>
 
-              <div className="p-3 rounded bg-black/60 border border-[#1e3a5f]/80 space-y-1">
+              <div className="p-3 rounded-md bg-[#0a0a0a] border border-zinc-800/80 space-y-1">
                 <span className="text-[10px] text-amber-300 uppercase block font-bold">
                   Recommended Evacuation &amp; Safety Perimeters:
                 </span>
-                <p className="text-slate-300 text-[11px]">
+                <p className="text-zinc-300 text-[11px]">
                   Preposition relief teams along high-clearance routes to <strong>Inaruwa Safe Hub</strong> and <strong>BPKIHS Medical Camp</strong>. Evacuate low-lying residents in Prakashpur Wards 3 &amp; 4 and Gobargadha Island immediately.
                 </p>
               </div>
             </div>
 
             {/* Modal Actions */}
-            <div className="flex items-center justify-between pt-3 border-t border-[#1e3a5f] flex-wrap gap-2">
+            <div className="flex items-center justify-between pt-3 border-t border-zinc-800 flex-wrap gap-2">
               <button
                 onClick={handleExportBulletinJson}
-                className="px-3.5 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold font-mono uppercase tracking-wider border border-slate-600 transition-colors flex items-center gap-1.5 cursor-pointer"
+                className="px-3.5 py-1.5 rounded-md bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold font-mono uppercase tracking-wider border border-zinc-700 transition-colors flex items-center gap-1.5 cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>EXPORT BULLETIN JSON</span>
@@ -695,13 +751,13 @@ export const PredictionCentre: React.FC<PredictionCentreProps> = ({
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setShowAdvisoryModal(false)}
-                  className="px-3 py-1.5 rounded-full border border-[#1e3a5f] hover:bg-white/10 text-xs text-slate-300 transition-colors cursor-pointer"
+                  className="px-3.5 py-1.5 rounded-md border border-zinc-800 hover:bg-zinc-800 text-xs text-zinc-300 transition-colors cursor-pointer"
                 >
                   CANCEL
                 </button>
                 <button
                   onClick={handleProceedToDispatcher}
-                  className="px-4 py-1.5 rounded-full bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-500 hover:to-blue-500 text-white text-xs font-bold tracking-wider uppercase border border-sky-400 transition-all cursor-pointer flex items-center gap-1.5"
+                  className="px-4 py-1.5 rounded-md bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold tracking-wider uppercase border border-cyan-500 transition-all cursor-pointer flex items-center gap-1.5"
                 >
                   <Send className="w-3.5 h-3.5" />
                   <span>FORWARD TO ALERT DISPATCHER</span>
