@@ -268,7 +268,7 @@ def test_full_evaluation_pipeline_execution(tmp_path: Path):
     )
 
     assert report.model_version == "baseline-v1"
-    assert report.summary_verdict == "PASS_ON_HELD_OUT_TEST_DATA"
+    assert report.summary_verdict == "PASS_ON_SYNTHETIC_TEST_DATA"
     assert len(report.matching_summaries) == 3
     assert "+1h" in report.multiclass_evaluations
     assert "+1h" in report.false_alarm_analyses
