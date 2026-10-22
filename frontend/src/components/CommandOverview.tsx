@@ -44,20 +44,20 @@ export const CommandOverview: React.FC<CommandOverviewProps> = ({
   return (
     <div className="space-y-3.5">
       {/* Event Context Strip with Sleek Minimalist Dividers */}
-      <div className="rounded-lg bg-[#0a0a0a] border border-zinc-800 px-4 py-2.5 flex flex-wrap items-center justify-between text-xs font-mono shadow-sm gap-2">
-        <div className="flex items-center gap-2.5 flex-wrap">
-          <span className="px-2 py-0.5 rounded text-[10px] font-mono font-medium bg-zinc-900 border border-zinc-800 text-zinc-400 uppercase">
+      <div className="rounded-xl bg-[#0a0a0a] border border-zinc-800 px-5 py-3 flex flex-wrap items-center justify-between text-sm font-mono shadow-sm gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          <span className="px-2.5 py-1 rounded text-xs font-mono font-bold bg-zinc-900 border border-zinc-700 text-zinc-300 uppercase tracking-wider">
             EVENT SCENARIO
           </span>
-          <span className="text-white font-semibold text-xs tracking-normal">{benchmarkScene.name}</span>
-          <span className="text-zinc-700 select-none">·</span>
-          <span className="text-zinc-400">{benchmarkScene.date_range.toUpperCase()}</span>
+          <span className="text-white font-bold text-sm sm:text-base tracking-normal">{benchmarkScene.name}</span>
+          <span className="text-zinc-600 select-none">·</span>
+          <span className="text-zinc-300 font-medium text-xs sm:text-sm">{benchmarkScene.date_range.toUpperCase()}</span>
         </div>
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-3 flex-wrap">
           <DataStatusBadge status={dataStatus} />
-          <span className="text-zinc-700 select-none">|</span>
-          <span className="text-zinc-300 font-medium text-xs font-mono flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+          <span className="text-zinc-600 select-none">|</span>
+          <span className="text-zinc-200 font-bold text-xs sm:text-sm font-mono flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shadow-[0_0_8px_rgba(245,158,11,0.6)]" />
             <span>PEAK DISCHARGE: {benchmarkScene.peak_discharge_m3s.toLocaleString()} M³/S</span>
           </span>
         </div>
@@ -71,10 +71,10 @@ export const CommandOverview: React.FC<CommandOverviewProps> = ({
         {/* Left Column: Reusable 3D Geospatial Terrain Map (7 cols on lg, 7 cols on xl) */}
         <div className="lg:col-span-7 xl:col-span-7 flex flex-col space-y-2">
           <div className="flex items-center justify-between px-1">
-            <span className="font-micro text-[10px] uppercase tracking-[1.2px] text-[#38bdf8] font-bold">
+            <span className="font-micro text-xs uppercase tracking-[1.4px] text-[#38bdf8] font-bold">
               3D GEOSPATIAL TERRAIN COMMAND // KOSHI BASIN
             </span>
-            <span className="font-mono text-[10px] text-slate-400">
+            <span className="font-mono text-xs text-slate-300 font-medium">
               DEM TERRAIN 1.5X &bull; REAL SETTLEMENTS MAPPED
             </span>
           </div>

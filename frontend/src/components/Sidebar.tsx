@@ -90,11 +90,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="p-3 space-y-3">
         {/* Navigation Category Label with Luminous Cyan Eyebrow */}
         <div className="px-3 pt-2 pb-1 flex items-center justify-between">
-          <span className="font-micro text-[10px] uppercase tracking-[1.4px] text-[#38bdf8] font-bold">
+          <span className="font-micro text-xs uppercase tracking-[1.4px] text-[#38bdf8] font-bold">
             CONSOLE NAVIGATION
           </span>
-          <span className="inline-flex items-center gap-1.5 text-[10px] text-emerald-400 font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 font-semibold">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span className="inline-flex items-center gap-1.5 text-xs text-emerald-400 font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 font-semibold">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             NOMINAL
           </span>
         </div>
@@ -116,20 +116,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 }`}
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className={`p-1 rounded transition-colors ${isActive ? 'bg-white/10' : 'group-hover:bg-white/5'}`}>
+                  <div className={`p-1.5 rounded transition-colors ${isActive ? 'bg-white/10' : 'group-hover:bg-white/5'}`}>
                     <Icon
-                      className={`w-4 h-4 transition-transform duration-200 group-hover:scale-110 ${
+                      className={`w-4.5 h-4.5 transition-transform duration-200 group-hover:scale-110 ${
                         isActive ? item.color : `${item.color} opacity-70 group-hover:opacity-100`
                       }`}
                     />
                   </div>
-                  <span className="font-display text-xs tracking-[1.2px] uppercase font-bold truncate">
+                  <span className="font-display text-sm tracking-wide uppercase font-bold truncate">
                     {item.label}
                   </span>
                 </div>
 
                 {item.badge && (
-                  <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full font-bold shrink-0 ${item.badgeColor}`}>
+                  <span className={`text-xs font-mono px-2 py-0.5 rounded-full font-bold shrink-0 ${item.badgeColor}`}>
                     {item.badge}
                   </span>
                 )}
@@ -141,12 +141,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Sidebar Footer: Vibrant Telemetry Line */}
       <div className="p-3.5 border-t border-[#1e293b]/90 bg-[#091322]/80">
-        <div className="flex items-center justify-between text-[10px] font-mono uppercase tracking-wider">
-          <span className="flex items-center gap-1.5 text-[#34d399] font-semibold">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+        <div className="flex items-center justify-between text-xs font-mono uppercase tracking-wider">
+          <span className="flex items-center gap-2 text-[#34d399] font-semibold">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             ORBITAL LINK
           </span>
-          <span className="text-[#38bdf8] font-bold bg-[#38bdf8]/10 px-2 py-0.5 rounded border border-[#38bdf8]/30">
+          <span className="text-[#38bdf8] font-bold bg-[#38bdf8]/10 px-2.5 py-0.5 rounded border border-[#38bdf8]/30">
             28 MS // 10HZ
           </span>
         </div>

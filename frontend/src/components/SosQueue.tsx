@@ -51,26 +51,26 @@ export const SosQueue: React.FC<SosQueueProps> = ({
     switch (status) {
       case 'TRANSMITTED_TO_DEOC':
         return (
-          <span className="px-2 py-0.5 rounded-full bg-sky-500/20 border border-sky-500/50 text-sky-300 text-[10px] font-mono font-bold">
+          <span className="px-3 py-1 rounded-full bg-sky-500/20 border border-sky-500/50 text-sky-300 text-xs font-mono font-bold tracking-wider">
             TRANSMITTED TO DEOC
           </span>
         );
       case 'SIMULATED_AUTHORITY_ACK':
       case 'ACKNOWLEDGED_BY_AUTHORITY':
         return (
-          <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 text-[10px] font-mono font-bold">
+          <span className="px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 text-xs font-mono font-bold tracking-wider">
             SIMULATED AUTHORITY ACK
           </span>
         );
       case 'RESOLVED':
         return (
-          <span className="px-2 py-0.5 rounded-full bg-slate-500/20 border border-slate-500/50 text-slate-400 text-[10px] font-mono font-bold">
+          <span className="px-3 py-1 rounded-full bg-slate-500/20 border border-slate-500/50 text-slate-300 text-xs font-mono font-bold tracking-wider">
             RESOLVED
           </span>
         );
       default:
         return (
-          <span className="px-2 py-0.5 rounded-full bg-rose-500/20 border border-rose-500/50 text-rose-300 text-[10px] font-mono font-bold">
+          <span className="px-3 py-1 rounded-full bg-rose-500/20 border border-rose-500/50 text-rose-300 text-xs font-mono font-bold tracking-wider">
             LOCAL LOGGED
           </span>
         );
@@ -81,47 +81,47 @@ export const SosQueue: React.FC<SosQueueProps> = ({
     <>
       <div className="rounded-lg bg-[#071326]/85 border border-[#1e3a5f]/80 overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.5)] flex flex-col backdrop-blur-xl">
         {/* Header with Emergency Triage Accents */}
-        <div className="px-4 py-3 border-b border-[#1e3a5f]/80 bg-[#091a32]/85 flex items-center justify-between">
+        <div className="px-4 py-3.5 border-b border-[#1e3a5f]/80 bg-[#091a32]/85 flex items-center justify-between">
           <div>
-            <h3 className="font-display text-xs tracking-[1.4px] uppercase font-bold text-white flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-[#ef4444] animate-ping"></span>
+            <h3 className="font-display text-sm sm:text-base tracking-[1.4px] uppercase font-bold text-white flex items-center gap-2.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#ef4444] animate-ping"></span>
               Citizen Assistance Queue
             </h3>
-            <p className="font-mono text-[10px] text-[#38bdf8] uppercase mt-0.5 font-semibold">
+            <p className="font-mono text-xs text-[#38bdf8] uppercase mt-0.5 font-bold tracking-wider">
               AUTHORITY TRIAGE &amp; HANDOFF PIPELINE
             </p>
           </div>
 
-          <span className="px-2.5 py-0.5 rounded-full bg-[#ef4444]/20 border border-[#ef4444]/40 text-[#fca5a5] text-[10px] font-mono font-bold flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse"></span>
+          <span className="px-3 py-1 rounded-full bg-[#ef4444]/20 border border-[#ef4444]/40 text-[#fca5a5] text-xs font-mono font-bold flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-red-400 animate-pulse"></span>
             TOP 3 CRITICAL
           </span>
         </div>
 
         {/* SOS Request List */}
-        <div className="p-3 space-y-2 flex-1">
+        <div className="p-3.5 space-y-2.5 flex-1">
           {topRequests.map((req) => {
             return (
               <div
                 key={req.id}
-                className="rounded-md p-3 bg-[#0c1c38]/75 border border-[#1e3a5f]/70 hover:border-[#38bdf8]/60 transition-all duration-200 flex items-center justify-between gap-3 shadow-sm"
+                className="rounded-md p-3.5 bg-[#0c1c38]/75 border border-[#1e3a5f]/70 hover:border-[#38bdf8]/60 transition-all duration-200 flex items-center justify-between gap-3.5 shadow-sm"
               >
-                <div className="space-y-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h4 className="font-display text-sm font-bold text-white tracking-wider uppercase truncate">
+                <div className="space-y-1.5 min-w-0">
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <h4 className="font-display text-base font-bold text-white tracking-wider uppercase truncate">
                       {req.requester_name}
                     </h4>
-                    <span className="px-2 py-0.5 rounded bg-[#0284c7]/25 border border-[#0284c7]/50 text-[#38bdf8] font-mono text-[11px] font-semibold">
+                    <span className="px-2.5 py-0.5 rounded bg-[#0284c7]/25 border border-[#0284c7]/50 text-[#38bdf8] font-mono text-xs font-bold">
                       {req.estimated_water_depth || '1.8M DEPTH'}
                     </span>
-                    <span className="px-1.5 py-0.5 rounded bg-[#e86e25]/20 border border-[#e86e25]/40 text-[#fed7aa] font-mono text-[10px] font-bold">
+                    <span className="px-2 py-0.5 rounded bg-[#e86e25]/20 border border-[#e86e25]/40 text-[#fed7aa] font-mono text-xs font-bold">
                       {req.category}
                     </span>
                   </div>
-                  <p className="font-mono text-[10px] text-[#94a3b8] uppercase truncate flex items-center gap-1">
+                  <p className="font-mono text-xs text-[#94a3b8] uppercase truncate flex items-center gap-1.5">
                     <span>📍</span> {req.location_name}
                   </p>
-                  <div className="pt-0.5">
+                  <div className="pt-1">
                     {getStatusBadge(req.handoff_status || req.status)}
                   </div>
                 </div>
@@ -130,7 +130,7 @@ export const SosQueue: React.FC<SosQueueProps> = ({
                   <InteractiveHoverButton
                     text="VIEW INCIDENT"
                     onClick={() => handleOpenDossier(req)}
-                    className="w-36 py-1.5 text-[10px] font-mono tracking-wider border-sky-500/40 bg-sky-950/30 text-sky-200"
+                    className="w-40 py-2 text-xs font-mono font-bold tracking-wider border-sky-500/50 bg-sky-950/40 text-sky-200 shadow-[0_0_10px_rgba(14,165,233,0.2)]"
                     dotColor="bg-sky-500 group-hover:bg-sky-500"
                   />
                 </div>
@@ -151,86 +151,86 @@ export const SosQueue: React.FC<SosQueueProps> = ({
                   <FileText className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-display text-sm font-bold text-white tracking-wider uppercase">
+                  <h3 className="font-display text-base sm:text-lg font-bold text-white tracking-wider uppercase">
                     INCIDENT DOSSIER // #{activeDossierRequest.id}
                   </h3>
-                  <p className="text-[10px] text-[#38bdf8] uppercase tracking-wider">
+                  <p className="text-xs text-[#38bdf8] uppercase tracking-wider font-semibold">
                     DECISION-SUPPORT INTELLIGENCE &bull; ANONYMIZED
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setActiveDossierRequest(null)}
-                className="text-slate-400 hover:text-white text-lg font-bold p-1 cursor-pointer"
+                className="text-slate-400 hover:text-white text-xl font-bold p-1 cursor-pointer"
               >
-                <X className="w-5 h-5" />
+                <X className="w-6 h-6" />
               </button>
             </div>
 
             {/* Success Message Banner */}
             {handoffSuccessMsg && (
-              <div className="p-3 rounded bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 text-xs font-bold flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+              <div className="p-3.5 rounded bg-emerald-500/20 border border-emerald-500/50 text-emerald-300 text-sm font-bold flex items-center gap-2.5">
+                <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0" />
                 <span>{handoffSuccessMsg}</span>
               </div>
             )}
 
             {/* Dossier Body */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-              <div className="p-3 rounded bg-black/60 border border-[#1e3a5f]/70 space-y-1">
-                <span className="text-[10px] text-slate-400 uppercase block">Citizen Contact:</span>
-                <span className="font-bold text-white text-sm block">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-sm">
+              <div className="p-3.5 rounded bg-black/60 border border-[#1e3a5f]/70 space-y-1.5">
+                <span className="text-xs text-slate-300 font-bold uppercase block">Citizen Contact:</span>
+                <span className="font-bold text-white text-base block">
                   {activeDossierRequest.requester_name}
                 </span>
-                <span className="text-[10px] text-slate-400">
+                <span className="text-xs text-slate-300">
                   Phone: {activeDossierRequest.contact_number}
                 </span>
               </div>
 
-              <div className="p-3 rounded bg-black/60 border border-[#1e3a5f]/70 space-y-1">
-                <span className="text-[10px] text-slate-400 uppercase block">Verified Coordinates:</span>
-                <span className="font-bold text-sky-300 text-xs block">
+              <div className="p-3.5 rounded bg-black/60 border border-[#1e3a5f]/70 space-y-1.5">
+                <span className="text-xs text-slate-300 font-bold uppercase block">Verified Coordinates:</span>
+                <span className="font-bold text-sky-300 text-sm block">
                   {activeDossierRequest.coordinates[0].toFixed(4)}°N, {activeDossierRequest.coordinates[1].toFixed(4)}°E
                 </span>
-                <span className="text-[10px] text-slate-400">
+                <span className="text-xs text-slate-300">
                   Elapsed: {activeDossierRequest.report_elapsed_time || activeDossierRequest.timestamp}
                 </span>
               </div>
 
-              <div className="p-3 rounded bg-black/60 border border-[#1e3a5f]/70 space-y-1 sm:col-span-2">
-                <span className="text-[10px] text-slate-400 uppercase block">Location &amp; Landmark:</span>
-                <span className="font-bold text-white text-xs block">
+              <div className="p-3.5 rounded bg-black/60 border border-[#1e3a5f]/70 space-y-1.5 sm:col-span-2">
+                <span className="text-xs text-slate-300 font-bold uppercase block">Location &amp; Landmark:</span>
+                <span className="font-bold text-white text-sm block">
                   📍 {activeDossierRequest.location_name}
                 </span>
-                <p className="text-[11px] text-slate-300 mt-1">
+                <p className="text-xs sm:text-sm text-slate-200 mt-1 leading-relaxed">
                   {activeDossierRequest.landmark}
                 </p>
               </div>
 
-              <div className="p-3 rounded bg-black/60 border border-[#1e3a5f]/70 space-y-1 sm:col-span-2">
-                <span className="text-[10px] text-slate-400 uppercase block">Reported Needs &amp; Surrounding Inundation:</span>
-                <p className="text-[11px] text-amber-200">
+              <div className="p-3.5 rounded bg-black/60 border border-[#1e3a5f]/70 space-y-1.5 sm:col-span-2">
+                <span className="text-xs text-slate-300 font-bold uppercase block">Reported Needs &amp; Surrounding Inundation:</span>
+                <p className="text-xs sm:text-sm text-amber-200 leading-relaxed">
                   {activeDossierRequest.notes}
                 </p>
-                <div className="pt-2 flex flex-wrap gap-2 text-[10px]">
-                  <span className="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/40">
+                <div className="pt-2 flex flex-wrap gap-2 text-xs">
+                  <span className="px-3 py-1 rounded bg-sky-500/20 text-sky-300 border border-sky-500/40 font-bold">
                     Depth: {activeDossierRequest.estimated_water_depth || '1.8m DEM Estimate'}
                   </span>
-                  <span className="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40">
+                  <span className="px-3 py-1 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40 font-bold">
                     Souls: {activeDossierRequest.people_count}
                   </span>
-                  <span className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40">
+                  <span className="px-3 py-1 rounded bg-purple-500/20 text-purple-300 border border-purple-500/40 font-bold">
                     Category: {activeDossierRequest.category}
                   </span>
                 </div>
               </div>
 
-              <div className="p-3 rounded bg-black/60 border border-[#1e3a5f]/70 space-y-1 sm:col-span-2">
-                <span className="text-[10px] text-slate-400 uppercase block">High Ground &amp; Medical Facilities:</span>
-                <div className="text-[11px] space-y-1 text-slate-300">
+              <div className="p-3.5 rounded bg-black/60 border border-[#1e3a5f]/70 space-y-1.5 sm:col-span-2">
+                <span className="text-xs text-slate-300 font-bold uppercase block">High Ground &amp; Medical Facilities:</span>
+                <div className="text-xs sm:text-sm space-y-1.5 text-slate-200">
                   <div>
                     &bull; Nearest Refuge:{' '}
-                    <strong className="text-white">
+                    <strong className="text-white font-bold">
                       {activeDossierRequest.nearest_shelter?.name || 'Inaruwa Safe Hub'}
                     </strong>{' '}
                     ({activeDossierRequest.nearest_shelter?.distance || '650m'})
@@ -238,7 +238,7 @@ export const SosQueue: React.FC<SosQueueProps> = ({
                   {activeDossierRequest.nearest_highground && (
                     <div>
                       &bull; Dry High-Ground Spur:{' '}
-                      <strong className="text-white">{activeDossierRequest.nearest_highground.name}</strong>{' '}
+                      <strong className="text-white font-bold">{activeDossierRequest.nearest_highground.name}</strong>{' '}
                       ({activeDossierRequest.nearest_highground.distance})
                     </div>
                   )}
@@ -247,15 +247,15 @@ export const SosQueue: React.FC<SosQueueProps> = ({
             </div>
 
             {/* Footer Actions */}
-            <div className="flex items-center justify-between pt-3 border-t border-[#1e3a5f] flex-wrap gap-2">
-              <div className="text-[10px] text-slate-400">
+            <div className="flex items-center justify-between pt-3.5 border-t border-[#1e3a5f] flex-wrap gap-3">
+              <div className="text-xs text-slate-300 font-mono">
                 Current Status: {getStatusBadge(activeDossierRequest.handoff_status || activeDossierRequest.status)}
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2.5">
                 <button
                   onClick={() => setActiveDossierRequest(null)}
-                  className="px-3 py-1.5 rounded-full border border-[#1e3a5f] hover:bg-white/10 text-xs text-slate-300 transition-colors cursor-pointer"
+                  className="px-4 py-2 rounded-full border border-[#1e3a5f] hover:bg-white/10 text-xs sm:text-sm font-semibold text-slate-200 transition-colors cursor-pointer"
                 >
                   CLOSE
                 </button>
@@ -264,7 +264,7 @@ export const SosQueue: React.FC<SosQueueProps> = ({
                   text="PREPARE HANDOFF"
                   onClick={() => handleTriggerHandoff(activeDossierRequest.id)}
                   disabled={!!handoffSuccessMsg}
-                  className="w-48 py-1.5 text-xs font-mono tracking-wider border-orange-500/50 bg-orange-950/40 text-orange-200"
+                  className="w-52 py-2 text-xs sm:text-sm font-mono font-bold tracking-wider border-orange-500/50 bg-orange-950/40 text-orange-200"
                   dotColor="bg-orange-500 group-hover:bg-orange-500"
                 />
               </div>

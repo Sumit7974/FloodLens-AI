@@ -122,9 +122,9 @@ export function TelemetryCommandCards({ metrics }: TelemetryCommandCardsProps = 
           {item.svgDecor}
 
           <CardHeader className="border-0 z-10 relative pb-1 pt-4 px-4 flex flex-row items-center justify-between">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2.5">
               {item.icon}
-              <CardTitle className="text-slate-300 text-xs font-semibold tracking-wider uppercase">
+              <CardTitle className="text-slate-200 text-sm font-semibold tracking-wider uppercase">
                 {item.title}
               </CardTitle>
             </div>
@@ -132,16 +132,16 @@ export function TelemetryCommandCards({ metrics }: TelemetryCommandCardsProps = 
             <CardToolbar>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button className="size-7 text-slate-400 hover:text-white hover:bg-white/10" size="icon" variant="ghost">
-                    <MoreHorizontal className="size-3.5"/>
+                  <Button className="size-8 text-slate-400 hover:text-white hover:bg-white/10" size="icon" variant="ghost">
+                    <MoreHorizontal className="size-4"/>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="bg-slate-900 text-slate-200 border-slate-800">
-                  <DropdownMenuItem className="text-xs flex gap-2 cursor-pointer">
-                    <RefreshCw className="size-3.5"/> Force Sync
+                  <DropdownMenuItem className="text-sm flex gap-2.5 cursor-pointer py-2">
+                    <RefreshCw className="size-4 text-cyan-400"/> Force Sync
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="text-xs flex gap-2 cursor-pointer">
-                    <ExternalLink className="size-3.5"/> Sensor Feed
+                  <DropdownMenuItem className="text-sm flex gap-2.5 cursor-pointer py-2">
+                    <ExternalLink className="size-4 text-cyan-400"/> Sensor Feed
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -150,18 +150,18 @@ export function TelemetryCommandCards({ metrics }: TelemetryCommandCardsProps = 
 
           <CardContent className="space-y-3 z-10 relative px-4 pb-4">
             <div className="flex items-baseline justify-between gap-2">
-              <span className="text-xl lg:text-2xl font-bold tracking-tight text-white font-mono">
+              <span className="text-2xl lg:text-3xl font-extrabold tracking-tight text-white font-mono">
                 {item.value}
               </span>
-              <Badge appearance="light" className="font-mono text-[10px] tracking-wider uppercase shrink-0" size="sm" variant={item.badgeVariant}>
+              <Badge appearance="light" className="font-mono text-xs py-1 px-2.5 tracking-wider uppercase shrink-0" size="sm" variant={item.badgeVariant}>
                 {item.badgePulse && (
-                  <span className="size-1.5 rounded-full bg-amber-400 animate-ping mr-1" />
+                  <span className="size-2 rounded-full bg-amber-400 animate-ping mr-1.5" />
                 )}
                 {item.badgeText}
               </Badge>
             </div>
 
-            <div className="text-[11px] text-slate-400 border-t border-white/10 pt-2.5 line-clamp-1 font-mono">
+            <div className="text-xs text-slate-300 border-t border-white/10 pt-2.5 line-clamp-1 font-mono tracking-wide">
               {item.subtext}
             </div>
           </CardContent>

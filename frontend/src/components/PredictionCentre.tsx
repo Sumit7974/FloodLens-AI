@@ -291,11 +291,11 @@ export const PredictionCentre: React.FC<PredictionCentreProps> = ({
           {/* Cluster A: Hydraulic Inflow & Sluice Operations */}
           <div className="rounded-xl bg-zinc-950/80 border border-zinc-800/80 backdrop-blur-md p-4 sm:p-5 flex flex-col justify-between space-y-3.5 shadow-sm">
             <div className="flex items-center justify-between">
-              <span className="text-xs uppercase tracking-wider text-zinc-400 font-medium flex items-center gap-2">
-                <Waves className="w-3.5 h-3.5 text-cyan-400" />
+              <span className="text-sm uppercase tracking-wider text-zinc-200 font-semibold flex items-center gap-2">
+                <Waves className="w-4 h-4 text-cyan-400" />
                 HYDRAULIC INFLOW &amp; SLUICE OPS
               </span>
-              <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wide">
+              <span className="text-xs font-mono text-zinc-400 uppercase tracking-wide font-medium">
                 ARUN + TAMOR BASIN
               </span>
             </div>
@@ -309,19 +309,19 @@ export const PredictionCentre: React.FC<PredictionCentreProps> = ({
 
             {/* Hairline Divider with Sluice & Outflow stats */}
             <div className="border-t border-zinc-800/80 pt-3 grid grid-cols-2 gap-3 text-xs font-mono">
-              <div className="space-y-0.5">
-                <span className="text-[10px] uppercase tracking-wider text-zinc-400 font-medium block">
+              <div className="space-y-1">
+                <span className="text-xs uppercase tracking-wider text-zinc-400 font-semibold block">
                   BARRAGE SLUICE STATUS
                 </span>
-                <span className="text-sm font-semibold text-zinc-200 font-mono block">
+                <span className="text-sm sm:text-base font-bold text-zinc-200 font-mono block">
                   {forecast.damGatesOpen.toUpperCase()}
                 </span>
               </div>
-              <div className="space-y-0.5 border-l border-zinc-800/80 pl-3">
-                <span className="text-[10px] uppercase tracking-wider text-zinc-400 font-medium block">
+              <div className="space-y-1 border-l border-zinc-800/80 pl-3">
+                <span className="text-xs uppercase tracking-wider text-zinc-400 font-semibold block">
                   OUTFLOW DISCHARGE
                 </span>
-                <span className="text-sm font-semibold text-zinc-200 font-mono block">
+                <span className="text-sm sm:text-base font-bold text-zinc-200 font-mono block">
                   94% CAPACITY
                 </span>
               </div>
@@ -331,12 +331,12 @@ export const PredictionCentre: React.FC<PredictionCentreProps> = ({
           {/* Cluster B: Crest Projection & Arrival */}
           <div className="rounded-xl bg-zinc-950/80 border border-zinc-800/80 backdrop-blur-md p-4 sm:p-5 flex flex-col justify-between space-y-3.5 shadow-sm">
             <div className="flex items-center justify-between">
-              <span className="text-xs uppercase tracking-wider text-zinc-400 font-medium flex items-center gap-2">
-                <Clock className="w-3.5 h-3.5 text-amber-400" />
+              <span className="text-sm uppercase tracking-wider text-zinc-200 font-semibold flex items-center gap-2">
+                <Clock className="w-4 h-4 text-amber-400" />
                 CREST PROJECTION &amp; ARRIVAL
               </span>
               <span
-                className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded uppercase ${
+                className={`text-xs font-mono font-bold px-2.5 py-1 rounded uppercase ${
                   forecast.threatLevel === 'CRITICAL'
                     ? 'text-rose-400 bg-rose-950/40 border border-rose-800/50'
                     : 'text-amber-400 bg-amber-950/40 border border-amber-800/50'
@@ -354,19 +354,19 @@ export const PredictionCentre: React.FC<PredictionCentreProps> = ({
 
             {/* Hairline Divider with Spur Location, Flow Velocity & Hazard State */}
             <div className="border-t border-zinc-800/80 pt-3 grid grid-cols-2 gap-3 text-xs font-mono">
-              <div className="space-y-0.5">
-                <span className="text-[10px] uppercase tracking-wider text-zinc-400 font-medium block">
+              <div className="space-y-1">
+                <span className="text-xs uppercase tracking-wider text-zinc-400 font-semibold block">
                   CRITICAL SPUR REACH
                 </span>
-                <span className="text-sm font-semibold text-zinc-200 font-mono block">
+                <span className="text-sm sm:text-base font-bold text-zinc-200 font-mono block">
                   SPUR 12+400
                 </span>
               </div>
-              <div className="space-y-0.5 border-l border-zinc-800/80 pl-3">
-                <span className="text-[10px] uppercase tracking-wider text-zinc-400 font-medium block">
+              <div className="space-y-1 border-l border-zinc-800/80 pl-3">
+                <span className="text-xs uppercase tracking-wider text-zinc-400 font-semibold block">
                   CHANNEL VELOCITY
                 </span>
-                <span className="text-sm font-semibold text-zinc-200 font-mono block">
+                <span className="text-sm sm:text-base font-bold text-zinc-200 font-mono block">
                   3.4 M/S
                 </span>
               </div>
@@ -375,7 +375,7 @@ export const PredictionCentre: React.FC<PredictionCentreProps> = ({
         </div>
 
         {/* Cluster C: Model & Telemetry Provenance Footer Bar */}
-        <div className="rounded-xl bg-zinc-950/80 border border-zinc-800/80 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs font-mono text-zinc-400">
+        <div className="rounded-xl bg-zinc-950/80 border border-zinc-800/80 px-5 py-3 flex flex-wrap items-center justify-between gap-3 text-sm font-mono text-zinc-300">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-zinc-500 flex items-center gap-1.5 font-medium">
               <BrainCircuit className="w-3.5 h-3.5 text-emerald-400" />

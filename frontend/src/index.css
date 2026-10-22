@@ -111,7 +111,7 @@
 
 .font-micro {
   font-family: 'Barlow Semi Condensed', 'D-DIN', 'Arial Narrow', sans-serif;
-  font-size: 12px;
+  font-size: 13px;
   text-transform: uppercase;
   letter-spacing: 1.1px;
   font-weight: 600;
@@ -122,17 +122,17 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.45rem;
+  gap: 0.5rem;
   border-radius: 9999px;
   border: 1px solid rgba(14, 165, 233, 0.5);
   background: linear-gradient(135deg, rgba(14, 165, 233, 0.18), rgba(232, 110, 37, 0.18));
   color: #ffffff;
   font-family: 'D-DIN-Bold', 'Barlow Semi Condensed', 'Arial Narrow', sans-serif;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1.17px;
-  padding: 8px 20px;
+  padding: 9px 22px;
   transition: all 0.2s ease-in-out;
   cursor: pointer;
   white-space: nowrap;
@@ -151,17 +151,17 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
+  gap: 0.45rem;
   border-radius: 9999px;
   border: 1px solid #1e3a5f;
   background-color: rgba(6, 13, 27, 0.8);
-  color: #94a3b8;
+  color: #cbd5e1;
   font-family: 'D-DIN-Bold', 'Barlow Semi Condensed', 'Arial Narrow', sans-serif;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1.0px;
-  padding: 6px 14px;
+  padding: 7px 16px;
   transition: all 0.2s ease-in-out;
   cursor: pointer;
   white-space: nowrap;
@@ -178,17 +178,17 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
+  gap: 0.45rem;
   border-radius: 9999px;
   border: 1px solid #0ea5e9;
   background-color: #0ea5e9;
   color: #ffffff;
   font-family: 'D-DIN-Bold', 'Barlow Semi Condensed', 'Arial Narrow', sans-serif;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 1.0px;
-  padding: 6px 14px;
+  padding: 7px 16px;
   cursor: pointer;
   white-space: nowrap;
   box-shadow: 0 0 15px rgba(14, 165, 233, 0.4);
@@ -206,15 +206,15 @@
 .badge-chip {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.4rem;
   border-radius: 9999px;
   border: 1px solid #1e3a5f;
   background-color: rgba(6, 13, 27, 0.8);
   color: #38bdf8;
-  font-size: 11px;
+  font-size: 12px;
   text-transform: uppercase;
-  letter-spacing: 0.96px;
-  padding: 3px 10px;
+  letter-spacing: 1px;
+  padding: 4px 12px;
   font-family: 'Barlow Semi Condensed', 'D-DIN', sans-serif;
   font-weight: 600;
 }
