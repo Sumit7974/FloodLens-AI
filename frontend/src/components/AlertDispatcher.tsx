@@ -14,12 +14,15 @@ import { GeospatialTerrainMap } from './map/GeospatialTerrainMap';
 import type { Alert, AlertSeverity, BenchmarkScene } from '../types';
 import { DataStatusBadge } from './common/DataStatusBadge';
 import { floodLensClient } from '../services/floodLensClient';
+import { DEMO_MODE, approveDemoDraft, dispatchApprovedDemo } from '../services/backendApi';
+import { toUiAlert } from '../services/backendMappers';
 
 interface AlertDispatcherProps {
   currentScene: BenchmarkScene;
   activeAlerts: Alert[];
   onBroadcastAlert: (newAlert: Alert) => void;
   onCancelAlert: (alertId: string) => void;
+  onAlertUpdated?: (alert: Alert) => void;
   initialPayload?: {
     horizon?: string;
     threatLevel?: string;
@@ -111,6 +114,7 @@ export const AlertDispatcher: React.FC<AlertDispatcherProps> = ({
   activeAlerts,
   onBroadcastAlert,
   onCancelAlert,
+  onAlertUpdated,
   initialPayload,
 }) => {
   // Target Zone selection
@@ -147,6 +151,7 @@ export const AlertDispatcher: React.FC<AlertDispatcherProps> = ({
 
   // Client Data Status state
   const [dataStatus, setDataStatus] = useState<'live' | 'cached' | 'error'>('cached');
+  const [pendingAlertId, setPendingAlertId] = useState<string | null>(null);
 
   // Handle incoming pre-filled payload from PredictionCentre
   useEffect(() => {
@@ -183,15 +188,6 @@ export const AlertDispatcher: React.FC<AlertDispatcherProps> = ({
     setChannels((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const generateSha256Audit = () => {
-    const chars = '0123456789abcdef';
-    let hash = '';
-    for (let i = 0; i < 32; i++) {
-      hash += chars[Math.floor(Math.random() * chars.length)];
-    }
-    return `SHA-256: ${hash}`;
-  };
-
   const handleConfirmBroadcast = async () => {
     const selectedChannelList: string[] = [];
     if (channels.push) selectedChannelList.push('Citizen Android Push [Simulated Drill]');
@@ -204,7 +200,7 @@ export const AlertDispatcher: React.FC<AlertDispatcherProps> = ({
       geofence_id: activeZone.id,
       severity: severity === 'UNSPECIFIED' ? 'ADVISORY' : severity,
       channels: selectedChannelList,
-      headline: headlineEn,
+      headline: res.data.headline,
       message: messageEn,
       headline_ne: headlineNe,
       message_ne: messageNe,
@@ -212,41 +208,63 @@ export const AlertDispatcher: React.FC<AlertDispatcherProps> = ({
       simulated_reach: activeZone.estimatedPopulation,
     });
 
-    if (res.status) {
-      setDataStatus(res.status);
+    setDataStatus(res.status);
+    if (res.status === 'error' || !res.data) {
+      setToast(`NOT SAVED: ${res.error || 'FastAPI rejected the draft'}`);
+      return;
     }
 
-    const auditHash = res.data?.audit_hash || generateSha256Audit();
+    const auditHash = res.data.audit_hash || undefined;
 
     const newAlert: Alert = {
-      id: res.data?.id || `ALT-KOSHI-2026-0${activeAlerts.length + 5}`,
+      id: res.data.id,
       code: `${severity === 'EMERGENCY' ? 'RED-ALERT' : severity === 'WARNING' ? 'AMBER-WATCH' : 'YELLOW-ADVISORY'}-0${activeAlerts.length + 5}`,
       headline: headlineEn,
       headline_ne: headlineNe,
-      description: messageEn,
+      description: res.data.description,
       description_ne: messageNe,
       severity: severity,
       risk_level: severity === 'EMERGENCY' ? 'EXTREME' : severity === 'WARNING' ? 'HIGH' : 'MODERATE',
-      geofence: activeZone.name,
-      population_affected: activeZone.estimatedPopulation,
-      status: 'DISPATCHED',
+      geofence: res.data.geofence || activeZone.name,
+      population_affected: res.data.population_affected,
+      status: res.data.status,
       issued_at: new Date().toISOString(),
-      dispatched_at: 'Just now (Simulated Drill)',
+      dispatched_at: res.data.dispatched_at || '',
       expires_at: new Date(Date.now() + 6 * 3600 * 1000).toISOString(),
-      channels: selectedChannelList,
-      approved_by: 'Authorized EOC Duty Commander (Drill Simulation)',
+      channels: res.data.channels,
+      approved_by: res.data.approved_by || '',
       evacuation_notice: severity === 'EMERGENCY',
       safe_shelter: selectedShelter,
-      read_rate: 88,
-      reach_count: activeZone.estimatedPopulation,
+      read_rate: undefined,
+      reach_count: undefined,
       audit_hash: auditHash,
       is_drill_simulation: true,
     };
 
     onBroadcastAlert(newAlert);
     setShowConfirmModal(false);
-    setToast('Simulated Broadcast Logged (Audit Record Created)');
+    setToast(res.isMock
+      ? 'LOCAL DEMO ONLY: alert simulation recorded in browser; no warnings sent.'
+      : 'Backend DEMO draft created. Approval and test dispatch are separate authorized steps.');
     setTimeout(() => setToast(null), 4000);
+  };
+
+  const handleAdvanceAlert = async (alert: Alert) => {
+    if (DEMO_MODE || (alert.status !== 'DRAFT' && alert.status !== 'APPROVED')) return;
+    setPendingAlertId(alert.id);
+    try {
+      const saved = alert.status === 'DRAFT'
+        ? await approveDemoDraft(alert.id)
+        : await dispatchApprovedDemo(alert.id);
+      onAlertUpdated?.(toUiAlert(saved));
+      setToast(alert.status === 'DRAFT'
+        ? 'Historical DEMO draft approved in backend; test dispatch still requires separate confirmation.'
+        : 'Historical DEMO test dispatch saved in backend (no public alert or rescue action).');
+    } catch (error) {
+      setToast(`NOT SAVED: ${error instanceof Error ? error.message : 'FastAPI rejected action'}`);
+    } finally {
+      setPendingAlertId(null);
+    }
   };
 
   const getSeverityPillColor = (sev: AlertSeverity) => {
@@ -522,7 +540,7 @@ export const AlertDispatcher: React.FC<AlertDispatcherProps> = ({
                 className="w-full py-2.5 px-4 rounded-full bg-gradient-to-r from-rose-600 via-red-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-mono font-bold text-xs uppercase tracking-wider border border-rose-400 shadow-[0_0_15px_rgba(244,63,94,0.4)] transition-all cursor-pointer flex items-center justify-center gap-2"
               >
                 <Send className="w-3.5 h-3.5" />
-                <span>AUTHORIZE SIMULATION DRILL DISPATCH</span>
+                <span>{DEMO_MODE ? 'RECORD LOCAL DEMO' : 'CREATE BACKEND DEMO DRAFT'}</span>
               </button>
             </div>
           </div>
@@ -561,10 +579,10 @@ export const AlertDispatcher: React.FC<AlertDispatcherProps> = ({
             <div className="flex items-center justify-between pb-2 border-b border-[#1e3a5f]">
               <h3 className="font-display text-xs font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
                 <Clock className="w-3.5 h-3.5 text-white" />
-                SIMULATION DISPATCH AUDIT LOG
+                HISTORICAL DEMO ALERT AUDIT
               </h3>
               <span className="text-[10px] text-emerald-400 font-bold">
-                SHA-256 AUDIT VERIFIED
+                TEST RECORDS · HASH NOT VERIFIED
               </span>
             </div>
 
@@ -587,10 +605,13 @@ export const AlertDispatcher: React.FC<AlertDispatcherProps> = ({
                     </div>
 
                     <button
-                      onClick={() => onCancelAlert(alert.id)}
-                      className="px-2 py-0.5 rounded text-[9px] border border-rose-500/50 text-rose-300 hover:bg-rose-500/20 cursor-pointer"
+                      onClick={() => alert.status === 'DRAFT' || alert.status === 'APPROVED'
+                        ? void handleAdvanceAlert(alert)
+                        : DEMO_MODE ? onCancelAlert(alert.id) : undefined}
+                      disabled={pendingAlertId === alert.id || (!DEMO_MODE && alert.status !== 'DRAFT' && alert.status !== 'APPROVED')}
+                      className="px-2 py-0.5 rounded text-[9px] border border-sky-500/50 text-sky-300 hover:bg-sky-500/20 cursor-pointer disabled:opacity-40"
                     >
-                      SUPERSEDE
+                      {pendingAlertId === alert.id ? 'Saving…' : alert.status === 'DRAFT' ? 'APPROVE DEMO DRAFT' : alert.status === 'APPROVED' ? 'DISPATCH TEST ONLY' : DEMO_MODE ? 'CANCEL LOCAL DEMO' : 'READ ONLY'}
                     </button>
                   </div>
 
@@ -600,7 +621,7 @@ export const AlertDispatcher: React.FC<AlertDispatcherProps> = ({
                     </span>
                     <span className="text-sky-300 flex items-center gap-1 font-mono">
                       <Hash className="w-3 h-3 text-sky-400" />
-                      {alert.audit_hash || 'SHA-256 Verified'}
+                      {alert.audit_hash || 'No cryptographic audit hash'}
                     </span>
                   </div>
                 </div>
@@ -668,7 +689,7 @@ export const AlertDispatcher: React.FC<AlertDispatcherProps> = ({
                 className="px-5 py-1.5 rounded-full bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white text-xs font-bold font-mono tracking-wider uppercase border border-rose-400 shadow-[0_0_12px_rgba(244,63,94,0.4)] transition-all cursor-pointer flex items-center gap-1.5"
               >
                 <Send className="w-3.5 h-3.5" />
-                <span>CONFIRM SIMULATION LOG</span>
+                <span>{DEMO_MODE ? 'RECORD LOCAL DEMO' : 'SAVE REVIEWABLE DRAFT'}</span>
               </button>
             </div>
           </div>
