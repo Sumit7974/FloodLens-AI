@@ -442,10 +442,12 @@ def run_comprehensive_forecast_evaluation(
     now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     dpath = Path(data_path) if data_path else (root / "ml" / "data" / "processed" / "era5_glofas_labeled.csv")
-    if not dpath.exists():
-        dpath = root / "ml" / "data" / "processed" / "koshi_event_cleaned.csv"
-    if not dpath.exists():
-        raise FileNotFoundError(f"Evaluation dataset not found at {dpath}")
+    if not dpath.is_file():
+        raise FileNotFoundError(
+            f"Requested evaluation dataset unavailable: {dpath}. "
+            "Pass data_path explicitly for synthetic demonstrations; "
+            "never silently substitute synthetic results for historical validation."
+        )
 
     logger.info(f"Loading evaluation dataset: {dpath}")
     df = pd.read_csv(dpath)
@@ -464,11 +466,9 @@ def run_comprehensive_forecast_evaluation(
     models_dir = root / "ml" / "models"
     from ml.src.predict import FloodRiskPredictor
 
-    predictor = None
-    try:
-        predictor = FloodRiskPredictor(models_dir=models_dir, model_version=model_version)
-    except Exception as exc:
-        logger.warning(f"Could not load predictor for {model_version}: {exc}")
+    predictor = FloodRiskPredictor(models_dir=models_dir, model_version=model_version)
+    if not all(h in predictor.models for h in (1, 3, 6)):
+        raise RuntimeError(f"Model {model_version} is missing one or more required +1h/+3h/+6h artifacts")
 
     horizons = [1, 3, 6]
     matching_summaries: List[MatchingSummary] = []
@@ -486,20 +486,15 @@ def run_comprehensive_forecast_evaluation(
 
         y_true = test_df[target_col]
 
-        # Generate model predictions
-        if predictor and h in predictor.models:
-            num_cols = predictor.metadata.get("features", {}).get("numeric", [])
-            cat_cols = predictor.metadata.get("features", {}).get("categorical", [])
-            all_cols = num_cols + cat_cols
-            X_test = test_df[all_cols].copy()
-            try:
-                preds_arr = predictor.models[h].predict(X_test)
-                y_pred = pd.Series(preds_arr, index=test_df.index)
-            except Exception as e:
-                logger.warning(f"Prediction error for horizon +{h}h: {e}")
-                y_pred = y_true.copy()
-        else:
-            y_pred = y_true.copy()
+        # Never replace failed inference with ground-truth labels: this falsely
+        # produces perfect scores and invalidates the evaluation report.
+        num_cols = predictor.metadata.get("features", {}).get("numeric", [])
+        cat_cols = predictor.metadata.get("features", {}).get("categorical", [])
+        X_test = test_df[num_cols + cat_cols].copy()
+        try:
+            y_pred = pd.Series(predictor.models[h].predict(X_test), index=test_df.index)
+        except Exception as exc:
+            raise RuntimeError(f"Model {model_version} failed at +{h}h; evaluation aborted") from exc
 
         # Task 1: Timestamp & Location Matching
         matched, summary = match_forecasts_with_observations(
