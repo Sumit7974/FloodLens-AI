@@ -35,8 +35,8 @@ class SatelliteSceneResponse(BaseModel):
 
 class SatelliteJobCreate(BaseModel):
     """Job dispatch request for satellite extent processing."""
-    event_id: Optional[str] = Field(default=None, description="Optional target flood event ID")
-    scene_id: Optional[str] = Field(default=None, description="Primary scene identifier to process")
+    event_id: str = Field(..., min_length=1, max_length=36, description="Target flood event ID (required)")
+    scene_id: str = Field(..., min_length=1, max_length=100, description="Primary scene identifier to process (required)")
     baseline_scene_id: Optional[str] = Field(default=None, description="Pre-flood baseline scene for change detection")
     method: str = Field(default="NDWI", description="Index or method: NDWI, MNDWI, SAR_CHANGE")
     threshold: Optional[float] = Field(default=0.0, description="Water index decision threshold")
@@ -61,7 +61,7 @@ class SatelliteJobDetailResponse(BaseModel):
     event_id: Optional[str] = None
     scene_id: Optional[str] = None
     baseline_scene_id: Optional[str] = None
-    requested_by: str
+    requested_by: Optional[str] = None
     created_at: datetime
     started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None

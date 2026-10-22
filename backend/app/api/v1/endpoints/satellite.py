@@ -5,8 +5,8 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, BackgroundTasks, Depends, Query, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import require_roles
-from app.core.exceptions import ConflictError, FloodLensAPIException, NotFoundError
+from app.api.deps import get_optional_current_user, require_roles
+from app.core.exceptions import ConflictError, FloodLensAPIException, NotFoundError, UnauthorizedError
 from app.database import get_db
 from app.models.enums import UserRole
 from app.models.satellite import SatelliteJob, SatelliteScene
@@ -18,7 +18,7 @@ from app.schemas.satellite import (
     SatelliteSceneCreate,
     SatelliteSceneResponse,
 )
-from app.services.satellite_processor import process_satellite_job, validate_satellite_job_parameters
+from app.services.satellite_processor import dispatch_satellite_job, validate_satellite_job_parameters
 
 router = APIRouter(prefix="/satellite", tags=["Satellite & GIS"])
 
@@ -161,7 +161,7 @@ async def create_satellite_job(
     db.refresh(new_job)
 
     # 4. Dispatch background worker task
-    background_tasks.add_task(process_satellite_job, new_job.id)
+    background_tasks.add_task(dispatch_satellite_job, new_job.id)
 
     return SatelliteJobResponse(
         job_id=new_job.id,
@@ -181,14 +181,27 @@ async def create_satellite_job(
 async def get_satellite_job_status(
     job_id: str,
     db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user),
 ) -> SatelliteJobDetailResponse:
-    """Retrieve persisted status, progress, timestamps, and output references for a processing job. Unknown IDs return 404."""
+    """Retrieve persisted status, progress, timestamps, and output references for a processing job.
+    
+    Preserves 404 for unknown job IDs. Requires authentication for existing jobs.
+    Redacts sensitive metadata (requester email, error details) for non-authority users.
+    """
     job = db.query(SatelliteJob).filter(SatelliteJob.id == job_id).first()
     if not job:
         raise NotFoundError(
             message=f"Satellite processing job '{job_id}' not found",
             code="JOB_NOT_FOUND",
         )
+
+    if not current_user:
+        raise UnauthorizedError(
+            message="Authentication required to view satellite processing job status",
+            code="UNAUTHORIZED",
+        )
+
+    is_authority_or_admin = current_user.role in (UserRole.AUTHORITY, UserRole.ADMIN)
 
     return SatelliteJobDetailResponse(
         job_id=job.id,
@@ -199,11 +212,11 @@ async def get_satellite_job_status(
         event_id=job.event_id,
         scene_id=job.scene_id,
         baseline_scene_id=job.baseline_scene_id,
-        requested_by=job.requested_by,
+        requested_by=job.requested_by if is_authority_or_admin else None,
         created_at=job.created_at,
         started_at=job.started_at,
         completed_at=job.completed_at,
         output_extent_id=job.output_extent_id,
-        error_message=job.error_message,
+        error_message=job.error_message if is_authority_or_admin else None,
         provenance=job.provenance,
     )

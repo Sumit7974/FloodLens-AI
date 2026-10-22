@@ -250,8 +250,21 @@ def test_satellite_job_workflow(client: TestClient, authority_token: str):
     )
     assert reg_res.status_code == status.HTTP_201_CREATED
 
-    # 2. Dispatch valid NDWI processing job
+    # 2. Dispatch valid NDWI processing job with explicit flood event
+    evt_id = f"evt_flow_{uuid.uuid4().hex[:6]}"
+    client.post(
+        "/api/v1/flood-events",
+        json={
+            "id": evt_id,
+            "region_id": "nepal_terai",
+            "name": "Koshi River Historical Workflow",
+            "start_at": datetime.now(timezone.utc).isoformat(),
+        },
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+
     job_payload = {
+        "event_id": evt_id,
         "method": "NDWI",
         "scene_id": scene_id,
         "threshold": 0.10,
@@ -267,8 +280,11 @@ def test_satellite_job_workflow(client: TestClient, authority_token: str):
     assert body["status"] == "QUEUED"
     job_id = body["job_id"]
 
-    # 3. Poll job status
-    poll_res = client.get(f"/api/v1/satellite/jobs/{job_id}")
+    # 3. Poll job status with authorization
+    poll_res = client.get(
+        f"/api/v1/satellite/jobs/{job_id}",
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
     assert poll_res.status_code == status.HTTP_200_OK
     poll_body = poll_res.json()
     assert poll_body["job_id"] == job_id
@@ -278,7 +294,7 @@ def test_satellite_job_workflow(client: TestClient, authority_token: str):
     # 4. Unsupported method MNDWI is rejected with 400
     mndwi_res = client.post(
         "/api/v1/satellite/jobs",
-        json={"method": "MNDWI", "scene_id": scene_id},
+        json={"event_id": evt_id, "method": "MNDWI", "scene_id": scene_id},
         headers={"Authorization": f"Bearer {authority_token}"},
     )
     assert mndwi_res.status_code == status.HTTP_400_BAD_REQUEST
