@@ -14,7 +14,6 @@ import {
   Lock,
   MapPin,
   RefreshCw,
-  Send,
   TrendingUp,
   Waves,
   Wifi,
