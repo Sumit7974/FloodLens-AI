@@ -259,17 +259,20 @@ def test_candidate_model_loading_and_predict_inference():
         assert 0.0 <= h_item["calibrated_probability"] <= 1.0
 
 
-def test_full_evaluation_pipeline_execution():
-    """Integration test verifying end-to-end execution of run_comprehensive_forecast_evaluation."""
-    report = run_comprehensive_forecast_evaluation(model_version="era5-v1")
+def test_full_evaluation_pipeline_execution(tmp_path: Path):
+    """Offline pipeline regression with explicitly tagged synthetic input, not ERA5 validation."""
+    synthetic = REPO_ROOT / "ml" / "data" / "synthetic" / "synthetic_koshi_event.csv"
+    assert synthetic.is_file(), "Versioned synthetic demo fixture is required."
+    report = run_comprehensive_forecast_evaluation(
+        data_path=synthetic, reports_dir=tmp_path, model_version="baseline-v1",
+    )
 
-    assert report.model_version == "era5-v1"
+    assert report.model_version == "baseline-v1"
     assert report.summary_verdict == "PASS_ON_HELD_OUT_TEST_DATA"
     assert len(report.matching_summaries) == 3
     assert "+1h" in report.multiclass_evaluations
     assert "+1h" in report.false_alarm_analyses
 
     # Verify that JSON artifacts were created
-    rep_dir = REPO_ROOT / "ml" / "reports"
-    assert (rep_dir / "forecast_vs_observation_report.json").exists()
-    assert (rep_dir / "evaluation_metrics_report.json").exists()
+    assert (tmp_path / "forecast_vs_observation_report.json").exists()
+    assert (tmp_path / "evaluation_metrics_report.json").exists()
