@@ -11,13 +11,10 @@ import {
   Gauge,
   Info,
   Layers,
-<<<<<<< HEAD
-=======
   Lock,
   MapPin,
   RefreshCw,
   Send,
->>>>>>> origin/feature/ml-final-validation
   TrendingUp,
   Waves,
   Wifi,
