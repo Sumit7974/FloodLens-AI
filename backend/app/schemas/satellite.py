@@ -49,3 +49,24 @@ class SatelliteJobResponse(BaseModel):
     message: str
     requested_by: str
     created_at: datetime
+
+
+class SatelliteJobDetailResponse(BaseModel):
+    """Comprehensive job status and artifact provenance detail schema."""
+    job_id: str
+    status: str
+    progress_percent: float = 0.0
+    method: str
+    threshold: Optional[float] = None
+    event_id: Optional[str] = None
+    scene_id: Optional[str] = None
+    baseline_scene_id: Optional[str] = None
+    requested_by: str
+    created_at: datetime
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    output_extent_id: Optional[str] = None
+    error_message: Optional[str] = None
+    provenance: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
