@@ -61,7 +61,7 @@ def test_optical_scene(db_session: Session) -> SatelliteScene:
         modality="optical",
         captured_at=datetime(2017, 8, 15, 10, 30, tzinfo=timezone.utc),
         cloud_quality=0.08,
-        asset_ref="ml/gis_processing/downloads/flood_polygons_web.geojson",
+        asset_ref="backend/tests/fixtures/optical_flood_sample.geojson",
         bbox_geojson={
             "type": "Polygon",
             "coordinates": [
@@ -90,7 +90,7 @@ def test_radar_scene(db_session: Session) -> SatelliteScene:
         modality="sar",
         captured_at=datetime(2017, 8, 16, 12, 0, tzinfo=timezone.utc),
         cloud_quality=None,
-        asset_ref="ml/gis_processing/downloads/radar_flood_polygons_optimized.geojson",
+        asset_ref="backend/tests/fixtures/radar_flood_sample.geojson",
         bbox_geojson={
             "type": "Polygon",
             "coordinates": [
@@ -292,7 +292,7 @@ def test_temporal_and_geographic_incompatibility_rejected(
         sensor="Sentinel-2",
         modality="optical",
         captured_at=now,
-        asset_ref="ml/gis_processing/downloads/flood_polygons_web.geojson",
+        asset_ref="backend/tests/fixtures/optical_flood_sample.geojson",
         bbox_geojson={
             "type": "Polygon",
             "coordinates": [[[87.0, 26.0], [87.5, 26.0], [87.5, 26.5], [87.0, 26.5], [87.0, 26.0]]],
@@ -305,7 +305,7 @@ def test_temporal_and_geographic_incompatibility_rejected(
         sensor="Sentinel-2",
         modality="optical",
         captured_at=now + timedelta(days=5),
-        asset_ref="ml/gis_processing/downloads/flood_polygons_web.geojson",
+        asset_ref="backend/tests/fixtures/optical_flood_sample.geojson",
         bbox_geojson={
             "type": "Polygon",
             "coordinates": [[[87.0, 26.0], [87.5, 26.0], [87.5, 26.5], [87.0, 26.5], [87.0, 26.0]]],
@@ -318,7 +318,7 @@ def test_temporal_and_geographic_incompatibility_rejected(
         sensor="Sentinel-2",
         modality="optical",
         captured_at=now - timedelta(days=5),
-        asset_ref="ml/gis_processing/downloads/flood_polygons_web.geojson",
+        asset_ref="backend/tests/fixtures/optical_flood_sample.geojson",
         bbox_geojson={
             "type": "Polygon",
             "coordinates": [[[80.0, 20.0], [80.5, 20.0], [80.5, 20.5], [80.0, 20.5], [80.0, 20.0]]],
@@ -652,7 +652,7 @@ def test_end_to_end_acceptance_workflow(
             "modality": "optical",
             "captured_at": "2017-08-15T10:30:00Z",
             "cloud_quality": 0.05,
-            "asset_ref": "ml/gis_processing/downloads/flood_polygons_web.geojson",
+            "asset_ref": "backend/tests/fixtures/optical_flood_sample.geojson",
         },
         headers={"Authorization": f"Bearer {authority_token}"},
     )

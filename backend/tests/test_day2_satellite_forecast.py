@@ -244,7 +244,7 @@ def test_satellite_job_workflow(client: TestClient, authority_token: str):
             "modality": "optical",
             "captured_at": datetime.now(timezone.utc).isoformat(),
             "cloud_quality": 0.05,
-            "asset_ref": "ml/gis_processing/downloads/flood_polygons_web.geojson",
+            "asset_ref": "backend/tests/fixtures/optical_flood_sample.geojson",
         },
         headers={"Authorization": f"Bearer {authority_token}"},
     )
