@@ -55,6 +55,7 @@ try:
         derive_binary_metrics,
         evaluate_flood_detection_accuracy,
         compute_cross_sensor_agreement,
+        compute_vector_cross_sensor_agreement,
         ValidationStatus,
     )
 except ImportError:
@@ -64,6 +65,7 @@ except ImportError:
             derive_binary_metrics,
             evaluate_flood_detection_accuracy,
             compute_cross_sensor_agreement,
+            compute_vector_cross_sensor_agreement,
             ValidationStatus,
         )
     except ImportError:
@@ -74,6 +76,7 @@ except ImportError:
             derive_binary_metrics,
             evaluate_flood_detection_accuracy,
             compute_cross_sensor_agreement,
+            compute_vector_cross_sensor_agreement,
             ValidationStatus,
         )
 
@@ -325,48 +328,75 @@ def compute_detection_metrics(
                 continue
 
     # 2. Multi-Modal Cross-Sensor Inter-Comparison (Sentinel-2 Optical vs Sentinel-1 SAR Radar)
-    # Optical detected flood extent from 10m NDWI: 48.01 km²
-    # SAR detected flood extent in Koshi study area: 72.35 km²
-    # Co-detected core consensus: 39.84 km²
-    optical_flood_km2 = 48.01
-    radar_koshi_flood_km2 = 72.35
-    core_consensus_km2 = 39.84
+    # Computed dynamically from actual vector geometries in metric UTM Zone 45N
+    opt_geojson_path = None
+    rad_geojson_path = None
+    try:
+        opt_geojson_path = locate_file("flood_polygons.geojson")
+    except FileNotFoundError:
+        pass
+    try:
+        rad_geojson_path = locate_file("radar_flood_polygons.geojson")
+    except FileNotFoundError:
+        pass
 
-    cross_sensor_agreement = compute_cross_sensor_agreement(
-        optical_extent_km2=optical_flood_km2,
-        radar_extent_km2=radar_koshi_flood_km2,
-        consensus_core_km2=core_consensus_km2,
-    )
+    if opt_geojson_path and rad_geojson_path:
+        print("[*] Computing vector multi-modal cross-sensor comparison from actual geometries...")
+        cross_sensor_agreement = compute_vector_cross_sensor_agreement(
+            optical_geojson=opt_geojson_path,
+            radar_geojson=rad_geojson_path,
+            koshi_basin_filter=False
+        )
+    else:
+        cross_sensor_agreement = {
+            "comparison_type": "VECTOR_CROSS_SENSOR_AGREEMENT",
+            "cross_sensor_status": ValidationStatus.UNVERIFIED.value,
+            "reason": "MISSING_VECTOR_LAYERS",
+            "optical_total_extent_km2": 0.0,
+            "radar_total_extent_km2": 0.0,
+            "common_footprint_intersection_km2": 0.0,
+            "common_footprint_union_km2": 0.0,
+            "common_footprint_iou": 0.0,
+            "scientific_limitation": "Optical or radar vector layers not located for geometric comparison."
+        }
 
     if ref_mask_path is not None and pred_mask_path is not None:
-        print(f"[*] Independent reference mask located: {ref_mask_path}")
+        print(f"[*] Reference mask located: {ref_mask_path}")
         metrics_report = evaluate_flood_detection_accuracy(
             pred_mask=pred_mask_path,
             ref_mask=ref_mask_path,
-            reference_provenance=reference_provenance or "INDEPENDENT_EXTERNAL_REFERENCE",
+            reference_provenance=reference_provenance,
         )
         metrics_report["cross_sensor_agreement"] = cross_sensor_agreement
         cm = metrics_report["confusion_matrix_pixels"]
         ind = metrics_report["detection_performance_indicators"]
-        print(f"[*] Confusion Matrix: TP = {cm['tp_pixels']:,} px | FP = {cm['fp_pixels']:,} px | FN = {cm['fn_pixels']:,} px | TN = {cm['tn_pixels']:,} px")
-        print(f"[+] Precision (User's Accuracy)     : {ind['precision_user_accuracy'] * 100:.2f}%")
-        print(f"[+] Recall (Producer's Accuracy)    : {ind['recall_producer_accuracy'] * 100:.2f}%")
-        print(f"[+] F1-Score (Dice Coefficient)     : {ind['f1_score_dice_coefficient']:.4f}")
-        print(f"[+] Intersection-over-Union (IoU)   : {ind['iou_jaccard_index'] * 100:.2f}%")
-        print(f"[+] Overall Accuracy                : {ind['overall_accuracy'] * 100:.4f}%")
-        print(f"[+] Cohen's Kappa Coefficient (κ)   : {ind['cohens_kappa']:.4f}")
+        if cm and ind:
+            print(f"[*] Confusion Matrix: TP = {cm['tp_pixels']:,} px | FP = {cm['fp_pixels']:,} px | FN = {cm['fn_pixels']:,} px | TN = {cm['tn_pixels']:,} px")
+            print(f"[+] Precision (User's Accuracy)     : {ind['precision_user_accuracy'] * 100:.2f}%")
+            print(f"[+] Recall (Producer's Accuracy)    : {ind['recall_producer_accuracy'] * 100:.2f}%")
+            print(f"[+] F1-Score (Dice Coefficient)     : {ind['f1_score_dice_coefficient']:.4f}")
+            print(f"[+] Intersection-over-Union (IoU)   : {ind['iou_jaccard_index'] * 100:.2f}%")
+            print(f"[+] Overall Accuracy                : {ind['overall_accuracy'] * 100:.4f}%")
+            print(f"[+] Cohen's Kappa Coefficient (κ)   : {ind['cohens_kappa']:.4f}")
     else:
         print("[!] NOTICE: No independent reference ground-truth flood mask found in repository.")
         print("    -> In accordance with scientific honesty standards, detection accuracy is reported as NOT_VALIDATED.")
-        print("    -> Cross-sensor satellite concordance is reported separately without claiming ground-truth accuracy.")
+        print("    -> Cross-sensor satellite concordance is evaluated separately from actual geometries.")
         metrics_report = evaluate_flood_detection_accuracy(
             pred_mask=pred_mask_path,
             ref_mask=None,
             reference_provenance=None,
         )
         metrics_report["cross_sensor_agreement"] = cross_sensor_agreement
-        print(f"[*] Status: [{metrics_report['validation_status']}]")
-        print(f"[+] Multi-Sensor Cross-Agreement    : {core_consensus_km2:.2f} km² co-verified ({cross_sensor_agreement['cross_sensor_jaccard_index'] * 100:.1f}% IoU)")
+        print(f"[*] Ground-Truth Status: [{metrics_report['validation_status']}]")
+        print(f"[*] Cross-Sensor Status: [{cross_sensor_agreement.get('cross_sensor_status', 'UNVERIFIED')}]")
+        if cross_sensor_agreement.get("common_footprint_bounds"):
+            print(f"    -> Common Footprint: {cross_sensor_agreement['common_footprint_bounds']}")
+            print(f"    -> Optical in Footprint : {cross_sensor_agreement['common_footprint_optical_km2']:.2f} km²")
+            print(f"    -> Radar in Footprint   : {cross_sensor_agreement['common_footprint_radar_km2']:.2f} km²")
+            print(f"    -> Intersection         : {cross_sensor_agreement['common_footprint_intersection_km2']:.2f} km²")
+            print(f"    -> Geometric IoU        : {cross_sensor_agreement['common_footprint_iou'] * 100:.2f}%")
+        print(f"    -> Limitation: {cross_sensor_agreement.get('scientific_limitation', '')}")
 
     return metrics_report
 
@@ -696,17 +726,34 @@ def generate_day5_documentation(
             "",
         ])
 
+    opt_tot = cross.get("optical_total_extent_km2", 48.01)
+    rad_tot = cross.get("radar_total_extent_km2", 2080.72)
+    com_opt = cross.get("common_footprint_optical_km2", 0.0)
+    com_rad = cross.get("common_footprint_radar_km2", 0.0)
+    com_inter = cross.get("common_footprint_intersection_km2", 0.0)
+    com_union = cross.get("common_footprint_union_km2", 0.0)
+    com_iou = cross.get("common_footprint_iou", 0.0)
+    cs_status = cross.get("cross_sensor_status", "UNVERIFIED")
+    cs_bounds = cross.get("common_footprint_bounds", None)
+    cs_limitation = cross.get("scientific_limitation", "The optical and radar scenes are non-coextensive.")
+
     doc_lines.extend([
-        "### Dual-Sensor Multi-Modal Cross-Agreement",
+        "### Multi-Modal Satellite Extent Comparison (Optical vs SAR)",
         "> [!NOTE]",
-        "> Cross-sensor agreement measures inter-satellite spatial concordance between optical and radar sensors, NOT independent ground-truth accuracy.",
+        "> Multi-modal satellite comparison measures spatial correspondence between Sentinel-2 optical and Sentinel-1 SAR detections across their available acquisitions. It is NOT independent ground-truth accuracy.",
         "",
-        f"- **Sentinel-2 Optical Extent**: {cross.get('optical_sentinel2_extent_km2', 48.01)} km²",
-        f"- **Sentinel-1 SAR Radar Extent**: {cross.get('radar_sentinel1_extent_km2', 72.35)} km² (within Koshi Basin)",
-        f"- **Co-Verified Core Flood Consensus**: **{cross.get('dual_sensor_consensus_core_km2', 39.84)} km²**",
-        f"- **Cloud-Penetrated Radar Discovery**: **{cross.get('radar_only_cloud_penetrated_km2', 32.51)} km²** (detected through storm clouds by SAR)",
-        f"- **Fine-Ponding Optical Discovery**: **{cross.get('optical_only_shallow_ponding_km2', 8.17)} km²** (shallow standing pools in open meadows)",
-        f"- **Cross-Sensor Spatial Concordance (IoU)**: **{cross.get('cross_sensor_jaccard_index', 0.4947) * 100:.1f}%**",
+        f"- **Sentinel-2 Optical Detected Flood Extent (Full Scene)**: **{opt_tot:.2f} km²** (`flood_polygons.geojson`)",
+        f"- **Sentinel-1 SAR Radar Detected Flood Extent (Full Scene)**: **{rad_tot:.2f} km²** (`radar_flood_polygons.geojson`)",
+        f"- **Common Geographical Footprint**: {cs_bounds if cs_bounds else 'None (Disjoint)'}",
+        f"- **Cross-Sensor Agreement Status**: **{cs_status}** ({cross.get('reason', 'NON_COEXTENSIVE_SCENE_COVERAGE')})",
+        f"- **Common Footprint Optical Flood Extent**: **{com_opt:.2f} km²**",
+        f"- **Common Footprint SAR Flood Extent**: **{com_rad:.2f} km²**",
+        f"- **Geometric Intersection Area in Common Footprint**: **{com_inter:.2f} km²**",
+        f"- **Geometric Union Area in Common Footprint**: **{com_union:.2f} km²**",
+        f"- **Geometric Overlap (IoU) in Common Footprint**: **{com_iou * 100:.2f}%**",
+        "",
+        "#### Scientific Analysis of Sensor Footprint Discrepancy",
+        f"{cs_limitation}",
         "",
         "---",
         "",
@@ -759,12 +806,13 @@ def sync_day5_deliverables():
 
     target_dirs = [
         WORKSPACE_ROOT,
-        WORKSPACE_ROOT / "FloodLens-AI",
         Path.cwd()
     ]
     seen = set()
 
     for t_dir in target_dirs:
+        if not t_dir.exists():
+            continue
         res = t_dir.resolve()
         if res in seen:
             continue

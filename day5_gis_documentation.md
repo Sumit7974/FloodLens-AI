@@ -4,7 +4,7 @@
 **Geographic Extent (WGS84)**: `[86.5, 26.2, 88.2, 27.8]`  
 **Projected Coordinate Reference System**: `EPSG:32645` (WGS 84 / UTM Zone 45N)  
 **Target Disaster Event**: August 2017 South Asian Monsoon Flooding Disaster  
-**Report Generated**: 2026-10-22 20:28:11 UTC  
+**Report Generated**: 2026-10-22 21:04:19 UTC  
 **Pipeline**: Day 5 QA, Validation & Optimization Suite (`day5_validation_report.py`)  
 
 ---
@@ -101,16 +101,22 @@ All GeoJSON deliverables were evaluated for topological correctness under OGC Si
 - High-density stream gauge cross-validation or aerial orthoimagery.
 - Independent reference data must NOT be derived from the same prediction pipeline.
 
-### Dual-Sensor Multi-Modal Cross-Agreement
+### Multi-Modal Satellite Extent Comparison (Optical vs SAR)
 > [!NOTE]
-> Cross-sensor agreement measures inter-satellite spatial concordance between optical and radar sensors, NOT independent ground-truth accuracy.
+> Multi-modal satellite comparison measures spatial correspondence between Sentinel-2 optical and Sentinel-1 SAR detections across their available acquisitions. It is NOT independent ground-truth accuracy.
 
-- **Sentinel-2 Optical Extent**: 48.01 km²
-- **Sentinel-1 SAR Radar Extent**: 72.35 km² (within Koshi Basin)
-- **Co-Verified Core Flood Consensus**: **39.84 km²**
-- **Cloud-Penetrated Radar Discovery**: **32.51 km²** (detected through storm clouds by SAR)
-- **Fine-Ponding Optical Discovery**: **8.17 km²** (shallow standing pools in open meadows)
-- **Cross-Sensor Spatial Concordance (IoU)**: **49.5%**
+- **Sentinel-2 Optical Detected Flood Extent (Full Scene)**: **48.01 km²** (`flood_polygons.geojson`)
+- **Sentinel-1 SAR Radar Detected Flood Extent (Full Scene)**: **2080.72 km²** (`radar_flood_polygons.geojson`)
+- **Common Geographical Footprint**: [87.446, 26.1284, 87.6098, 26.6598]
+- **Cross-Sensor Agreement Status**: **UNVERIFIED** (NON_COEXTENSIVE_SCENE_COVERAGE)
+- **Common Footprint Optical Flood Extent**: **7.07 km²**
+- **Common Footprint SAR Flood Extent**: **49.40 km²**
+- **Geometric Intersection Area in Common Footprint**: **0.25 km²**
+- **Geometric Union Area in Common Footprint**: **56.22 km²**
+- **Geometric Overlap (IoU) in Common Footprint**: **0.45%**
+
+#### Scientific Analysis of Sensor Footprint Discrepancy
+The optical Sentinel-2 scene and Sentinel-1 SAR acquisition share only a narrow border strip (0.16° lon). Because 85.3% of the optical flood detection and 97.6% of the radar flood detection lie outside the shared boundary, cross-sensor agreement across the flood event is UNVERIFIED.
 
 ---
 
