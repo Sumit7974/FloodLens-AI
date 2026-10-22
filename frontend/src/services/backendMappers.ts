@@ -1,5 +1,5 @@
-import type { HelpRequest, AuthorityHandoffStatus, RequestCategory } from '../types';
-import type { AssistanceRecord } from './backendApi';
+import type { Alert, HelpRequest, AuthorityHandoffStatus, RequestCategory } from '../types';
+import type { AssistanceRecord, AlertRecord } from './backendApi';
 
 const categoryMap: Record<AssistanceRecord['category'], RequestCategory> = {
   evacuation: 'EVACUATION',
@@ -52,5 +52,30 @@ export function toHelpRequest(record: AssistanceRecord): HelpRequest {
       { timestamp: record.created_at, action: 'Assistance report recorded in backend', author: 'FloodLens historical/test backend' },
       { timestamp: record.updated_at, action: `Backend status: ${record.status}`, author: 'Authorized authority user' },
     ],
+  };
+}
+
+/**
+ * Backend AlertResponse has no severity or population metrics.
+ * Represent absent values as unspecified rather than fabricating an emergency.
+ */
+export function toUiAlert(record: AlertRecord): Alert {
+  return {
+    id: record.id,
+    code: `DEMO-${record.id.slice(0, 8)}`,
+    headline: record.title,
+    description: record.message,
+    severity: 'UNSPECIFIED',
+    risk_level: 'UNKNOWN',
+    geofence: record.area_id,
+    population_affected: 0,
+    status: record.status.toUpperCase() as Alert['status'],
+    issued_at: record.issued_at || record.created_at,
+    expires_at: '',
+    channels: record.target_channels,
+    approved_by: record.approved_by || '',
+    dispatched_at: record.issued_at || '',
+    evacuation_notice: false,
+    is_drill_simulation: record.mode === 'historical_demo' || record.mode === 'test',
   };
 }
