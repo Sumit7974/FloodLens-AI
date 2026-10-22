@@ -3,6 +3,8 @@ import { AlertDispatcher } from './components/AlertDispatcher';
 import { CommandOverview } from './components/CommandOverview';
 import { Header } from './components/Header';
 import { BackendAccessPanel } from './components/BackendAccessPanel';
+import { BackendSatelliteEvidence } from './components/BackendSatelliteEvidence';
+import { BackendPredictionPanel, BackendAnalyticsPanel } from './components/BackendResearchPanels';
 import { ModelAnalytics } from './components/ModelAnalytics';
 import { PredictionCentre } from './components/PredictionCentre';
 import { ResponseOperations } from './components/ResponseOperations';
@@ -355,6 +357,7 @@ export function App() {
         isLiveSimulation={isLiveSimulation}
         isBackendConnected={!DEMO_MODE && isBackendConnected}
         onToggleLiveSimulation={() => {
+          if (!DEMO_MODE) { showToast('Backend mode does not simulate external flood data or alerts.'); return; }
           setIsLiveSimulation(!isLiveSimulation);
           showToast(
             !isLiveSimulation
@@ -400,7 +403,7 @@ export function App() {
               />
             )}
 
-            {activeTab === 'prediction-centre' && (
+            {activeTab === 'prediction-centre' && (DEMO_MODE ? (
               <PredictionCentre
                 currentScene={currentScene}
                 onNavigateToDispatcher={(payload) => {
@@ -409,17 +412,17 @@ export function App() {
                   setActiveTab('alert-dispatcher');
                 }}
               />
-            )}
+            ) : <BackendPredictionPanel />)}
 
-            {activeTab === 'satellite-intel' && (
+            {activeTab === 'satellite-intel' && (DEMO_MODE ? (
               <SatelliteIntelligence
                 currentScene={currentScene}
                 onSendToResponseOps={() => {
-                  showToast('Satellite flood mask sent to Incident Coordination queue');
+                  showToast('Navigated to coordination view. No satellite data was transferred.');
                   setActiveTab('response-ops');
                 }}
               />
-            )}
+            ) : <BackendSatelliteEvidence />)}
 
             {activeTab === 'response-ops' && (
               <ResponseOperations
@@ -440,13 +443,13 @@ export function App() {
               />
             )}
 
-            {activeTab === 'model-analytics' && (
+            {activeTab === 'model-analytics' && (DEMO_MODE ? (
               <ModelAnalytics
                 currentScene={currentScene}
                 deployedModelVersion={deployedModelVersion}
                 onDeployModel={handleDeployModel}
               />
-            )}
+            ) : <BackendAnalyticsPanel />)}
           </div>
         </main>
       </div>
