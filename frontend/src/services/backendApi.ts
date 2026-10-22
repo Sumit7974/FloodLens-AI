@@ -93,6 +93,55 @@ export interface AssetExposureResponse {
   exposed_assets: unknown[];
 }
 
+export interface PredictionMapResponse {
+  layer_id: string;
+  status: string;
+  total_zones: number;
+  issued_at: string | null;
+  model_version: string | null;
+  data_quality: string | null;
+  mode: string | null;
+  features: Array<{
+    id: string;
+    properties: {
+      location_name?: string;
+      model_version?: string;
+      data_quality?: string;
+      horizons?: Record<string, { risk_level: string; calibrated_probability: number | null }>;
+    };
+    geometry?: unknown;
+  }>;
+}
+
+export interface ModelResearchRecord {
+  version: string;
+  type: string;
+  status: string;
+  horizons: number[];
+  description: string;
+  limitations: string[];
+}
+
+export interface ModelEvaluationRecord {
+  id: string;
+  target_type: string;
+  baseline_version: string;
+  candidate_version: string | null;
+  metrics: Record<string, unknown>;
+  reference_id: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface EventEvaluations {
+  event_id: string;
+  event_name: string | null;
+  status: string;
+  evaluations_count: number;
+  data_limitations: string[];
+  results: ModelEvaluationRecord[];
+}
+
 export type BackendEvent = {
   type: string;
   event_id?: string;
@@ -191,6 +240,18 @@ export async function getSettlementExposure(eventId: string): Promise<Settlement
 
 export async function getAssetExposure(eventId: string): Promise<AssetExposureResponse> {
   return request<AssetExposureResponse>(`/flood-events/${encodeURIComponent(eventId)}/assets`);
+}
+
+export async function getPredictedRiskZones(): Promise<PredictionMapResponse> {
+  return request<PredictionMapResponse>('/predictions/map');
+}
+
+export async function listResearchModels(): Promise<ModelResearchRecord[]> {
+  return request<ModelResearchRecord[]>('/models');
+}
+
+export async function getEventEvaluations(eventId: string): Promise<EventEvaluations> {
+  return request<EventEvaluations>(`/analytics/events/${encodeURIComponent(eventId)}`);
 }
 
 export async function getAssistanceQueue(): Promise<AssistanceRecord[]> {
