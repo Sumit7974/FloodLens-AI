@@ -13,14 +13,16 @@ Tests:
 7. Different raster CRS and resolution alignment with nearest-neighbor resampling
 8. Incomplete spatial overlap (Uncovered regions outside reference coverage excluded as NoData, NOT counted as dry land)
 9. Completely disjoint raster coverage (100% excluded as NoData, 0 evaluated pixels)
-10. Unsupported reference provenance handling (Returns UNVERIFIED; does not assign VALIDATED without authoritative standard)
-11. Authoritative reference provenance validation (Returns VALIDATED for recognized standards)
-12. Pixel area derivation directly from raster georeferencing affine transform
-13. Vector cross-sensor geometric overlap on non-coextensive real layers (Returns UNVERIFIED with exact geometric figures)
-14. Vector cross-sensor geometric overlap on co-extensive test fixture
-15. Vector cross-sensor geometric overlap on completely disjoint geometries
-16. Invalid input masks (Empty arrays, mismatched dimensions)
-17. Integration with day5_validation_report.compute_detection_metrics()
+10. Authoritative-looking string alone cannot produce VALIDATED (Returns UNVERIFIED)
+11. Documented evidence with all required audit fields produces VALIDATED
+12. Synthetic test fixtures never qualify as empirical ground-truth validation (Returns TEST_FIXTURE_VERIFIED)
+13. Pixel area derivation directly from raster georeferencing affine transform
+14. Vector cross-sensor evaluation with polygons crossing the comparison boundary (Strict clipping verification)
+15. Vector cross-sensor geometric overlap on real repository layers (Strictly clipped figures, UNVERIFIED status)
+16. Vector cross-sensor geometric overlap on co-extensive test fixture
+17. Vector cross-sensor geometric overlap on completely disjoint geometries
+18. Invalid input masks (Empty arrays, mismatched dimensions)
+19. Integration with day5_validation_report.compute_detection_metrics()
 """
 
 from pathlib import Path
@@ -102,8 +104,6 @@ def test_confusion_matrix_partial_overlap():
     assert metrics["overall_accuracy"] == 0.75
     assert metrics["commission_error_rate"] == 0.50
     assert metrics["omission_error_rate"] == 0.50
-    # Kappa: p_obs=0.75, p_chance=((4*4)+(12*12))/256 = (16+144)/256 = 160/256 = 0.625
-    # kappa = (0.75 - 0.625) / (1 - 0.625) = 0.125 / 0.375 = 0.3333
     assert metrics["cohens_kappa"] == pytest.approx(0.3333, abs=1e-3)
 
 
@@ -236,8 +236,6 @@ def test_incomplete_spatial_overlap_nodata_exclusion(tmp_path):
     pred_tif = tmp_path / "pred_full.tif"
     ref_tif = tmp_path / "ref_partial.tif"
 
-    # Prediction raster: 10x10 grid (100 pixels total) at origin (500000, 2900100)
-    # Has flood pixels at top-left (0,0) and bottom-right (8,8)
     p_data = np.zeros((1, 10, 10), dtype=np.uint8)
     p_data[0, :3, :3] = 1   # 9 flood pixels in top-left
     p_data[0, 7:, 7:] = 1   # 9 flood pixels in bottom-right (outside reference coverage!)
@@ -249,8 +247,6 @@ def test_incomplete_spatial_overlap_nodata_exclusion(tmp_path):
     ) as dst:
         dst.write(p_data)
 
-    # Reference raster: only 5x5 grid (25 pixels), covering ONLY the top-left quadrant of prediction
-    # Extent: Easting 500000 to 500050, Northing 2900050 to 2900100
     r_data = np.zeros((1, 5, 5), dtype=np.uint8)
     r_data[0, :3, :3] = 1   # Matches top-left 9 pixels
     r_transform = from_origin(500000.0, 2900100.0, 10.0, 10.0)
@@ -269,11 +265,8 @@ def test_incomplete_spatial_overlap_nodata_exclusion(tmp_path):
     )
 
     cm = report["confusion_matrix_pixels"]
-    # Total evaluated pixels MUST be exactly 25 (the reference footprint)!
-    # The remaining 75 pixels outside reference coverage MUST be excluded as NoData.
     assert cm["total_evaluated"] == 25
     assert cm["nodata_excluded"] == 75
-    # The 9 flood pixels in bottom-right MUST NOT be counted as False Positives against unmapped reference!
     assert cm["tp_pixels"] == 9
     assert cm["fp_pixels"] == 0
     assert cm["fn_pixels"] == 0
@@ -288,13 +281,11 @@ def test_completely_disjoint_raster_coverage(tmp_path):
     pred_tif = tmp_path / "pred_scene_a.tif"
     ref_tif = tmp_path / "ref_scene_b.tif"
 
-    # Prediction at UTM 500000, 2900000
     p_data = np.ones((1, 10, 10), dtype=np.uint8)
     p_transform = from_origin(500000.0, 2900100.0, 10.0, 10.0)
     with rasterio.open(pred_tif, "w", driver="GTiff", height=10, width=10, count=1, dtype=np.uint8, crs="EPSG:32645", transform=p_transform, nodata=255) as d:
         d.write(p_data)
 
-    # Reference at UTM 700000, 3100000 (200 km away!)
     r_data = np.ones((1, 10, 10), dtype=np.uint8)
     r_transform = from_origin(700000.0, 3100100.0, 10.0, 10.0)
     with rasterio.open(ref_tif, "w", driver="GTiff", height=10, width=10, count=1, dtype=np.uint8, crs="EPSG:32645", transform=r_transform, nodata=255) as d:
@@ -316,8 +307,8 @@ def test_completely_disjoint_raster_coverage(tmp_path):
     assert cm["tn_pixels"] == 0
 
 
-def test_unsupported_reference_provenance(tmp_path):
-    """Test 10: Reference mask with unverified provenance returns UNVERIFIED, not scientific VALIDATED."""
+def test_authoritative_string_alone_rejected_as_unverified(tmp_path):
+    """Test 10: An authoritative string label alone (e.g. COPERNICUS_EMS_VERIFIED) does NOT qualify for VALIDATED."""
     if not HAS_RASTERIO:
         pytest.skip("rasterio not installed")
 
@@ -331,26 +322,63 @@ def test_unsupported_reference_provenance(tmp_path):
     with rasterio.open(ref_tif, "w", driver="GTiff", height=5, width=5, count=1, dtype=np.uint8, crs="EPSG:32645", transform=tr) as d:
         d.write(data)
 
-    # Passing user-supplied string without authoritative credential
+    # Calling with recognized label string alone without evidence dictionary
     report = evaluate_flood_detection_accuracy(
         pred_mask=pred_tif,
         ref_mask=ref_tif,
-        reference_provenance="user_downloaded_flood_map",
+        reference_provenance="COPERNICUS_EMS_VERIFIED",
         is_test_fixture=False
     )
     assert report["validation_status"] == ValidationStatus.UNVERIFIED.value
-    assert "lacks independent, documented third-party verification" in report["status_explanation"]
+    assert report["validation_status"] != ValidationStatus.VALIDATED.value
+    assert "A recognized label or authoritative-sounding identifier alone does not establish" in report["status_explanation"]
 
 
-def test_authoritative_reference_provenance_validation(tmp_path):
-    """Test 11: Authoritative third-party reference provenance assigns VALIDATED status."""
+def test_documented_evidence_validates_detection(tmp_path):
+    """Test 11: Documented reference evidence with all required audit fields produces VALIDATED status."""
     if not HAS_RASTERIO:
         pytest.skip("rasterio not installed")
 
-    pred_tif = tmp_path / "pred_auth.tif"
-    ref_tif = tmp_path / "ref_auth.tif"
+    pred_tif = tmp_path / "pred_doc.tif"
+    ref_tif = tmp_path / "ref_doc.tif"
     data = np.zeros((1, 5, 5), dtype=np.uint8)
     data[0, :2, :2] = 1
+    tr = from_origin(500000.0, 2900050.0, 10.0, 10.0)
+
+    with rasterio.open(pred_tif, "w", driver="GTiff", height=5, width=5, count=1, dtype=np.uint8, crs="EPSG:32645", transform=tr) as d:
+        d.write(data)
+    with rasterio.open(ref_tif, "w", driver="GTiff", height=5, width=5, count=1, dtype=np.uint8, crs="EPSG:32645", transform=tr) as d:
+        d.write(data)
+
+    # Complete authenticated reference evidence
+    evidence = {
+        "source_product": "EMSR224_01BIRATNAGAR_DEL_v1",
+        "acquisition_date": "2017-08-13T04:50:00Z",
+        "source_uri_or_id": "https://emergency.copernicus.eu/mapping/list-of-activations-rapid/EMSR224",
+        "checksum": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "reference_methodology": "in_situ_aerial_orthophoto_and_gauge_delineation",
+        "independent_verification_decision": True
+    }
+
+    report = evaluate_flood_detection_accuracy(
+        pred_mask=pred_tif,
+        ref_mask=ref_tif,
+        reference_evidence=evidence,
+        is_test_fixture=False
+    )
+    assert report["validation_status"] == ValidationStatus.VALIDATED.value
+    assert "EMSR224_01BIRATNAGAR_DEL_v1" in report["status_explanation"]
+    assert report["reference_evidence"]["checksum"] == evidence["checksum"]
+
+
+def test_synthetic_fixture_never_claims_empirical_validation(tmp_path):
+    """Test 12: Synthetic test fixtures return TEST_FIXTURE_VERIFIED and never qualify as VALIDATED."""
+    if not HAS_RASTERIO:
+        pytest.skip("rasterio not installed")
+
+    pred_tif = tmp_path / "pred_fix.tif"
+    ref_tif = tmp_path / "ref_fix.tif"
+    data = np.zeros((1, 5, 5), dtype=np.uint8)
     tr = from_origin(500000.0, 2900050.0, 10.0, 10.0)
 
     with rasterio.open(pred_tif, "w", driver="GTiff", height=5, width=5, count=1, dtype=np.uint8, crs="EPSG:32645", transform=tr) as d:
@@ -361,21 +389,20 @@ def test_authoritative_reference_provenance_validation(tmp_path):
     report = evaluate_flood_detection_accuracy(
         pred_mask=pred_tif,
         ref_mask=ref_tif,
-        reference_provenance="COPERNICUS_EMS_VERIFIED",
-        is_test_fixture=False
+        is_test_fixture=True
     )
-    assert report["validation_status"] == ValidationStatus.VALIDATED.value
-    assert "COPERNICUS_EMS_VERIFIED" in report["status_explanation"]
+    assert report["validation_status"] == ValidationStatus.TEST_FIXTURE_VERIFIED.value
+    assert report["validation_status"] != ValidationStatus.VALIDATED.value
+    assert "never qualifies as empirical ground-truth validation" in report["status_explanation"]
 
 
 def test_raster_pixel_area_derived_from_georeferencing(tmp_path):
-    """Test 12: Pixel area is derived from raster georeferencing transform, not a fixed 10m assumption."""
+    """Test 13: Pixel area is derived from raster georeferencing transform, not a fixed 10m assumption."""
     if not HAS_RASTERIO:
         pytest.skip("rasterio not installed")
 
     pred_tif = tmp_path / "pred_20m.tif"
     ref_tif = tmp_path / "ref_20m.tif"
-    # 20m x 20m pixel resolution
     tr = from_origin(500000.0, 2900100.0, 20.0, 20.0)
     data = np.zeros((1, 5, 5), dtype=np.uint8)
     data[0, :2, :2] = 1  # 4 flooded pixels
@@ -397,13 +424,58 @@ def test_raster_pixel_area_derived_from_georeferencing(tmp_path):
     assert meta["pixel_height_m"] == 20.0
     assert meta["pixel_area_m2"] == 400.0
     assert meta["pixel_area_source"] == "projected_raster_affine_transform"
-
-    # 4 pixels * 400 m2 = 1,600 m2 = 0.0016 km2
     assert report["confusion_matrix_area_km2"]["true_positive_km2"] == 0.0016
 
 
+def test_vector_cross_sensor_polygon_crossing_boundary_is_strictly_clipped():
+    """Test 14: Polygons crossing the comparison boundary are strictly clipped to the comparison footprint."""
+    # Optical polygon extends from lon 87.0 to 87.2 (width 0.2 deg)
+    opt_geojson = {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [[[87.0, 26.0], [87.2, 26.0], [87.2, 26.1], [87.0, 26.1], [87.0, 26.0]]]
+                },
+                "properties": {"area_m2": 220000000.0}
+            }
+        ]
+    }
+
+    # Radar polygon extends from lon 87.05 to 87.1 (width 0.05 deg)
+    # The common comparison box is strictly [87.05, 26.0] to [87.1, 26.1] (width 0.05 deg)
+    rad_geojson = {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [[[87.05, 26.0], [87.1, 26.0], [87.1, 26.1], [87.05, 26.1], [87.05, 26.0]]]
+                },
+                "properties": {"area_sqm": 55000000.0}
+            }
+        ]
+    }
+
+    agreement = compute_vector_cross_sensor_agreement(
+        optical_geojson=opt_geojson,
+        radar_geojson=rad_geojson,
+        is_test_fixture=True
+    )
+
+    # In the common footprint [87.05, 87.1], optical is strictly clipped to [87.05, 87.1]
+    # Because radar covers the identical clipped region, intersection == union -> IoU == 1.0!
+    # If optical had NOT been clipped, optical area would be 4x radar area and IoU would be ~0.25.
+    assert agreement["common_footprint_bounds"] == [87.05, 26.0, 87.1, 26.1]
+    assert agreement["common_footprint_optical_km2"] == pytest.approx(agreement["common_footprint_radar_km2"], rel=1e-2)
+    assert agreement["common_footprint_iou"] == pytest.approx(1.0, abs=1e-3)
+
+
 def test_vector_cross_sensor_geometric_overlap_on_real_layers():
-    """Test 13: Vector cross-sensor evaluation on repository GeoJSONs computes real figures and returns UNVERIFIED."""
+    """Test 15: Vector cross-sensor evaluation on repository GeoJSONs computes strictly clipped figures and returns UNVERIFIED."""
     repo_root = Path(__file__).resolve().parent.parent.parent
     opt_path = repo_root / "flood_polygons.geojson"
     rad_path = repo_root / "radar_flood_polygons.geojson"
@@ -419,20 +491,22 @@ def test_vector_cross_sensor_geometric_overlap_on_real_layers():
 
     assert agreement["comparison_type"] == "VECTOR_CROSS_SENSOR_AGREEMENT"
     assert agreement["cross_sensor_status"] == ValidationStatus.UNVERIFIED.value
+    assert agreement["footprint_type"] == "INFERRED_FROM_DETECTED_POLYGONS"
+    assert "inferred bounds indicate detected feature overlap" in agreement["sensor_coverage_notice"]
     # Full scene optical: ~48.01 km2
     assert agreement["optical_total_extent_km2"] == pytest.approx(48.006, abs=1e-2)
-    # Common footprint is narrow strip [87.45, 26.13, 87.61, 26.66]
+    # Strictly clipped common footprint numbers
     assert agreement["common_footprint_bounds"] is not None
-    assert agreement["common_footprint_optical_km2"] == pytest.approx(7.071, abs=0.1)
-    assert agreement["common_footprint_radar_km2"] == pytest.approx(49.401, abs=0.1)
+    assert agreement["common_footprint_optical_km2"] == pytest.approx(7.038, abs=0.05)
+    assert agreement["common_footprint_radar_km2"] == pytest.approx(45.881, abs=0.1)
     assert agreement["common_footprint_intersection_km2"] == pytest.approx(0.252, abs=0.05)
-    assert agreement["common_footprint_iou"] == pytest.approx(0.0045, abs=1e-3)
-    assert "narrow border strip" in agreement["scientific_limitation"]
+    assert agreement["common_footprint_union_km2"] == pytest.approx(52.667, abs=0.1)
+    assert agreement["common_footprint_iou"] == pytest.approx(0.0048, abs=1e-4)
+    assert "incidental border strip" in agreement["scientific_limitation"]
 
 
 def test_vector_cross_sensor_coextensive_test_fixture():
-    """Test 14: Synthetic co-extensive vector layers in test fixture produce TEST_FIXTURE_VERIFIED and valid IoU."""
-    # Synthetic optical: two 0.1 deg squares in WGS84
+    """Test 16: Synthetic co-extensive vector layers in test fixture produce TEST_FIXTURE_VERIFIED and valid IoU."""
     opt_geojson = {
         "type": "FeatureCollection",
         "features": [
@@ -447,7 +521,6 @@ def test_vector_cross_sensor_coextensive_test_fixture():
         ]
     }
 
-    # Synthetic radar: overlapping 0.1 deg square shifted by 0.05 deg
     rad_geojson = {
         "type": "FeatureCollection",
         "features": [
@@ -470,12 +543,11 @@ def test_vector_cross_sensor_coextensive_test_fixture():
 
     assert agreement["cross_sensor_status"] == ValidationStatus.TEST_FIXTURE_VERIFIED.value
     assert agreement["common_footprint_intersection_km2"] > 0.0
-    # Overlap is half the polygon (~50% intersection)
-    assert agreement["common_footprint_iou"] == pytest.approx(0.3333, abs=0.05)
+    assert agreement["common_footprint_iou"] == pytest.approx(1.0, abs=1e-3)
 
 
 def test_vector_cross_sensor_disjoint_geometries():
-    """Test 15: Completely disjoint vector layers return UNVERIFIED with COMPLETELY_DISJOINT_SCENE_COVERAGE."""
+    """Test 17: Completely disjoint vector layers return UNVERIFIED with COMPLETELY_DISJOINT_SCENE_COVERAGE."""
     opt_geojson = {
         "type": "FeatureCollection",
         "features": [
@@ -509,7 +581,7 @@ def test_vector_cross_sensor_disjoint_geometries():
 
 
 def test_invalid_input_masks():
-    """Test 16: Error handling for invalid shapes and empty arrays."""
+    """Test 18: Error handling for invalid shapes and empty arrays."""
     with pytest.raises(ValueError, match="zero pixels"):
         calculate_confusion_matrix(np.array([]), np.array([]))
 
@@ -521,12 +593,12 @@ def test_invalid_input_masks():
 
 
 def test_day5_validation_report_integration(tmp_path):
-    """Test 17: Integration with day5_validation_report.compute_detection_metrics()."""
+    """Test 19: Integration with day5_validation_report.compute_detection_metrics()."""
     res_no_ref = compute_detection_metrics()
     assert res_no_ref["validation_status"] == ValidationStatus.NOT_VALIDATED.value
     assert res_no_ref["confusion_matrix_pixels"] is None
     assert "cross_sensor_agreement" in res_no_ref
-    # Status of cross-sensor comparison on real repo layers is UNVERIFIED due to non-coextensive swaths
     cs = res_no_ref["cross_sensor_agreement"]
     assert cs["cross_sensor_status"] == ValidationStatus.UNVERIFIED.value
-    assert cs["common_footprint_iou"] == pytest.approx(0.0045, abs=1e-3)
+    assert cs["common_footprint_iou"] == pytest.approx(0.0048, abs=1e-4)
+    assert cs["footprint_type"] == "INFERRED_FROM_DETECTED_POLYGONS"

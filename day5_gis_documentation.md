@@ -4,7 +4,7 @@
 **Geographic Extent (WGS84)**: `[86.5, 26.2, 88.2, 27.8]`  
 **Projected Coordinate Reference System**: `EPSG:32645` (WGS 84 / UTM Zone 45N)  
 **Target Disaster Event**: August 2017 South Asian Monsoon Flooding Disaster  
-**Report Generated**: 2026-10-22 21:04:19 UTC  
+**Report Generated**: 2026-10-22 21:21:25 UTC  
 **Pipeline**: Day 5 QA, Validation & Optimization Suite (`day5_validation_report.py`)  
 
 ---
@@ -108,15 +108,17 @@ All GeoJSON deliverables were evaluated for topological correctness under OGC Si
 - **Sentinel-2 Optical Detected Flood Extent (Full Scene)**: **48.01 km²** (`flood_polygons.geojson`)
 - **Sentinel-1 SAR Radar Detected Flood Extent (Full Scene)**: **2080.72 km²** (`radar_flood_polygons.geojson`)
 - **Common Geographical Footprint**: [87.446, 26.1284, 87.6098, 26.6598]
+- **Footprint Inference Method**: Inferred from bounding envelopes of detected flood polygons (raw sensor swaths unavailable)
 - **Cross-Sensor Agreement Status**: **UNVERIFIED** (NON_COEXTENSIVE_SCENE_COVERAGE)
-- **Common Footprint Optical Flood Extent**: **7.07 km²**
-- **Common Footprint SAR Flood Extent**: **49.40 km²**
+- **Common Footprint Optical Flood Extent (Strictly Clipped)**: **7.04 km²**
+- **Common Footprint SAR Flood Extent (Strictly Clipped)**: **45.88 km²**
 - **Geometric Intersection Area in Common Footprint**: **0.25 km²**
-- **Geometric Union Area in Common Footprint**: **56.22 km²**
-- **Geometric Overlap (IoU) in Common Footprint**: **0.45%**
+- **Geometric Union Area in Common Footprint**: **52.67 km²**
+- **Geometric Overlap (IoU) in Common Footprint**: **0.48%**
 
 #### Scientific Analysis of Sensor Footprint Discrepancy
-The optical Sentinel-2 scene and Sentinel-1 SAR acquisition share only a narrow border strip (0.16° lon). Because 85.3% of the optical flood detection and 97.6% of the radar flood detection lie outside the shared boundary, cross-sensor agreement across the flood event is UNVERIFIED.
+- **Coverage Notice**: The comparison footprint is inferred strictly from the bounding envelopes of detected flood polygons. Verified raw satellite swath acquisition footprints are not bundled in repository assets; inferred bounds indicate detected feature overlap, not full sensor swath coverage.
+- **Analysis**: The optical Sentinel-2 scene and Sentinel-1 SAR acquisition share only an incidental border strip (0.16° lon inferred from detected polygons). Because 85.3% of the optical flood detection and 97.8% of the radar flood detection lie outside the shared boundary, cross-sensor agreement across the flood event is UNVERIFIED.
 
 ---
 

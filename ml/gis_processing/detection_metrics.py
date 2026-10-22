@@ -16,13 +16,18 @@ Key Scientific Guarantees:
    using nearest-neighbor resampling for categorical/binary masks.
 5. Strictly distinguishes independent ground-truth validation from cross-sensor
    satellite inter-comparison (e.g. Optical vs SAR) and unit test fixtures.
-6. When no independent reference mask is available, truthfully reports
+   Synthetic test fixtures never qualify as empirical ground-truth validation.
+6. A recognized string label alone (e.g. "COPERNICUS_EMS_VERIFIED") does NOT establish
+   independent validation. Empirical validation requires verifiable reference evidence:
+   identifiable source product, acquisition date, source URI or archive identifier,
+   checksum, reference methodology, and an independent verification decision.
+7. When no independent reference mask is available, truthfully reports
    status="NOT_VALIDATED" with detailed missing evidence declarations.
-7. Rejects circular validation (evaluating a prediction against itself).
-8. Handles completely disjoint rasters, partial overlaps, and non-coextensive scenes.
-9. Computes multi-sensor cross-agreement using actual geometric polygon intersections
-   projected into metric CRS (UTM Zone 45N), reporting UNVERIFIED when acquisitions
-   are non-coextensive.
+8. Rejects circular validation (evaluating a prediction against itself).
+9. In cross-sensor vector evaluation, explicitly clips each geometry to the shared
+   comparison footprint before projection, union, and IoU calculations.
+10. Transparently distinguishes actual satellite acquisition footprints from bounding
+    boxes inferred from detected flood polygons.
 
 Author: FloodLens AI GIS & Remote Sensing Team
 """
@@ -62,14 +67,14 @@ class ValidationStatus(str, Enum):
     INVALID_INPUT = "INVALID_INPUT"
 
 
-# Recognized authoritative third-party ground-truth standards
-VERIFIED_REFERENCE_STANDARDS: Set[str] = {
-    "COPERNICUS_EMS_VERIFIED",
-    "DFO_SATELLITE_VERIFIED",
-    "DHM_NEPAL_FIELD_VERIFIED",
-    "UNOSAT_SATELLITE_VERIFIED",
-    "AERIAL_SURVEY_VERIFIED",
-    "GROUND_TRUTH_FIELD_SURVEY"
+# Documented evidence fields required for empirical ground-truth validation
+REQUIRED_EVIDENCE_FIELDS: Set[str] = {
+    "source_product",
+    "acquisition_date",
+    "source_uri_or_id",
+    "checksum",
+    "reference_methodology",
+    "independent_verification_decision"
 }
 
 
@@ -149,7 +154,6 @@ def calculate_confusion_matrix(
 ) -> Dict[str, int]:
     """
     Computes confusion matrix counts (TP, FP, FN, TN) between predicted and reference binary masks.
-
     Excludes invalid, uncovered, and NoData pixels so unmapped regions are NOT counted as dry land.
     """
     if pred_mask is None or ref_mask is None:
@@ -305,7 +309,8 @@ def evaluate_flood_detection_accuracy(
     valid_mask: Optional[np.ndarray] = None,
     nodata_values: Optional[Set[Union[int, float]]] = None,
     pixel_size_m: Optional[float] = None,
-    reference_provenance: Optional[str] = None,
+    reference_provenance: Optional[Union[str, Dict[str, Any]]] = None,
+    reference_evidence: Optional[Dict[str, Any]] = None,
     is_test_fixture: bool = False
 ) -> Dict[str, Any]:
     """
@@ -317,9 +322,10 @@ def evaluate_flood_detection_accuracy(
       - Derives cell resolution and area directly from raster georeferencing affine transform.
       - Reprojects reference data using nearest-neighbor resampling and explicitly marks
         uncovered/out-of-bounds pixels as NoData (excluding them from evaluation).
-      - Returns TEST_FIXTURE_VERIFIED for automated test fixtures.
-      - Returns UNVERIFIED if reference data lacks documented independent provenance.
-      - Returns VALIDATED only when independently documented reference evidence is confirmed.
+      - Returns TEST_FIXTURE_VERIFIED for automated test fixtures (never empirical ground truth).
+      - Returns UNVERIFIED if reference data lacks documented independent evidence.
+        A recognized label alone (e.g. "COPERNICUS_EMS_VERIFIED") does NOT establish validation.
+      - Returns VALIDATED ONLY when documented reference evidence is provided and confirmed.
     """
     # 1. Missing Reference Safety Check
     if ref_mask is None:
@@ -470,24 +476,73 @@ def evaluate_flood_detection_accuracy(
         fn=cm["fn_pixels"]
     )
 
-    # 6. Determine Scientific Validation Status & Provenance
-    prov_str = str(reference_provenance or "").strip().upper()
+    # 6. Determine Scientific Validation Status & Provenance Evidence
+    # Require verifiable reference evidence: label strings alone NEVER establish validation
+    evidence_dict: Optional[Dict[str, Any]] = None
+    if isinstance(reference_evidence, dict):
+        evidence_dict = reference_evidence
+    elif isinstance(reference_provenance, dict):
+        evidence_dict = reference_provenance
+
+    prov_str = str(reference_provenance or "").strip().upper() if isinstance(reference_provenance, str) else ""
     is_fixture = is_test_fixture or prov_str.startswith("TEST_") or prov_str == "FIXTURE"
 
     if is_fixture:
         status = ValidationStatus.TEST_FIXTURE_VERIFIED.value
-        status_note = "Evaluation performed against verified test fixture. Validates algorithm correctness; not an empirical real-world claim."
-    elif prov_str in VERIFIED_REFERENCE_STANDARDS:
-        status = ValidationStatus.VALIDATED.value
-        status_note = f"Empirical validation confirmed against recognized authoritative reference standard: {prov_str}."
+        status_note = (
+            "Evaluation performed against verified test fixture. Validates algorithm correctness; "
+            "never qualifies as empirical ground-truth validation."
+        )
+        prov_recorded = reference_provenance if isinstance(reference_provenance, str) else "TEST_FIXTURE"
+        evidence_summary = None
+    elif evidence_dict is not None:
+        missing_fields = [
+            f for f in REQUIRED_EVIDENCE_FIELDS
+            if not evidence_dict.get(f) or (isinstance(evidence_dict.get(f), str) and not evidence_dict.get(f).strip())
+        ]
+        ver_decision = evidence_dict.get("independent_verification_decision")
+        decision_valid = False
+        if isinstance(ver_decision, bool) and ver_decision is True:
+            decision_valid = True
+        elif isinstance(ver_decision, str) and ver_decision.strip().upper() in {"VERIFIED", "APPROVED", "AUTHENTICATED", "CONFIRMED"}:
+            decision_valid = True
+
+        if missing_fields or not decision_valid:
+            status = ValidationStatus.UNVERIFIED.value
+            status_note = (
+                f"Reference evidence is incomplete or unverified. Missing or invalid required fields: "
+                f"{missing_fields or ['independent_verification_decision']}. "
+                "In accordance with ISO 19157 standards, status is UNVERIFIED."
+            )
+            prov_recorded = str(evidence_dict.get("source_product", "INCOMPLETE_EVIDENCE"))
+            evidence_summary = evidence_dict
+        else:
+            status = ValidationStatus.VALIDATED.value
+            status_note = (
+                f"Empirical validation confirmed against independently authenticated reference evidence: "
+                f"{evidence_dict['source_product']} ({evidence_dict['source_uri_or_id']}), "
+                f"acquired {evidence_dict['acquisition_date']}, "
+                f"method: {evidence_dict['reference_methodology']}, "
+                f"checksum: {str(evidence_dict['checksum'])[:16]}..."
+            )
+            prov_recorded = str(evidence_dict["source_product"])
+            evidence_summary = evidence_dict
     else:
+        # A string label alone (even "COPERNICUS_EMS_VERIFIED") is NOT verified evidence
         status = ValidationStatus.UNVERIFIED.value
-        status_note = "Reference dataset supplied lacks independent, documented third-party verification credentials. In accordance with ISO 19157 standards, status is UNVERIFIED."
+        status_note = (
+            "A recognized label or authoritative-sounding identifier alone does not establish independent scientific validation. "
+            "Empirical ground-truth validation strictly requires documented evidence: source_product, acquisition_date, "
+            "source_uri_or_id, checksum, reference_methodology, and independent_verification_decision. Status is UNVERIFIED."
+        )
+        prov_recorded = prov_str or "UNVERIFIED_SOURCE"
+        evidence_summary = None
 
     return {
         "validation_status": status,
         "status_explanation": status_note,
-        "reference_provenance": reference_provenance or ("TEST_FIXTURE" if is_fixture else "UNVERIFIED_SOURCE"),
+        "reference_provenance": prov_recorded,
+        "reference_evidence": evidence_summary,
         "alignment_metadata": alignment_info,
         "confusion_matrix_pixels": cm,
         "confusion_matrix_area_km2": cm_area_km2,
@@ -511,11 +566,12 @@ def compute_vector_cross_sensor_agreement(
 
     Methodology:
       1. Loads vector features and computes their geographic footprints (bounding boxes).
-      2. Determines the common spatial intersection of the footprints.
-      3. If scenes are disjoint or their common footprint is non-coextensive (covering only
-         an incidental border strip), returns status="UNVERIFIED" with reason="NON_COEXTENSIVE_SCENE_COVERAGE".
-      4. Projects features within the common footprint into metric UTM Zone 45N (EPSG:32645).
-      5. Calculates exact geometric optical area, radar area, intersection, union, and IoU.
+      2. Informs that bounds are inferred from detected flood polygons, not raw satellite swath footprints.
+      3. Determines the common spatial intersection of the inferred footprints.
+      4. If scenes are disjoint or non-coextensive, returns status="UNVERIFIED" with reason="NON_COEXTENSIVE_SCENE_COVERAGE".
+      5. Explicitly clips each geometry to the common comparison footprint before projection, union, and IoU.
+      6. Projects clipped features into metric UTM Zone 45N (EPSG:32645).
+      7. Calculates exact geometric optical area, radar area, intersection, union, and IoU.
     """
     if not HAS_SHAPELY:
         raise RuntimeError("Shapely is required for vector cross-sensor geometric evaluation.")
@@ -553,6 +609,7 @@ def compute_vector_cross_sensor_agreement(
             "comparison_type": "VECTOR_CROSS_SENSOR_AGREEMENT",
             "cross_sensor_status": ValidationStatus.UNVERIFIED.value,
             "reason": "EMPTY_FEATURE_COLLECTION",
+            "footprint_type": "INFERRED_FROM_DETECTED_POLYGONS",
             "optical_total_extent_km2": 0.0,
             "radar_total_extent_km2": 0.0,
             "common_footprint_intersection_km2": 0.0,
@@ -572,7 +629,7 @@ def compute_vector_cross_sensor_agreement(
         for f in rad_features_eval
     ) / 1e6
 
-    # Determine bounding boxes
+    # Determine bounding boxes inferred from detected polygons
     opt_minx = min(g.bounds[0] for g in opt_geoms)
     opt_miny = min(g.bounds[1] for g in opt_geoms)
     opt_maxx = max(g.bounds[2] for g in opt_geoms)
@@ -591,13 +648,21 @@ def compute_vector_cross_sensor_agreement(
 
     is_disjoint = (com_minx >= com_maxx) or (com_miny >= com_maxy)
 
+    footprint_notice = (
+        "The comparison footprint is inferred strictly from the bounding envelopes of detected flood polygons. "
+        "Verified raw satellite swath acquisition footprints are not bundled in repository assets; "
+        "inferred bounds indicate detected feature overlap, not full sensor swath coverage."
+    )
+
     if is_disjoint:
         return {
             "comparison_type": "VECTOR_CROSS_SENSOR_AGREEMENT",
             "cross_sensor_status": ValidationStatus.UNVERIFIED.value,
             "reason": "COMPLETELY_DISJOINT_SCENE_COVERAGE",
-            "optical_bounds": [round(opt_minx, 4), round(opt_miny, 4), round(opt_maxx, 4), round(opt_maxy, 4)],
-            "radar_bounds": [round(rad_minx, 4), round(rad_miny, 4), round(rad_maxx, 4), round(rad_maxy, 4)],
+            "footprint_type": "INFERRED_FROM_DETECTED_POLYGONS",
+            "sensor_coverage_notice": footprint_notice,
+            "inferred_optical_envelope": [round(opt_minx, 4), round(opt_miny, 4), round(opt_maxx, 4), round(opt_maxy, 4)],
+            "inferred_radar_envelope": [round(rad_minx, 4), round(rad_miny, 4), round(rad_maxx, 4), round(rad_maxy, 4)],
             "common_footprint_bounds": None,
             "optical_total_extent_km2": round(opt_total_area_km2, 3),
             "radar_total_extent_km2": round(rad_total_area_km2, 3),
@@ -611,15 +676,31 @@ def compute_vector_cross_sensor_agreement(
 
     common_bbox_geom = box(com_minx, com_miny, com_maxx, com_maxy)
 
-    # Filter features intersecting the common footprint
-    opt_in_common = [g for g in opt_geoms if g.intersects(common_bbox_geom)]
-    rad_in_common = [g for g in rad_geoms if g.intersects(common_bbox_geom)]
+    # CRITICAL: Explicitly clip each geometry to the common comparison footprint
+    # Selecting by intersects alone leaks exterior polygon areas outside the boundary box.
+    opt_clipped = []
+    for g in opt_geoms:
+        if g.intersects(common_bbox_geom):
+            clipped = g.intersection(common_bbox_geom)
+            if not clipped.is_empty and clipped.area > 0:
+                opt_clipped.append(clipped)
 
-    if not opt_in_common or not rad_in_common:
+    rad_clipped = []
+    for g in rad_geoms:
+        if g.intersects(common_bbox_geom):
+            clipped = g.intersection(common_bbox_geom)
+            if not clipped.is_empty and clipped.area > 0:
+                rad_clipped.append(clipped)
+
+    if not opt_clipped or not rad_clipped:
         return {
             "comparison_type": "VECTOR_CROSS_SENSOR_AGREEMENT",
             "cross_sensor_status": ValidationStatus.UNVERIFIED.value,
             "reason": "NO_FEATURES_IN_COMMON_FOOTPRINT",
+            "footprint_type": "INFERRED_FROM_DETECTED_POLYGONS",
+            "sensor_coverage_notice": footprint_notice,
+            "inferred_optical_envelope": [round(opt_minx, 4), round(opt_miny, 4), round(opt_maxx, 4), round(opt_maxy, 4)],
+            "inferred_radar_envelope": [round(rad_minx, 4), round(rad_miny, 4), round(rad_maxx, 4), round(rad_maxy, 4)],
             "optical_total_extent_km2": round(opt_total_area_km2, 3),
             "radar_total_extent_km2": round(rad_total_area_km2, 3),
             "common_footprint_bounds": [round(com_minx, 4), round(com_miny, 4), round(com_maxx, 4), round(com_maxy, 4)],
@@ -628,12 +709,12 @@ def compute_vector_cross_sensor_agreement(
             "common_footprint_intersection_km2": 0.0,
             "common_footprint_union_km2": 0.0,
             "common_footprint_iou": 0.0,
-            "scientific_limitation": "While scene bounding boxes intersect, no detected flood polygons exist within the common footprint."
+            "scientific_limitation": "While scene bounding envelopes intersect, no detected flood polygons exist within the shared footprint."
         }
 
-    # Project intersecting geometries to metric UTM Zone 45N
-    opt_common_union = unary_union(opt_in_common)
-    rad_common_union = unary_union(rad_in_common)
+    # Project strictly clipped geometries to metric UTM Zone 45N
+    opt_common_union = unary_union(opt_clipped)
+    rad_common_union = unary_union(rad_clipped)
 
     opt_utm = transform_geom_to_utm45n(opt_common_union)
     rad_utm = transform_geom_to_utm45n(rad_common_union)
@@ -659,8 +740,8 @@ def compute_vector_cross_sensor_agreement(
     elif is_non_coextensive:
         status = ValidationStatus.UNVERIFIED.value
         limitation = (
-            f"The optical Sentinel-2 scene and Sentinel-1 SAR acquisition share only a narrow border strip "
-            f"({round(com_maxx - com_minx, 2)}° lon). Because {round((1.0 - opt_coverage_ratio) * 100, 1)}% of the "
+            f"The optical Sentinel-2 scene and Sentinel-1 SAR acquisition share only an incidental border strip "
+            f"({round(com_maxx - com_minx, 2)}° lon inferred from detected polygons). Because {round((1.0 - opt_coverage_ratio) * 100, 1)}% of the "
             f"optical flood detection and {round((1.0 - rad_coverage_ratio) * 100, 1)}% of the radar flood detection "
             f"lie outside the shared boundary, cross-sensor agreement across the flood event is UNVERIFIED."
         )
@@ -672,9 +753,13 @@ def compute_vector_cross_sensor_agreement(
         "comparison_type": "VECTOR_CROSS_SENSOR_AGREEMENT",
         "cross_sensor_status": status,
         "is_coextensive_coverage": not is_non_coextensive,
+        "footprint_type": "INFERRED_FROM_DETECTED_POLYGONS",
+        "sensor_coverage_notice": footprint_notice,
+        "inferred_optical_envelope": [round(opt_minx, 4), round(opt_miny, 4), round(opt_maxx, 4), round(opt_maxy, 4)],
+        "inferred_radar_envelope": [round(rad_minx, 4), round(rad_miny, 4), round(rad_maxx, 4), round(rad_maxy, 4)],
+        "common_footprint_bounds": [round(com_minx, 4), round(com_miny, 4), round(com_maxx, 4), round(com_maxy, 4)],
         "optical_total_extent_km2": round(opt_total_area_km2, 3),
         "radar_total_extent_km2": round(rad_total_area_km2, 3),
-        "common_footprint_bounds": [round(com_minx, 4), round(com_miny, 4), round(com_maxx, 4), round(com_maxy, 4)],
         "common_footprint_optical_km2": round(opt_com_area_km2, 3),
         "common_footprint_radar_km2": round(rad_com_area_km2, 3),
         "common_footprint_intersection_km2": round(inter_area_km2, 3),
