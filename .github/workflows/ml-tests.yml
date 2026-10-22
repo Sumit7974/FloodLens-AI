@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - 'feature/**'
+      - 'fix/**'
     paths:
       - 'ml/**'
       - '.github/workflows/ml-tests.yml'
