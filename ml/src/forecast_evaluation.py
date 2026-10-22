@@ -598,7 +598,7 @@ def run_comprehensive_forecast_evaluation(
         numerical_evaluations=num_metrics,
         unobserved_targets_audit=unobserved,
         matched_sample_pairs=sample_pairs,
-        summary_verdict="PASS_ON_HELD_OUT_TEST_DATA",
+        summary_verdict=("PASS_ON_SYNTHETIC_TEST_DATA" if "is_synthetic" in df.columns and df["is_synthetic"].astype(str).str.lower().eq("true").all() else "PASS_ON_HELD_OUT_TEST_DATA"),
     )
 
     # Save JSON reports
