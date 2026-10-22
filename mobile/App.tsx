@@ -292,14 +292,21 @@ function FacilitiesScreen() {
   const [loading, setLoading] = useState(false);
   const reload = useCallback(async () => {
     setLoading(true); setError('');
-    const r = await Promise.allSettled([getShelters(), getHospitals()]);
-    if (r[0].status === 'fulfilled') setShelters(r[0].value.shelters);
-    else setError(errorText(r[0].reason));
-    if (r[1].status === 'fulfilled') setHospitals(r[1].value.hospitals);
-    else setError(previous => previous || errorText(r[1].reason));
+    const [sheltersResult, hospitalsResult] = await Promise.allSettled([getShelters(), getHospitals()]);
+    if (sheltersResult.status === 'fulfilled') {
+      setShelters(sheltersResult.value.shelters);
+    } else if (sheltersResult.status === 'rejected') {
+      setError(errorText(sheltersResult.reason));
+    }
+    if (hospitalsResult.status === 'fulfilled') {
+      setHospitals(hospitalsResult.value.hospitals);
+    } else if (hospitalsResult.status === 'rejected') {
+      const hospitalError = errorText(hospitalsResult.reason);
+      setError(previous => previous || hospitalError);
+    }
     setNotes([
-      r[0].status === 'fulfilled' ? (r[0].value.data_notes || '') : '',
-      r[1].status === 'fulfilled' ? (r[1].value.data_notes || '') : '',
+      sheltersResult.status === 'fulfilled' ? (sheltersResult.value.data_notes || '') : '',
+      hospitalsResult.status === 'fulfilled' ? (hospitalsResult.value.data_notes || '') : '',
     ].filter(Boolean));
     setLoading(false);
   }, []);
@@ -504,7 +511,7 @@ export default function App() {
     else changeScreen('area');
   };
   return <View style={styles.root}>
-    <StatusBar barStyle="light-content" backgroundColor={C.bg} />
+    <StatusBar barStyle="light-content" />
     <View style={styles.header}>
       <View style={styles.between}>
         <Text style={styles.brand}>◉ FLOODLENS <Text style={{ color: C.aqua }}>CITIZEN</Text></Text>
