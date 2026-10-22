@@ -49,6 +49,7 @@ function AccountScreen({ profile, onAuth }: {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const submit = async () => {
+    if (busy) return;
     if (!email.includes('@') || password.length < 8) { setError('Enter a valid email and a password of at least 8 characters.'); return; }
     setBusy(true); setError('');
     try {
@@ -373,6 +374,7 @@ function HelpScreen({ profile, go, onSubmitted }: {
     finally { setGpsBusy(false); }
   };
   const submit = () => {
+    if (busy) return;
     setError('');
     if (!profile) { go('account'); return; }
     if (!TEST_SOS_ALLOWED) { setError('Test submissions are disabled. Configure EXPO_PUBLIC_ENABLE_TEST_SOS=true only with an isolated demonstration backend.'); return; }
@@ -383,8 +385,10 @@ function HelpScreen({ profile, go, onSubmitted }: {
     if (!Number.isInteger(count) || count < 1 || count > 100) { setError('People count must be between 1 and 100.'); return; }
     RNAlert.alert('Confirm historical test request', 'This sends a TEST record to your configured FloodLens backend. It does NOT contact emergency services or dispatch rescue teams. Do not use it for real emergencies.', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Submit test record', onPress: () => { void (async () => {
+      { text: 'Submit test record', onPress: () => {
+        if (busy) return;
         setBusy(true);
+        void (async () => {
         try {
           await submitHelpRequest({
             latitude: lat, longitude: lon, people_count: count, category,
