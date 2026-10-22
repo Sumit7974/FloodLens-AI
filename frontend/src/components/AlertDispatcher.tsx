@@ -200,7 +200,7 @@ export const AlertDispatcher: React.FC<AlertDispatcherProps> = ({
       geofence_id: activeZone.id,
       severity: severity === 'UNSPECIFIED' ? 'ADVISORY' : severity,
       channels: selectedChannelList,
-      headline: res.data.headline,
+      headline: headlineEn,
       message: messageEn,
       headline_ne: headlineNe,
       message_ne: messageNe,
@@ -218,8 +218,8 @@ export const AlertDispatcher: React.FC<AlertDispatcherProps> = ({
 
     const newAlert: Alert = {
       id: res.data.id,
-      code: `${severity === 'EMERGENCY' ? 'RED-ALERT' : severity === 'WARNING' ? 'AMBER-WATCH' : 'YELLOW-ADVISORY'}-0${activeAlerts.length + 5}`,
-      headline: headlineEn,
+      code: res.data.code,
+      headline: res.data.headline,
       headline_ne: headlineNe,
       description: res.data.description,
       description_ne: messageNe,
@@ -230,7 +230,7 @@ export const AlertDispatcher: React.FC<AlertDispatcherProps> = ({
       status: res.data.status,
       issued_at: new Date().toISOString(),
       dispatched_at: res.data.dispatched_at || '',
-      expires_at: new Date(Date.now() + 6 * 3600 * 1000).toISOString(),
+      expires_at: res.data.expires_at || '',
       channels: res.data.channels,
       approved_by: res.data.approved_by || '',
       evacuation_notice: severity === 'EMERGENCY',
