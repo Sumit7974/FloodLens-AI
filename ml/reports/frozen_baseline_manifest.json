@@ -1,0 +1,111 @@
+{
+  "manifest_id": "manifest_freeze_era5_v1_20261021_175127",
+  "frozen_at": "2026-10-21T17:51:27Z",
+  "baseline_model_version": "era5-v1",
+  "baseline_model_type": "RandomForestClassifier(n_estimators=100, max_depth=6, class_weight='balanced')",
+  "primary_dataset_path": "ml/data/processed/era5_glofas_labeled.csv",
+  "primary_dataset_sha256": "708b49d1dc560a06791204a0f26a91d26d8cfa76ec9a35f48859bfe4c3afae22",
+  "total_samples_count": 5856,
+  "date_range_start": "2017-06-01T00:00:00+00:00",
+  "date_range_end": "2024-09-30T23:00:00+00:00",
+  "feature_count": 12,
+  "target_horizons": [
+    1,
+    3,
+    6
+  ],
+  "risk_thresholds": {
+    "moderate_rain_24h_mm": 25.0,
+    "high_rain_24h_mm": 100.0,
+    "critical_rain_24h_mm": 150.0,
+    "discharge_p90_percentile": ">= 90th percentile of training split",
+    "discharge_p95_percentile": ">= 95th percentile of training split",
+    "binary_warning_threshold": "Risk tier >= 2 (High or Critical)"
+  },
+  "frozen_artifacts": [
+    {
+      "relative_path": "ml/data/processed/era5_glofas_labeled.csv",
+      "sha256_checksum": "708b49d1dc560a06791204a0f26a91d26d8cfa76ec9a35f48859bfe4c3afae22",
+      "size_bytes": 1695645,
+      "artifact_type": "dataset",
+      "description": "Operational evaluation and reanalysis training dataset for Sapta Koshi Chatara Gorge."
+    },
+    {
+      "relative_path": "ml/models/baseline_rf_plus_1h_era5-v1.joblib",
+      "sha256_checksum": "5aca208c3455ecbb5141488d50ff0861e7ef1e77874140c78f7fbdbef19cc68e",
+      "size_bytes": 822059,
+      "artifact_type": "model_binary",
+      "description": "Baseline Random Forest multi-horizon classifier for +1h lead time."
+    },
+    {
+      "relative_path": "ml/models/baseline_rf_plus_3h_era5-v1.joblib",
+      "sha256_checksum": "e61b4644b72f04512643ea5b1aa05e66dfc554950a0cc39d7d438f65eb9747b3",
+      "size_bytes": 896555,
+      "artifact_type": "model_binary",
+      "description": "Baseline Random Forest multi-horizon classifier for +3h lead time."
+    },
+    {
+      "relative_path": "ml/models/baseline_rf_plus_6h_era5-v1.joblib",
+      "sha256_checksum": "93817bffbe2bec77ab2596926ca069b95dacc73e817cd5f7e87f391e93ce2fe6",
+      "size_bytes": 963947,
+      "artifact_type": "model_binary",
+      "description": "Baseline Random Forest multi-horizon classifier for +6h lead time."
+    },
+    {
+      "relative_path": "ml/models/model_metadata_era5-v1.json",
+      "sha256_checksum": "18d527b7f29bf57336176c912fdccbc12eaedb472f3c47f8716fbb6a1f8536a7",
+      "size_bytes": 1085,
+      "artifact_type": "metadata",
+      "description": "Model hyperparameter, feature schema, and threshold metadata for era5-v1."
+    }
+  ],
+  "partitions": [
+    {
+      "name": "frozen_baseline_train_75pct",
+      "start_timestamp": "2017-06-01T00:00:00+00:00",
+      "end_timestamp": "2024-07-31T23:00:00+00:00",
+      "row_count": 4392,
+      "percentage": 75.0,
+      "purpose": "Historical training partition used to train era5-v1 baseline models."
+    },
+    {
+      "name": "frozen_baseline_test_25pct",
+      "start_timestamp": "2024-08-01T00:00:00+00:00",
+      "end_timestamp": "2024-09-30T23:00:00+00:00",
+      "row_count": 1464,
+      "percentage": 25.0,
+      "purpose": "Immutable held-out test split for evaluating baseline and candidate models (Aug-Sep 2024)."
+    },
+    {
+      "name": "experiment_training_partition",
+      "start_timestamp": "2017-06-01T00:00:00+00:00",
+      "end_timestamp": "2024-07-15T23:00:00+00:00",
+      "row_count": 4008,
+      "percentage": 68.44,
+      "purpose": "Historical training window for candidate offline model experimentation."
+    },
+    {
+      "name": "experiment_validation_partition",
+      "start_timestamp": "2024-07-16T00:00:00+00:00",
+      "end_timestamp": "2024-08-15T23:00:00+00:00",
+      "row_count": 744,
+      "percentage": 12.7,
+      "purpose": "Tuning partition for hyperparameter selection and threshold calibration (NO TEST LEAKAGE)."
+    },
+    {
+      "name": "experiment_test_partition",
+      "start_timestamp": "2024-08-16T00:00:00+00:00",
+      "end_timestamp": "2024-09-30T23:00:00+00:00",
+      "row_count": 1104,
+      "percentage": 18.85,
+      "purpose": "Untouched held-out test split reserved exclusively for final candidate benchmarking."
+    }
+  ],
+  "data_limitations": [
+    "Zero in-situ river stage telemetry: river_stage_m is NaN in reanalysis feeds.",
+    "Continuous floodwater depth is unobserved in historical records (0 ground-truth depth observations).",
+    "GloFAS discharge represents daily reanalysis estimate, not direct in-situ gauge readings.",
+    "ERA5 25km grid cell smooths sub-grid mountain convective cloudbursts (<15min onset)."
+  ],
+  "tamper_protection_status": "VERIFIED_LOCKED"
+}
