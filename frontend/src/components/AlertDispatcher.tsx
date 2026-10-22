@@ -202,7 +202,7 @@ export const AlertDispatcher: React.FC<AlertDispatcherProps> = ({
     // Transmit through unified service adapter
     const res = await floodLensClient.postSimulatedAlert({
       geofence_id: activeZone.id,
-      severity: severity,
+      severity: severity === 'UNSPECIFIED' ? 'ADVISORY' : severity,
       channels: selectedChannelList,
       headline: headlineEn,
       message: messageEn,
