@@ -1,0 +1,31 @@
+{
+  "expo": {
+    "name": "FloodLens Citizen",
+    "slug": "floodlens-citizen",
+    "scheme": "floodlens",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "android": {
+      "package": "ai.floodlens.citizen",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ],
+      "usesCleartextTraffic": true
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow FloodLens to get your approximate location only when you choose to share it in a test help request."
+        }
+      ],
+      "expo-secure-store"
+    ],
+    "extra": {
+      "environment": "historical-demo-only"
+    }
+  }
+}
