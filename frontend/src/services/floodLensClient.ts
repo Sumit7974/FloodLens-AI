@@ -26,6 +26,7 @@ import type {
   PredictionHorizonTier,
 } from '../types/apiContracts';
 import { mapToGaugeStations } from '../types/apiContracts';
+import { DEMO_MODE, createDemoDraft } from './backendApi';
 
 export class FloodLensClient {
   private static instance: FloodLensClient;
@@ -351,39 +352,72 @@ export class FloodLensClient {
   }
 
   /**
-   * 7. Post simulated CAP emergency broadcast alert
+   * 7. Simulation-only alert workflow.
+   *
+   * In backend mode this creates a DRAFT, never a dispatched alert. A separate
+   * authorized human review and explicit simulated dispatch are required.
+   * Network failures MUST NOT produce fake success records.
    */
   public async postSimulatedAlert(payload: AlertSimulationPayload): Promise<ApiResponse<AlertAuditRecord>> {
-    return this.executeFetch(
-      '/alerts/simulated',
-      () => {
-        const code = `SIM-ALT-${Date.now().toString().slice(-4)}`;
+    if (!DEMO_MODE) {
+      try {
+        const draft = await createDemoDraft(payload.geofence_id, payload.headline, payload.message);
         return {
-          id: `ALT-SIM-${Date.now()}`,
-          code,
-          geofence: payload.geofence_id,
-          severity: payload.severity,
-          headline: payload.headline,
-          description: payload.message,
-          headline_ne: payload.headline_ne,
-          description_ne: payload.message_ne,
-          channels: payload.channels,
-          approved_by: payload.issued_by,
-          dispatched_at: 'Just now (Simulated Drill)',
-          expires_at: 'In 6 hours',
-          population_affected: 14200,
-          simulated_reach: 12400,
-          audit_hash: `SHA-256: ${Math.random().toString(16).substring(2, 10)}${Math.random().toString(16).substring(2, 10)}`,
-          is_drill_simulation: true,
-          status: 'DISPATCHED',
+          status: 'live',
+          isMock: false,
+          data: {
+            id: draft.id,
+            code: `DEMO-${draft.id.slice(0, 8)}`,
+            geofence: draft.area_id,
+            severity: payload.severity,
+            headline: draft.title,
+            description: draft.message,
+            headline_ne: payload.headline_ne,
+            description_ne: payload.message_ne,
+            channels: draft.target_channels,
+            approved_by: draft.approved_by || '',
+            dispatched_at: '',
+            expires_at: '',
+            population_affected: 0,
+            simulated_reach: 0,
+            audit_hash: '',
+            is_drill_simulation: true,
+            status: 'DRAFT',
+          },
         };
-      },
-      'postSimulatedAlert',
-      {
-        method: 'POST',
-        body: JSON.stringify(payload),
+      } catch (error) {
+        return {
+          status: 'error',
+          isMock: false,
+          data: null as unknown as AlertAuditRecord,
+          error: error instanceof Error ? error.message : 'Failed to create backend draft',
+        };
       }
-    );
+    }
+
+    return {
+      status: 'cached',
+      isMock: true,
+      data: {
+        id: `DEMO-${Date.now()}`,
+        code: `LOCAL-DEMO-${Date.now().toString().slice(-6)}`,
+        geofence: payload.geofence_id,
+        severity: payload.severity,
+        headline: `[DEMO ONLY] ${payload.headline}`,
+        description: payload.message,
+        headline_ne: payload.headline_ne,
+        description_ne: payload.message_ne,
+        channels: payload.channels,
+        approved_by: 'Local historical demonstration only',
+        dispatched_at: 'Local UI simulation (no network dispatch)',
+        expires_at: '',
+        population_affected: 0,
+        simulated_reach: 0,
+        audit_hash: 'LOCAL-DEMO-UNVERIFIED',
+        is_drill_simulation: true,
+        status: 'DISPATCHED',
+      },
+    };
   }
 
   /**
