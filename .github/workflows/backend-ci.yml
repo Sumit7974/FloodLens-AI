@@ -46,7 +46,10 @@ jobs:
         with:
           python-version: "3.11"
           cache: "pip"
-          cache-dependency-path: backend/requirements.txt
+          cache-dependency-path: |
+            backend/requirements.txt
+            backend/requirements-dev.txt
+            ml/requirements.txt
 
       - name: Install system dependencies
         run: |
@@ -58,6 +61,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r backend/requirements.txt
           pip install -r backend/requirements-dev.txt
+          pip install -r ml/requirements.txt
 
       - name: Verify PostgreSQL 16 & PostGIS extension
         env:
@@ -82,6 +86,11 @@ jobs:
         working-directory: backend
         run: |
           python scripts/verify_spatial_postgis.py
+
+      - name: Run live PostGIS ML forecast persistence integration test
+        working-directory: backend
+        run: |
+          pytest -v -s tests/test_ml_postgis_integration.py
 
       - name: Run full pytest suite against PostGIS
         working-directory: backend
