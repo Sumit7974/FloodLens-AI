@@ -48,7 +48,6 @@ if sys.platform.startswith("win"):
 import numpy as np
 from shapely.geometry import shape, mapping, box
 import shapely.ops
-import pyproj
 
 try:
     from ml.gis_processing.detection_metrics import (
@@ -85,8 +84,6 @@ except ImportError:
 SCRIPT_DIR = Path(__file__).resolve().parent
 DOWNLOADS_DIR = SCRIPT_DIR / "downloads"
 WORKSPACE_ROOT = SCRIPT_DIR.parent.parent
-if not (WORKSPACE_ROOT / "FloodLens-AI").exists() and SCRIPT_DIR.parent.name == "ml":
-    WORKSPACE_ROOT = SCRIPT_DIR.parent.parent.parent
 
 # Input Vector Layers (Checked in downloads/ or root)
 LAYER_FILENAMES = {
@@ -157,7 +154,11 @@ def validate_geojson_topology() -> Dict[str, Any]:
     print(" TASK 1: TOPOLOGY, GEOMETRY & STATISTICAL VALIDATION")
     print("=" * 78)
 
-    transformer = pyproj.Transformer.from_crs(CRS_WGS84, CRS_UTM45N, always_xy=True)
+    try:
+        import pyproj
+        transformer = pyproj.Transformer.from_crs(CRS_WGS84, CRS_UTM45N, always_xy=True)
+    except ImportError:
+        transformer = None
     validation_results = {}
     study_box = box(STUDY_BBOX[0] - 2.0, STUDY_BBOX[1] - 2.0, STUDY_BBOX[2] + 2.0, STUDY_BBOX[3] + 2.0)
 
@@ -217,20 +218,22 @@ def validate_geojson_topology() -> Dict[str, Any]:
                 # Reported area
                 rep_a = props.get("area_m2") or props.get("area_sqm") or 0.0
                 reported_area_m2 += rep_a
-                try:
-                    g_utm = shapely.ops.transform(transformer.transform, g)
-                    total_calc_area_m2 += g_utm.area
-                except Exception:
-                    pass
+                if transformer is not None:
+                    try:
+                        g_utm = shapely.ops.transform(transformer.transform, g)
+                        total_calc_area_m2 += g_utm.area
+                    except Exception:
+                        pass
 
             elif "LineString" in g_type:
                 rep_l = props.get("length_m") or 0.0
                 reported_length_m += rep_l
-                try:
-                    g_utm = shapely.ops.transform(transformer.transform, g)
-                    total_calc_length_m += g_utm.length
-                except Exception:
-                    pass
+                if transformer is not None:
+                    try:
+                        g_utm = shapely.ops.transform(transformer.transform, g)
+                        total_calc_length_m += g_utm.length
+                    except Exception:
+                        pass
 
         status_str = "PASS" if invalid_count == 0 and empty_count == 0 and bbox_errors == 0 else "WARNING"
 
