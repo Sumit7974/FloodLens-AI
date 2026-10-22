@@ -12,7 +12,7 @@ interface CommandOverviewProps {
   benchmarkScene: BenchmarkScene;
   requests: HelpRequest[];
   alerts: Alert[];
-  onHandoffRequest?: (requestId: string) => void;
+  onHandoffRequest?: (requestId: string) => Promise<boolean> | boolean;
   onAssignRequest?: (requestId: string, unitName: string) => void; // backwards compat
   onBroadcastRevision: (alertId: string) => void;
 }
