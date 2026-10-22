@@ -408,7 +408,7 @@ def run_predicted_vs_observed_analysis(
         targets=targets_results,
         comparison_table_sample=comparison_samples,
         unobserved_targets_audit=unobserved,
-        summary_verdict="PASS_ON_HELD_OUT_TEST_DATA",
+        summary_verdict=("PASS_ON_SYNTHETIC_TEST_DATA" if "is_synthetic" in df.columns and df["is_synthetic"].astype(str).str.lower().eq("true").all() else "PASS_ON_HELD_OUT_TEST_DATA"),
     )
 
     # Persist report
