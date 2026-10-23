@@ -35,15 +35,15 @@ An initial audit with `npx expo-doctor` identified two configuration and depende
 ## 3. Backend API & Networking Architecture
 
 ### Configuration
-The app uses dynamic API resolution defined in `mobile/src/api.ts`:
+The app uses dynamic API resolution defined in `mobile/src/api/client.ts`:
 ```typescript
-const configured = (process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:8000').trim().replace(/\/+$/, '');
-export const API_BASE = configured.endsWith('/api/v1') ? configured : `${configured}/api/v1`;
+export const PRODUCTION_API_URL = 'https://floodlens-backend-4pt5.onrender.com';
+const DEFAULT_ENV_API_URL = (process.env.EXPO_PUBLIC_API_URL || PRODUCTION_API_URL).trim().replace(/\/+$/, '');
 ```
-- **Android Emulator**: Defaults to `http://10.0.2.2:8000/api/v1`, routing from the Android emulator loopback to the host FastAPI service.
-- **Physical Device / Local LAN**: Supports `EXPO_PUBLIC_API_URL=http://<HOST_IP>:8000/api/v1` or reverse ADB port forwarding (`adb reverse tcp:8000 tcp:8000`).
-- **Deployed Staging / Production**: Supports `EXPO_PUBLIC_API_URL=https://api.floodlens.ai/api/v1` (enforcing HTTPS encryption over the wire).
-- **Transparency**: The active API endpoint is visibly rendered in the application footer for QA verification.
+- **Live Deployed Cloud (Render)**: Defaults to `https://floodlens-backend-4pt5.onrender.com` (enforcing HTTPS encryption over the wire).
+- **Android Emulator**: Supports `http://10.0.2.2:8000`, routing from the Android emulator loopback to the host FastAPI service.
+- **Physical Device / Local Wi-Fi LAN**: Supports `EXPO_PUBLIC_API_URL=http://<HOST_IP>:8000` or reverse ADB port forwarding (`adb reverse tcp:8000 tcp:8000`).
+- **Transparency**: The active API endpoint is visibly rendered with real-time latency probing in the application header and network settings modal.
 
 ---
 

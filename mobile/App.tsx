@@ -36,6 +36,7 @@ import {
   setCustomApiBaseUrl,
   resetApiBaseUrl,
   RECOMMENDED_LAN_IP_HINT,
+  PRODUCTION_API_URL,
 } from './src/api/client';
 import { BackendHealthResponse, QueuedIncident } from './src/types';
 import { CitizenSOSScreen, ResponderScreen } from './src/screens';
@@ -433,12 +434,20 @@ export default function App() {
               </View>
 
               <Text style={styles.modalDescription}>
-                Configure target FastAPI address so physical Android devices running Expo Go or Emulators can reach the host machine.
+                Target backend service for live telemetry, automated AI forecasting, and citizen emergency triage.
               </Text>
 
               {/* Quick Preset Buttons */}
               <Text style={styles.presetLabel}>RECOMMENDED PRESETS:</Text>
               <View style={styles.presetsWrap}>
+                <TouchableOpacity
+                  style={[styles.presetBtn, { borderColor: THEME.colors.cyan }]}
+                  onPress={() => handleSaveCustomUrl(PRODUCTION_API_URL)}
+                >
+                  <Text style={[styles.presetBtnTitle, { color: THEME.colors.cyan }]}>Live Cloud Backend (Production Render)</Text>
+                  <Text style={styles.presetBtnUrl}>{PRODUCTION_API_URL}</Text>
+                </TouchableOpacity>
+
                 <TouchableOpacity
                   style={styles.presetBtn}
                   onPress={() => handleSaveCustomUrl(RECOMMENDED_LAN_IP_HINT)}
@@ -454,14 +463,6 @@ export default function App() {
                   <Text style={styles.presetBtnTitle}>Android Emulator</Text>
                   <Text style={styles.presetBtnUrl}>http://10.0.2.2:8000</Text>
                 </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.presetBtn}
-                  onPress={() => handleSaveCustomUrl('http://localhost:8000')}
-                >
-                  <Text style={styles.presetBtnTitle}>Localhost (PC / Web)</Text>
-                  <Text style={styles.presetBtnUrl}>http://localhost:8000</Text>
-                </TouchableOpacity>
               </View>
 
               {/* Manual URL Input */}
@@ -470,7 +471,7 @@ export default function App() {
                 style={styles.modalInput}
                 value={customUrlInput}
                 onChangeText={setCustomUrlInput}
-                placeholder="http://192.168.x.x:8000"
+                placeholder={PRODUCTION_API_URL}
                 placeholderTextColor={THEME.colors.textMuted}
                 autoCapitalize="none"
                 autoCorrect={false}

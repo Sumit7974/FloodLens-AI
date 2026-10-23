@@ -17,12 +17,34 @@ import {
 const STORAGE_API_OVERRIDE_KEY = '@floodlens_custom_api_url_v1';
 const STORAGE_AUTH_TOKEN_KEY = '@floodlens_auth_token_v1';
 
-// Default host configurations
-const DEFAULT_ENV_API_URL = (process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000').trim().replace(/\/+$/, '');
+// Live Deployed Cloud Backend (Production Render)
+export const PRODUCTION_API_URL = 'https://floodlens-backend-4pt5.onrender.com';
+export const RECOMMENDED_LAN_IP_HINT = 'http://192.168.29.121:8000';
+
+// Default host configurations: prefers EXPO_PUBLIC_API_URL, falls back to live production HTTPS service
+const DEFAULT_ENV_API_URL = (process.env.EXPO_PUBLIC_API_URL || PRODUCTION_API_URL).trim().replace(/\/+$/, '');
 let runtimeApiBaseUrl: string | null = null;
 let cachedAuthToken: string | null = null;
 
-export const RECOMMENDED_LAN_IP_HINT = 'http://192.168.29.121:8000';
+/**
+ * Normalizes and builds full request URL safely whether base URL contains /api/v1 or not.
+ */
+export function buildFullUrl(baseUrl: string, path: string): string {
+  if (path.startsWith('http://') || path.startsWith('https://')) {
+    return path;
+  }
+  const cleanBase = baseUrl.trim().replace(/\/+$/, '');
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+
+  // If baseUrl already ends with /api/v1 and path starts with /api/v1/, prevent duplicate prefix
+  if (cleanBase.endsWith('/api/v1') && cleanPath.startsWith('/api/v1/')) {
+    return `${cleanBase}${cleanPath.substring(7)}`;
+  }
+  if (cleanBase.endsWith('/api/v1') && cleanPath === '/api/v1') {
+    return cleanBase;
+  }
+  return `${cleanBase}${cleanPath}`;
+}
 
 /**
  * Resolve effective API base URL (checking memory cache, AsyncStorage override, or environment)
@@ -42,7 +64,6 @@ export async function getEffectiveApiBaseUrl(): Promise<string> {
   runtimeApiBaseUrl = DEFAULT_ENV_API_URL;
   return DEFAULT_ENV_API_URL;
 }
-
 
 /**
  * Synchronous getter for current configured API base URL
@@ -90,7 +111,8 @@ export async function setStoredAuthToken(token: string): Promise<void> {
   await AsyncStorage.setItem(STORAGE_AUTH_TOKEN_KEY, token);
 }
 
-const REQUEST_TIMEOUT_MS = 6500;
+// 25-second timeout handles Render free-tier cold-start latency gracefully
+const REQUEST_TIMEOUT_MS = 25000;
 
 /**
  * Fetch wrapper with timeout and standardized tactical error handling
@@ -101,7 +123,7 @@ async function fetchWithTimeout(
   timeoutMs = REQUEST_TIMEOUT_MS
 ): Promise<Response> {
   const baseUrl = await getEffectiveApiBaseUrl();
-  const fullUrl = path.startsWith('http') ? path : `${baseUrl}${path.startsWith('/') ? path : `/${path}`}`;
+  const fullUrl = buildFullUrl(baseUrl, path);
   const token = await getStoredAuthToken();
 
   const controller = new AbortController();
@@ -127,10 +149,10 @@ async function fetchWithTimeout(
   } catch (error: any) {
     clearTimeout(id);
     if (error.name === 'AbortError') {
-      throw new Error(`Timeout after ${timeoutMs}ms reaching ${fullUrl}. If testing on physical phone, check EXPO_PUBLIC_API_URL=${RECOMMENDED_LAN_IP_HINT}`);
+      throw new Error(`Timeout after ${timeoutMs}ms reaching ${fullUrl}. (Render cloud backend may be waking from cold standby. Tap Refresh to retry.)`);
     }
     throw new Error(
-      `${error.message || 'Network request failed'}. (Target: ${fullUrl}. Ensure your device is on the same Wi-Fi and host firewall permits port 8000)`
+      `${error.message || 'Network request failed'}. (Target: ${fullUrl})`
     );
   }
 }
@@ -538,5 +560,21 @@ export async function fetchSensorTelemetry(): Promise<SensorReading[]> {
     throw new Error(`Failed to fetch sensors: ${response.status}`);
   }
 
-  return response.json();
+  const data = await response.json();
+  if (Array.isArray(data.stations)) {
+    return data.stations.map((s: any) => ({
+      sensor_id: s.station_id || `gauge-${Math.random().toString(36).substring(7)}`,
+      station_name: s.name || 'Hydro Gauge',
+      river_basin: s.river || 'Koshi Basin',
+      water_level_m: s.current_level || 0,
+      danger_threshold_m: s.danger_level || 8.0,
+      warning_threshold_m: s.warning_level || 7.0,
+      flow_rate_m3s: s.discharge_rate || 0,
+      rainfall_1h_mm: 0,
+      rainfall_24h_mm: 0,
+      status: s.status || 'NORMAL',
+      last_reported_at: s.last_reported_at || 'Just now',
+    }));
+  }
+  return Array.isArray(data) ? data : [];
 }

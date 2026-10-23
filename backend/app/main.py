@@ -74,12 +74,10 @@ def create_application() -> FastAPI:
         response.headers["X-Request-ID"] = req_id
         return response
 
-    # CORS configuration
-    origins = settings.cors_origins if isinstance(settings.cors_origins, list) else ["*"]
+    # CORS configuration - allow all origins without regex restrictions for web and mobile clients
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=origins,
-        allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
+        allow_origins=["*"],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -122,3 +120,13 @@ def create_application() -> FastAPI:
 
 
 app = create_application()
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(
+        "app.main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True,
+    )

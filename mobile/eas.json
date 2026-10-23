@@ -13,12 +13,15 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://floodlens-ai-3235.loca.lt"
+        "EXPO_PUBLIC_API_URL": "https://floodlens-backend-4pt5.onrender.com"
       }
     },
     "production": {
       "android": {
         "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://floodlens-backend-4pt5.onrender.com"
       }
     }
   }
