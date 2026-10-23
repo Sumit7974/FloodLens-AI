@@ -1,6 +1,6 @@
 import * as SecureStore from 'expo-secure-store';
 
-const configured = (process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:8000').trim().replace(/\/+$/, '');
+const configured = (process.env.EXPO_PUBLIC_API_URL || 'https://floodlens-backend-4pt5.onrender.com').trim().replace(/\/+$/, '');
 export const API_BASE = configured.endsWith('/api/v1') ? configured : `${configured}/api/v1`;
 const TOKEN_KEY = 'floodlens_demo_citizen_token';
 let token: string | null = null;
@@ -149,7 +149,19 @@ export const getHistoricalEvents = async (): Promise<FloodEvent[]> => {
 };
 export const getObservedExtent = (eventId: string): Promise<ExtentFeature> =>
   jsonRequest(`/flood-events/${encodeURIComponent(eventId)}/extent/geojson`);
-export const getAlerts = (): Promise<AlertRecord[]> => jsonRequest('/alerts');
+export const getAlerts = async (includeDemo = true): Promise<AlertRecord[]> => {
+  if (includeDemo && token) {
+    try {
+      return await jsonRequest<AlertRecord[]>('/alerts?include_demo=true', {}, true);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 403) {
+        return await jsonRequest<AlertRecord[]>('/alerts', {}, Boolean(token));
+      }
+      throw err;
+    }
+  }
+  return jsonRequest<AlertRecord[]>('/alerts', {}, Boolean(token));
+};
 export const getShelters = async (): Promise<{ shelters: Facility[]; data_notes?: string }> =>
   jsonRequest('/facilities/shelters');
 export const getHospitals = async (): Promise<{ hospitals: Facility[]; data_notes?: string }> =>
