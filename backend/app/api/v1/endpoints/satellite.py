@@ -2,26 +2,29 @@
 import uuid
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Query, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import require_roles
-from app.core.exceptions import ConflictError, FloodLensAPIException, NotFoundError
+from app.api.deps import get_optional_current_user, require_roles
+from app.core.exceptions import ConflictError, FloodLensAPIException, NotFoundError, UnauthorizedError
 from app.database import get_db
 from app.models.enums import UserRole
-from app.models.satellite import SatelliteScene
+from app.models.satellite import SatelliteJob, SatelliteScene
 from app.models.user import User
 from app.schemas.satellite import (
     SatelliteJobCreate,
+    SatelliteJobDetailResponse,
     SatelliteJobResponse,
     SatelliteSceneCreate,
     SatelliteSceneResponse,
 )
+from app.services.satellite_processor import (
+    dispatch_satellite_job,
+    normalize_processing_parameters,
+    validate_satellite_job_parameters,
+)
 
 router = APIRouter(prefix="/satellite", tags=["Satellite & GIS"])
-
-# In-memory tracking for scheduled background jobs
-_SATELLITE_JOBS: Dict[str, Dict[str, Any]] = {}
 
 
 @router.post(
@@ -100,49 +103,141 @@ async def get_satellite_scene(scene_id: str, db: Session = Depends(get_db)) -> S
 @router.post(
     "/jobs",
     response_model=SatelliteJobResponse,
-    status_code=status.HTTP_501_NOT_IMPLEMENTED,
+    status_code=status.HTTP_202_ACCEPTED,
     summary="Start authorized satellite processing job",
-    description="Explicitly reports that the satellite processing pipeline is not implemented until Member 2 processing worker is connected.",
+    description="Enqueues durable optical NDWI or SAR change detection processing job. Authorized authority/admin only.",
 )
 async def create_satellite_job(
     job_spec: SatelliteJobCreate,
+    background_tasks: BackgroundTasks,
     current_user: User = Depends(require_roles([UserRole.AUTHORITY, UserRole.ADMIN])),
+    db: Session = Depends(get_db),
 ) -> SatelliteJobResponse:
-    """Satellite processing worker is not connected. Explicitly reports not implemented."""
-    raise FloodLensAPIException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        code="PROCESSING_NOT_IMPLEMENTED",
-        message="Satellite processing pipeline is not implemented: processing worker is not connected. Durable queue and execution worker pending Member 2 integration.",
-        details={
-            "method": job_spec.method,
-            "scene_id": job_spec.scene_id,
-            "worker_status": "disconnected",
-        },
+    """Validate parameters and enqueue a durable background satellite processing job."""
+    # 1. Comprehensive domain validation
+    target_scene, baseline_scene, flood_event, resolved_asset = validate_satellite_job_parameters(db, job_spec)
+
+    normalized_method = (job_spec.method or "").strip().upper()
+
+    # 2. Duplicate detection: if an identical job is already QUEUED or RUNNING, reuse it
+    req_threshold = round(float(job_spec.threshold if job_spec.threshold is not None else 0.0), 4)
+    norm_incoming_params = normalize_processing_parameters(job_spec.parameters, method=normalized_method)
+
+    active_candidates = (
+        db.query(SatelliteJob)
+        .filter(
+            SatelliteJob.scene_id == job_spec.scene_id,
+            SatelliteJob.baseline_scene_id == job_spec.baseline_scene_id,
+            SatelliteJob.method == normalized_method,
+            SatelliteJob.threshold == req_threshold,
+            SatelliteJob.event_id == job_spec.event_id,
+            SatelliteJob.status.in_(["QUEUED", "RUNNING"]),
+        )
+        .all()
+    )
+
+    existing_active = None
+    for cand in active_candidates:
+        cand_norm_params = normalize_processing_parameters(cand.parameters, method=cand.method)
+        if cand_norm_params == norm_incoming_params:
+            existing_active = cand
+            break
+
+    if existing_active:
+        return SatelliteJobResponse(
+            job_id=existing_active.id,
+            status=existing_active.status,
+            message="An identical satellite processing job is already in progress.",
+            requested_by=existing_active.requested_by,
+            created_at=existing_active.created_at,
+        )
+
+    # 3. Create durable database record
+    job_id = f"sat_job_{uuid.uuid4().hex[:12]}"
+    stored_parameters = {
+        "threshold": req_threshold,
+        "scene_id": job_spec.scene_id,
+        "baseline_scene_id": job_spec.baseline_scene_id,
+        "method": normalized_method,
+        "event_id": job_spec.event_id,
+        **norm_incoming_params,
+    }
+    new_job = SatelliteJob(
+        id=job_id,
+        event_id=job_spec.event_id,
+        scene_id=job_spec.scene_id,
+        baseline_scene_id=job_spec.baseline_scene_id,
+        method=normalized_method,
+        threshold=req_threshold,
+        status="QUEUED",
+        progress_percent=0.0,
+        requested_by=current_user.email or current_user.id,
+        parameters=stored_parameters,
+    )
+    db.add(new_job)
+    db.commit()
+    db.refresh(new_job)
+
+    # 4. Dispatch background worker task
+    background_tasks.add_task(dispatch_satellite_job, new_job.id)
+
+    return SatelliteJobResponse(
+        job_id=new_job.id,
+        status="QUEUED",
+        message="Satellite processing job queued successfully.",
+        requested_by=new_job.requested_by,
+        created_at=new_job.created_at,
     )
 
 
 @router.get(
     "/jobs/{job_id}",
+    response_model=SatelliteJobDetailResponse,
     status_code=status.HTTP_200_OK,
     summary="Get status of satellite processing job",
 )
-async def get_satellite_job_status(job_id: str) -> Dict[str, Any]:
-    """Poll progress of a background satellite processing job. Unknown IDs return 404."""
-    if job_id not in _SATELLITE_JOBS:
+async def get_satellite_job_status(
+    job_id: str,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user),
+) -> SatelliteJobDetailResponse:
+    """Retrieve persisted status, progress, timestamps, and output references for a processing job.
+    
+    Preserves 404 for unknown job IDs. Requires authentication for existing jobs.
+    Redacts sensitive metadata (requester email, error details, worker identity) for non-authority users.
+    """
+    job = db.query(SatelliteJob).filter(SatelliteJob.id == job_id).first()
+    if not job:
         raise NotFoundError(
             message=f"Satellite processing job '{job_id}' not found",
             code="JOB_NOT_FOUND",
         )
 
-    job = _SATELLITE_JOBS[job_id]
-    created_at_val = job.get("created_at")
-    return {
-        "job_id": job_id,
-        "status": job["status"],
-        "progress_percent": job.get("progress_percent", 0),
-        "method": job.get("method"),
-        "event_id": job.get("event_id"),
-        "scene_id": job.get("scene_id"),
-        "requested_by": job.get("requested_by"),
-        "created_at": created_at_val.isoformat() if hasattr(created_at_val, "isoformat") else created_at_val,
-    }
+    if not current_user:
+        raise UnauthorizedError(
+            message="Authentication required to view satellite processing job status",
+            code="UNAUTHORIZED",
+        )
+
+    is_authority_or_admin = current_user.role in (UserRole.AUTHORITY, UserRole.ADMIN)
+
+    return SatelliteJobDetailResponse(
+        job_id=job.id,
+        status=job.status,
+        progress_percent=job.progress_percent,
+        method=job.method,
+        threshold=job.threshold,
+        event_id=job.event_id,
+        scene_id=job.scene_id,
+        baseline_scene_id=job.baseline_scene_id,
+        requested_by=job.requested_by if is_authority_or_admin else None,
+        worker_id=job.worker_id if is_authority_or_admin else None,
+        created_at=job.created_at,
+        started_at=job.started_at,
+        completed_at=job.completed_at,
+        lease_expires_at=job.lease_expires_at if is_authority_or_admin else None,
+        heartbeat_at=job.heartbeat_at if is_authority_or_admin else None,
+        output_extent_id=job.output_extent_id,
+        error_message=job.error_message if is_authority_or_admin else None,
+        provenance=job.provenance,
+    )

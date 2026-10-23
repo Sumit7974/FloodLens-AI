@@ -18,7 +18,7 @@ from app.models.evaluation import Evaluation
 from app.models.flood_event import FloodEvent
 from app.models.forecast import ForecastRun, RiskPrediction
 from app.models.location import Location
-from app.models.satellite import FloodExtent, SatelliteScene
+from app.models.satellite import FloodExtent, SatelliteJob, SatelliteScene
 from app.models.user import User
 
 __all__ = [
@@ -42,6 +42,7 @@ __all__ = [
     "RiskLevel",
     "RiskPrediction",
     "RoadHazard",
+    "SatelliteJob",
     "SatelliteScene",
     "TimestampMixin",
     "User",

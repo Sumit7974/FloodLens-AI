@@ -1,0 +1,42 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "sar_flood_001",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              87.08,
+              26.58
+            ],
+            [
+              87.18,
+              26.58
+            ],
+            [
+              87.18,
+              26.68
+            ],
+            [
+              87.08,
+              26.68
+            ],
+            [
+              87.08,
+              26.58
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "source": "Sentinel-1 SAR change detection historical sample",
+        "sensor": "Sentinel-1 SAR",
+        "modality": "sar",
+        "area_approx_km2": 110.0
+      }
+    }
+  ]
+}

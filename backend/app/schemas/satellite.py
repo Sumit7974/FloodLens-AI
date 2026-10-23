@@ -35,11 +35,12 @@ class SatelliteSceneResponse(BaseModel):
 
 class SatelliteJobCreate(BaseModel):
     """Job dispatch request for satellite extent processing."""
-    event_id: Optional[str] = Field(default=None, description="Optional target flood event ID")
-    scene_id: Optional[str] = Field(default=None, description="Primary scene identifier to process")
+    event_id: str = Field(..., min_length=1, max_length=36, description="Target flood event ID (required)")
+    scene_id: str = Field(..., min_length=1, max_length=100, description="Primary scene identifier to process (required)")
     baseline_scene_id: Optional[str] = Field(default=None, description="Pre-flood baseline scene for change detection")
     method: str = Field(default="NDWI", description="Index or method: NDWI, MNDWI, SAR_CHANGE")
     threshold: Optional[float] = Field(default=0.0, description="Water index decision threshold")
+    parameters: Optional[Dict[str, Any]] = Field(default=None, description="Optional preprocessing and quality parameters")
 
 
 class SatelliteJobResponse(BaseModel):
@@ -49,3 +50,27 @@ class SatelliteJobResponse(BaseModel):
     message: str
     requested_by: str
     created_at: datetime
+
+
+class SatelliteJobDetailResponse(BaseModel):
+    """Comprehensive job status and artifact provenance detail schema."""
+    job_id: str
+    status: str
+    progress_percent: float = 0.0
+    method: str
+    threshold: Optional[float] = None
+    event_id: Optional[str] = None
+    scene_id: Optional[str] = None
+    baseline_scene_id: Optional[str] = None
+    requested_by: Optional[str] = None
+    worker_id: Optional[str] = None
+    created_at: datetime
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    lease_expires_at: Optional[datetime] = None
+    heartbeat_at: Optional[datetime] = None
+    output_extent_id: Optional[str] = None
+    error_message: Optional[str] = None
+    provenance: Optional[str] = None
+
+    model_config = ConfigDict(from_attributes=True)
