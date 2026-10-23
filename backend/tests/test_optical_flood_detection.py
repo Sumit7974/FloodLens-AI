@@ -201,8 +201,10 @@ def test_classify_flood_dynamics_isolates_persistent_from_new_flood():
     assert stats["unobserved_pixels"] == 1
 
 
-def test_missing_baseline_rejection(db_session: Session):
+def test_missing_baseline_rejection(db_session: Session, synthetic_optical_fixtures):
     """Reject optical NDWI new-flood processing on raw band directory when baseline is omitted."""
+    post_dir = synthetic_optical_fixtures["post_dir"]
+
     # Create test event and optical scene pointing to a directory
     event = FloodEvent(
         id=f"event_test_{uuid.uuid4().hex[:8]}",
@@ -216,7 +218,7 @@ def test_missing_baseline_rejection(db_session: Session):
         sensor="Sentinel-2",
         modality="optical",
         captured_at=datetime(2017, 8, 15, tzinfo=timezone.utc),
-        asset_ref="data/historical_koshi_optical/post_flood",
+        asset_ref=str(post_dir),
         bbox_geojson={"type": "Polygon", "coordinates": [[[87.0, 26.0], [88.0, 26.0], [88.0, 27.0], [87.0, 27.0], [87.0, 26.0]]]},
     )
     db_session.add_all([event, target_scene])
