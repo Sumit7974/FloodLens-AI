@@ -82,9 +82,6 @@ def concurrency_scene(db_session: Session) -> SatelliteScene:
 # ==============================================================================
 def test_two_independent_postgres_sessions_claim_same_job(
     is_postgres: bool,
-    db_session: Session,
-    concurrency_event: FloodEvent,
-    concurrency_scene: SatelliteScene,
 ):
     """At least one true parallel-execution test must use real independent connections.
     
@@ -99,21 +96,53 @@ def test_two_independent_postgres_sessions_claim_same_job(
             "(runs in CI against PostgreSQL 16 PostGIS container)."
         )
 
-    # Create target QUEUED job
+    from tests.conftest import test_engine
+    IndependentSession = sessionmaker(bind=test_engine, autocommit=False, autoflush=False)
+
+    # 1. Setup session: Commit event, scene, target_job to PostgreSQL
+    setup_sess = IndependentSession()
+    event_id = f"evt_conc_{uuid.uuid4().hex[:8]}"
+    scene_id = f"scene_conc_{uuid.uuid4().hex[:8]}"
+    job_id = f"sat_job_parallel_{uuid.uuid4().hex[:8]}"
+
+    event = FloodEvent(
+        id=event_id,
+        region_id="nepal_terai",
+        name="Nepal Monsoon Concurrency Test Event",
+        start_at=datetime(2017, 8, 11, 0, 0, tzinfo=timezone.utc),
+        end_at=datetime(2017, 8, 20, 0, 0, tzinfo=timezone.utc),
+        mode=OperationalMode.HISTORICAL_DEMO,
+    )
+    scene = SatelliteScene(
+        id=scene_id,
+        provider="ESA Copernicus",
+        sensor="Sentinel-2",
+        modality="optical",
+        captured_at=datetime(2017, 8, 15, 10, 30, tzinfo=timezone.utc),
+        cloud_quality=0.05,
+        asset_ref="backend/tests/fixtures/optical_flood_sample.geojson",
+        bbox_geojson={
+            "type": "Polygon",
+            "coordinates": [[[87.0, 26.0], [87.5, 26.0], [87.5, 26.5], [87.0, 26.5], [87.0, 26.0]]],
+        },
+    )
     target_job = SatelliteJob(
-        id=f"sat_job_parallel_{uuid.uuid4().hex[:8]}",
-        event_id=concurrency_event.id,
-        scene_id=concurrency_scene.id,
+        id=job_id,
+        event_id=event_id,
+        scene_id=scene_id,
         method="NDWI",
         threshold=0.0,
         status="QUEUED",
         requested_by="concurrency_tester@floodlens.org",
     )
-    db_session.add(target_job)
-    db_session.commit()
 
-    engine = db_session.bind
-    IndependentSession = sessionmaker(bind=engine, autocommit=False, autoflush=False)
+    try:
+        setup_sess.add(event)
+        setup_sess.add(scene)
+        setup_sess.add(target_job)
+        setup_sess.commit()
+    finally:
+        setup_sess.close()
 
     barrier = threading.Barrier(2)
     results = {}
@@ -123,7 +152,7 @@ def test_two_independent_postgres_sessions_claim_same_job(
         try:
             # Synchronize both threads to hit claim_job at the exact same instant
             barrier.wait(timeout=5.0)
-            claimed = claim_job(sess, job_id=target_job.id, worker_id=worker_name, lease_seconds=60)
+            claimed = claim_job(sess, job_id=job_id, worker_id=worker_name, lease_seconds=60)
             results[worker_name] = claimed.id if claimed else None
         except Exception as e:
             results[worker_name] = f"ERROR: {e}"
@@ -138,28 +167,34 @@ def test_two_independent_postgres_sessions_claim_same_job(
     t1.join(timeout=10.0)
     t2.join(timeout=10.0)
 
-    # Exactly one thread must have succeeded in claiming the job
-    non_none_claims = [val for val in results.values() if val is not None and not str(val).startswith("ERROR")]
-    none_claims = [val for val in results.values() if val is None]
+    # Verification and cleanup
+    verify_sess = IndependentSession()
+    try:
+        # Exactly one thread must have succeeded in claiming the job
+        non_none_claims = [val for val in results.values() if val is not None and not str(val).startswith("ERROR")]
+        none_claims = [val for val in results.values() if val is None]
 
-    assert len(non_none_claims) == 1, f"Expected exactly 1 claim, got: {results}"
-    assert len(none_claims) == 1, f"Expected exactly 1 failed claim, got: {results}"
-    assert non_none_claims[0] == target_job.id
+        assert len(non_none_claims) == 1, f"Expected exactly 1 claim, got: {results}"
+        assert len(none_claims) == 1, f"Expected exactly 1 failed claim, got: {results}"
+        assert non_none_claims[0] == job_id
 
-    # Verify final state in database
-    db_session.expire_all()
-    refreshed = db_session.query(SatelliteJob).filter(SatelliteJob.id == target_job.id).first()
-    assert refreshed.status == "RUNNING"
-    assert refreshed.worker_id in ("worker-thread-1", "worker-thread-2")
-    assert refreshed.lease_expires_at is not None
-    assert refreshed.heartbeat_at is not None
+        # Verify final state in database
+        refreshed = verify_sess.query(SatelliteJob).filter(SatelliteJob.id == job_id).first()
+        assert refreshed is not None
+        assert refreshed.status == "RUNNING"
+        assert refreshed.worker_id in ("worker-thread-1", "worker-thread-2")
+        assert refreshed.lease_expires_at is not None
+        assert refreshed.heartbeat_at is not None
+    finally:
+        verify_sess.query(SatelliteJob).filter(SatelliteJob.id == job_id).delete()
+        verify_sess.query(SatelliteScene).filter(SatelliteScene.id == scene_id).delete()
+        verify_sess.query(FloodEvent).filter(FloodEvent.id == event_id).delete()
+        verify_sess.commit()
+        verify_sess.close()
 
 
 def test_two_independent_sessions_claim_general_queue(
     is_postgres: bool,
-    db_session: Session,
-    concurrency_event: FloodEvent,
-    concurrency_scene: SatelliteScene,
 ):
     """Two concurrent threads polling the general queue claim distinct jobs without double-processing.
     Runs on live PostgreSQL in CI.
@@ -170,29 +205,62 @@ def test_two_independent_sessions_claim_general_queue(
             "(runs in CI against PostgreSQL 16 PostGIS container)."
         )
 
+    from tests.conftest import test_engine
+    IndependentSession = sessionmaker(bind=test_engine, autocommit=False, autoflush=False)
+
+    setup_sess = IndependentSession()
+    event_id = f"evt_q_{uuid.uuid4().hex[:8]}"
+    scene_id = f"scene_q_{uuid.uuid4().hex[:8]}"
+    job_a_id = f"sat_job_q_a_{uuid.uuid4().hex[:6]}"
+    job_b_id = f"sat_job_q_b_{uuid.uuid4().hex[:6]}"
+
+    event = FloodEvent(
+        id=event_id,
+        region_id="nepal_terai",
+        name="Queue Concurrency Test Event",
+        start_at=datetime(2017, 8, 11, 0, 0, tzinfo=timezone.utc),
+        end_at=datetime(2017, 8, 20, 0, 0, tzinfo=timezone.utc),
+        mode=OperationalMode.HISTORICAL_DEMO,
+    )
+    scene = SatelliteScene(
+        id=scene_id,
+        provider="ESA Copernicus",
+        sensor="Sentinel-2",
+        modality="optical",
+        captured_at=datetime(2017, 8, 15, 10, 30, tzinfo=timezone.utc),
+        cloud_quality=0.05,
+        asset_ref="backend/tests/fixtures/optical_flood_sample.geojson",
+        bbox_geojson={
+            "type": "Polygon",
+            "coordinates": [[[87.0, 26.0], [87.5, 26.0], [87.5, 26.5], [87.0, 26.5], [87.0, 26.0]]],
+        },
+    )
     job_a = SatelliteJob(
-        id=f"sat_job_q_a_{uuid.uuid4().hex[:6]}",
-        event_id=concurrency_event.id,
-        scene_id=concurrency_scene.id,
+        id=job_a_id,
+        event_id=event_id,
+        scene_id=scene_id,
         method="NDWI",
         status="QUEUED",
         requested_by="queue_test@floodlens.org",
         created_at=datetime.now(timezone.utc) - timedelta(seconds=10),
     )
     job_b = SatelliteJob(
-        id=f"sat_job_q_b_{uuid.uuid4().hex[:6]}",
-        event_id=concurrency_event.id,
-        scene_id=concurrency_scene.id,
+        id=job_b_id,
+        event_id=event_id,
+        scene_id=scene_id,
         method="NDWI",
         status="QUEUED",
         requested_by="queue_test@floodlens.org",
         created_at=datetime.now(timezone.utc) - timedelta(seconds=5),
     )
-    db_session.add_all([job_a, job_b])
-    db_session.commit()
 
-    engine = db_session.bind
-    IndependentSession = sessionmaker(bind=engine, autocommit=False, autoflush=False)
+    try:
+        setup_sess.add(event)
+        setup_sess.add(scene)
+        setup_sess.add_all([job_a, job_b])
+        setup_sess.commit()
+    finally:
+        setup_sess.close()
 
     barrier = threading.Barrier(2)
     claims = {}
@@ -203,6 +271,8 @@ def test_two_independent_sessions_claim_general_queue(
             barrier.wait(timeout=5.0)
             claimed = claim_job(sess, worker_id=worker_name, lease_seconds=60)
             claims[worker_name] = claimed.id if claimed else None
+        except Exception as e:
+            claims[worker_name] = f"ERROR: {e}"
         finally:
             sess.close()
 
@@ -214,10 +284,18 @@ def test_two_independent_sessions_claim_general_queue(
     t1.join(timeout=10.0)
     t2.join(timeout=10.0)
 
-    claimed_ids = [c for c in claims.values() if c is not None]
-    assert len(claimed_ids) == 2, f"Expected 2 claimed jobs, got: {claims}"
-    assert len(set(claimed_ids)) == 2, f"Both workers claimed the same job! {claims}"
-    assert set(claimed_ids) == {job_a.id, job_b.id}
+    verify_sess = IndependentSession()
+    try:
+        claimed_ids = [c for c in claims.values() if c is not None and not str(c).startswith("ERROR")]
+        assert len(claimed_ids) == 2, f"Expected 2 claimed jobs, got: {claims}"
+        assert len(set(claimed_ids)) == 2, f"Both workers claimed the same job! {claims}"
+        assert set(claimed_ids) == {job_a_id, job_b_id}
+    finally:
+        verify_sess.query(SatelliteJob).filter(SatelliteJob.id.in_([job_a_id, job_b_id])).delete(synchronize_session=False)
+        verify_sess.query(SatelliteScene).filter(SatelliteScene.id == scene_id).delete()
+        verify_sess.query(FloodEvent).filter(FloodEvent.id == event_id).delete()
+        verify_sess.commit()
+        verify_sess.close()
 
 
 def test_atomic_job_claiming_safety(
@@ -421,13 +499,14 @@ def test_heartbeat_prevents_premature_recovery(
 def test_worker_failure_bounded_retry(
     db_session: Session,
     concurrency_event: FloodEvent,
+    concurrency_scene: SatelliteScene,
 ):
     """Worker execution failure safely records error, increments retry count, and re-queues."""
     failing_job = SatelliteJob(
         id=f"sat_job_fail_{uuid.uuid4().hex[:6]}",
         event_id=concurrency_event.id,
-        scene_id="scene_nonexistent_xyz",
-        method="NDWI",
+        scene_id=concurrency_scene.id,
+        method="INVALID_NDWI_METHOD",
         status="RUNNING",
         worker_id="test-fail-worker",
         retry_count=0,
@@ -454,13 +533,14 @@ def test_worker_failure_bounded_retry(
 def test_retry_exhaustion_transitions_to_failed(
     db_session: Session,
     concurrency_event: FloodEvent,
+    concurrency_scene: SatelliteScene,
 ):
     """When a job reaches max_retries, it transitions to FAILED with completed_at set."""
     now = datetime.now(timezone.utc)
     exhausted_job = SatelliteJob(
         id=f"sat_job_exhaust_{uuid.uuid4().hex[:6]}",
         event_id=concurrency_event.id,
-        scene_id="scene_missing_for_exhaustion",
+        scene_id=concurrency_scene.id,
         method="NDWI",
         status="RUNNING",
         worker_id="test-exhaust-worker",
@@ -806,6 +886,7 @@ def test_expired_worker_cannot_complete_reclaimed_job(
 def test_expired_worker_cannot_fail_reclaimed_job(
     db_session: Session,
     concurrency_event: FloodEvent,
+    concurrency_scene: SatelliteScene,
 ):
     """If a slow/crashed worker encounters an error after another worker has reclaimed
     the job, the slow worker MUST NOT increment retry_count or mark the job FAILED."""
@@ -813,8 +894,8 @@ def test_expired_worker_cannot_fail_reclaimed_job(
     job = SatelliteJob(
         id=f"sat_job_no_fail_hijack_{uuid.uuid4().hex[:6]}",
         event_id=concurrency_event.id,
-        scene_id="scene_invalid_will_error",
-        method="NDWI",
+        scene_id=concurrency_scene.id,
+        method="INVALID_METHOD",
         status="RUNNING",
         worker_id="slow-failing-worker",
         started_at=now - timedelta(seconds=120),
