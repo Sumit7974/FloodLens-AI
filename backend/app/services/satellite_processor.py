@@ -399,6 +399,36 @@ def validate_satellite_job_parameters(
         allow_single = False
         if hasattr(job_spec, "parameters") and isinstance(job_spec.parameters, dict):
             allow_single = bool(job_spec.parameters.get("allow_single_scene"))
+            if "scl_policy" in job_spec.parameters:
+                pol = str(job_spec.parameters["scl_policy"]).strip().lower()
+                if pol not in ("conservative", "permissive"):
+                    raise FloodLensAPIException(
+                        status_code=400,
+                        code="INVALID_PROCESSING_PARAMETER",
+                        message=f"Invalid scl_policy '{pol}'. Supported policies: conservative, permissive.",
+                    )
+            if "scale_factor" in job_spec.parameters:
+                try:
+                    sf = float(job_spec.parameters["scale_factor"])
+                    if sf <= 0 or not math.isfinite(sf):
+                        raise ValueError()
+                except (TypeError, ValueError):
+                    raise FloodLensAPIException(
+                        status_code=400,
+                        code="INVALID_PROCESSING_PARAMETER",
+                        message="scale_factor must be a positive finite number.",
+                    )
+            if "boa_offset" in job_spec.parameters:
+                try:
+                    bo = float(job_spec.parameters["boa_offset"])
+                    if not math.isfinite(bo):
+                        raise ValueError()
+                except (TypeError, ValueError):
+                    raise FloodLensAPIException(
+                        status_code=400,
+                        code="INVALID_PROCESSING_PARAMETER",
+                        message="boa_offset must be a valid finite number.",
+                    )
 
         if not baseline_scene and not allow_single:
             raise FloodLensAPIException(
@@ -850,7 +880,11 @@ def _process_sar_radar_pair(
 
 
 def compute_artifact_checksum(path: Path) -> str:
-    """Compute deterministic SHA-256 digest of input artifact or directory contents."""
+    """Compute deterministic streaming SHA-256 digest of input artifact or directory contents.
+
+    Streams file contents in 64 KB chunks without loading full imagery into memory.
+    Sorts files consistently by relative POSIX paths to avoid machine-specific absolute path leakage.
+    """
     if not path.exists():
         return "missing"
     hasher = hashlib.sha256()
@@ -859,10 +893,58 @@ def compute_artifact_checksum(path: Path) -> str:
             while chunk := f.read(65536):
                 hasher.update(chunk)
     elif path.is_dir():
-        for p in sorted(path.rglob("*.tif")):
-            hasher.update(p.name.encode("utf-8"))
-            hasher.update(str(p.stat().st_size).encode("utf-8"))
+        relevant_extensions = {".tif", ".tiff", ".geojson", ".json"}
+        files = [
+            p for p in path.rglob("*")
+            if p.is_file() and p.suffix.lower() in relevant_extensions
+        ]
+        files.sort(key=lambda p: p.relative_to(path).as_posix())
+        for p in files:
+            hasher.update(p.relative_to(path).as_posix().encode("utf-8"))
+            with open(p, "rb") as f:
+                while chunk := f.read(65536):
+                    hasher.update(chunk)
     return hasher.hexdigest()[:16]
+
+
+def normalize_processing_parameters(
+    parameters: Optional[Dict[str, Any]],
+    method: str = "NDWI",
+) -> Dict[str, Any]:
+    """Normalize and validate scientific processing configuration parameters.
+
+    Whitelists only recognized scientific parameters to prevent unvalidated
+    arbitrary client parameters from polluting the deterministic execution fingerprint.
+    """
+    raw = parameters or {}
+    norm_method = (method or "NDWI").strip().upper()
+
+    scl_policy = str(raw.get("scl_policy", "conservative")).strip().lower()
+    if scl_policy not in ("conservative", "permissive"):
+        scl_policy = "conservative"
+
+    try:
+        boa_offset = round(float(raw.get("boa_offset", 0.0)), 4)
+        if not math.isfinite(boa_offset):
+            boa_offset = 0.0
+    except (TypeError, ValueError):
+        boa_offset = 0.0
+
+    try:
+        scale_factor = round(float(raw.get("scale_factor", 10000.0)), 4)
+        if scale_factor <= 0 or not math.isfinite(scale_factor):
+            scale_factor = 10000.0
+    except (TypeError, ValueError):
+        scale_factor = 10000.0
+
+    allow_single_scene = bool(raw.get("allow_single_scene", False))
+
+    return {
+        "scl_policy": scl_policy,
+        "boa_offset": boa_offset,
+        "scale_factor": scale_factor,
+        "allow_single_scene": allow_single_scene,
+    }
 
 
 def compute_extent_identity(
@@ -872,27 +954,28 @@ def compute_extent_identity(
     method: str,
     threshold: Optional[float],
     artifact_checksum: str,
+    parameters: Optional[Dict[str, Any]] = None,
     pipeline_version: str = "v1",
 ) -> str:
     """Generate a collision-resistant deterministic flood extent identity.
 
-    Incorporate:
+    Incorporates:
     - Event ID
     - Target scene ID
     - Baseline scene ID
     - Method and algorithm version
-    - Threshold and quality settings
-    - Input artifact checksum
+    - Threshold and normalized processing configuration (scl_policy, boa_offset, scale_factor)
+    - Input artifact streaming content checksum
 
     Guarantees:
     - Retries with identical parameters remain strictly idempotent.
-    - Different thresholds do not overwrite distinct valid outputs.
-    - Different acquisition scenes or baselines remain separate.
-    - Avoids truncated string collisions and fits within VARCHAR(100).
+    - Different processing configurations produce distinct extent IDs.
+    - Fits within VARCHAR(100).
     """
     clean_event = event_id.replace(" ", "_")[:16]
     clean_scene = scene_id.replace(" ", "_")[:16]
     norm_thresh = round(float(threshold if threshold is not None else 0.0), 4)
+    norm_params = normalize_processing_parameters(parameters, method=method)
 
     identity_dict = {
         "event_id": event_id,
@@ -901,6 +984,7 @@ def compute_extent_identity(
         "method": method.upper(),
         "threshold": norm_thresh,
         "artifact_hash": artifact_checksum,
+        "parameters": norm_params,
         "version": pipeline_version,
     }
     canonical_repr = json.dumps(identity_dict, sort_keys=True)
@@ -998,6 +1082,7 @@ def execute_satellite_pipeline(
         method=job.method,
         threshold=job.threshold,
         artifact_checksum=combined_checksum,
+        parameters=job.parameters,
     )
 
     source_scenes = [job.scene_id]

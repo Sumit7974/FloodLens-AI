@@ -18,7 +18,11 @@ from app.schemas.satellite import (
     SatelliteSceneCreate,
     SatelliteSceneResponse,
 )
-from app.services.satellite_processor import dispatch_satellite_job, validate_satellite_job_parameters
+from app.services.satellite_processor import (
+    dispatch_satellite_job,
+    normalize_processing_parameters,
+    validate_satellite_job_parameters,
+)
 
 router = APIRouter(prefix="/satellite", tags=["Satellite & GIS"])
 
@@ -116,8 +120,10 @@ async def create_satellite_job(
     normalized_method = (job_spec.method or "").strip().upper()
 
     # 2. Duplicate detection: if an identical job is already QUEUED or RUNNING, reuse it
-    req_threshold = job_spec.threshold or 0.0
-    existing_active = (
+    req_threshold = round(float(job_spec.threshold if job_spec.threshold is not None else 0.0), 4)
+    norm_incoming_params = normalize_processing_parameters(job_spec.parameters, method=normalized_method)
+
+    active_candidates = (
         db.query(SatelliteJob)
         .filter(
             SatelliteJob.scene_id == job_spec.scene_id,
@@ -127,8 +133,16 @@ async def create_satellite_job(
             SatelliteJob.event_id == job_spec.event_id,
             SatelliteJob.status.in_(["QUEUED", "RUNNING"]),
         )
-        .first()
+        .all()
     )
+
+    existing_active = None
+    for cand in active_candidates:
+        cand_norm_params = normalize_processing_parameters(cand.parameters, method=cand.method)
+        if cand_norm_params == norm_incoming_params:
+            existing_active = cand
+            break
+
     if existing_active:
         return SatelliteJobResponse(
             job_id=existing_active.id,
@@ -140,6 +154,14 @@ async def create_satellite_job(
 
     # 3. Create durable database record
     job_id = f"sat_job_{uuid.uuid4().hex[:12]}"
+    stored_parameters = {
+        "threshold": req_threshold,
+        "scene_id": job_spec.scene_id,
+        "baseline_scene_id": job_spec.baseline_scene_id,
+        "method": normalized_method,
+        "event_id": job_spec.event_id,
+        **norm_incoming_params,
+    }
     new_job = SatelliteJob(
         id=job_id,
         event_id=job_spec.event_id,
@@ -150,14 +172,7 @@ async def create_satellite_job(
         status="QUEUED",
         progress_percent=0.0,
         requested_by=current_user.email or current_user.id,
-        parameters={
-            "threshold": req_threshold,
-            "scene_id": job_spec.scene_id,
-            "baseline_scene_id": job_spec.baseline_scene_id,
-            "method": normalized_method,
-            "event_id": job_spec.event_id,
-            **(job_spec.parameters or {}),
-        },
+        parameters=stored_parameters,
     )
     db.add(new_job)
     db.commit()

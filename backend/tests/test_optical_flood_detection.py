@@ -45,16 +45,22 @@ from app.models.enums import UserRole
 from app.models.flood_event import FloodEvent
 from app.models.satellite import FloodExtent, SatelliteJob, SatelliteScene
 from app.models.user import User
+from fastapi.testclient import TestClient
+
 from app.schemas.satellite import SatelliteJobCreate
 from app.services.satellite_processor import (
     _process_optical_bands,
+    compute_artifact_checksum,
+    compute_extent_identity,
     execute_satellite_pipeline,
+    normalize_processing_parameters,
     validate_satellite_job_parameters,
     set_test_db_session,
     OUTPUT_DIR,
 )
 from app.workers.satellite_worker import claim_job, execute_job
 from ml.gis_processing.calculate_ndwi import (
+    affine_transforms_equal,
     classify_flood_dynamics,
     compute_ndwi,
     dn_to_reflectance,
@@ -674,3 +680,349 @@ def test_truthful_provenance_tagging(db_session: Session, synthetic_optical_fixt
         job_id="syn_test_job",
     )
     assert prov_syn == "SYNTHETIC_TEST_FIXTURE"
+
+
+# ==============================================================================
+# Mandatory Regression Tests (4 Independent Source Review Edge Cases)
+# ==============================================================================
+
+def test_half_pixel_origin_shift_at_real_utm_coordinates():
+    """Verify that a 5m half-pixel shift in real UTM coordinates is NOT treated as equal.
+
+    np.isclose with default rtol=1e-5 incorrectly returned True for:
+      np.isclose(584980, 584985, atol=1e-5) -> True!
+      np.isclose(2925000, 2925005, atol=1e-5) -> True!
+    affine_transforms_equal with strict atol and zero rtol must return False.
+    reproject_to_target_grid must reproject the array rather than returning it unchanged.
+    """
+    trans_a = Affine(10.0, 0.0, 584980.0, 0.0, -10.0, 2925000.0)
+    trans_half = Affine(10.0, 0.0, 584985.0, 0.0, -10.0, 2925005.0)
+
+    # Verify standard np.isclose defect exists if relative tolerance is enabled
+    assert bool(np.isclose(584980.0, 584985.0, atol=1e-5)) is True
+    assert bool(np.isclose(2925000.0, 2925005.0, atol=1e-5)) is True
+
+    # Strict geospatial check correctly rejects half-pixel displacement
+    assert affine_transforms_equal(trans_a, trans_half, atol=1e-3) is False
+
+    # Verify reproject_to_target_grid reprojects rather than taking fast path
+    arr = np.array([[1000.0, 2000.0], [1000.0, 2000.0]], dtype=np.float32)
+    reprojected = reproject_to_target_grid(
+        src_data=arr,
+        src_transform=trans_half,
+        src_crs="EPSG:32645",
+        target_shape=(2, 2),
+        target_transform=trans_a,
+        target_crs="EPSG:32645",
+        is_categorical=False,
+    )
+    # The half-pixel shift MUST produce interpolated values, not an unchanged copy of arr
+    assert not np.array_equal(arr, reprojected)
+
+
+def test_one_pixel_origin_shift_at_real_utm_coordinates():
+    """Verify that a 10m one-pixel shift in UTM coordinates is rejected by fast path."""
+    trans_a = Affine(10.0, 0.0, 584980.0, 0.0, -10.0, 2925000.0)
+    trans_one = Affine(10.0, 0.0, 584990.0, 0.0, -10.0, 2925000.0)
+
+    assert affine_transforms_equal(trans_a, trans_one, atol=1e-3) is False
+
+
+def test_identical_grid_fast_path():
+    """Verify that identical affine transforms, CRS and shapes take the fast path."""
+    trans = Affine(10.0, 0.0, 584980.0, 0.0, -10.0, 2925000.0)
+    assert affine_transforms_equal(trans, trans, atol=1e-3) is True
+
+    arr = np.array([[100.0, 200.0], [300.0, 400.0]], dtype=np.float32)
+    res = reproject_to_target_grid(
+        src_data=arr,
+        src_transform=trans,
+        src_crs="EPSG:32645",
+        target_shape=(2, 2),
+        target_transform=trans,
+        target_crs="EPSG:32645",
+        is_categorical=False,
+    )
+    np.testing.assert_array_equal(arr, res)
+
+
+def test_reprojection_uint16_reflectance_with_destination_nan():
+    """Verify that raw uint16 arrays with dst_nodata=np.nan do not crash and produce float32 with NaNs."""
+    trans_src = Affine(10.0, 0.0, 584980.0, 0.0, -10.0, 2925000.0)
+    trans_dst = Affine(10.0, 0.0, 584985.0, 0.0, -10.0, 2925000.0)
+
+    src_uint16 = np.array([[1500, 2500], [0, 3000]], dtype=np.uint16)
+
+    out = reproject_to_target_grid(
+        src_data=src_uint16,
+        src_transform=trans_src,
+        src_crs="EPSG:32645",
+        target_shape=(2, 2),
+        target_transform=trans_dst,
+        target_crs="EPSG:32645",
+        is_categorical=False,
+        src_nodata=0,
+        dst_nodata=np.nan,
+    )
+    assert out.dtype == np.float32
+    assert np.issubdtype(out.dtype, np.floating)
+
+
+def test_bilinear_interpolation_near_source_nodata_boundary():
+    """Verify that bilinear resampling near NoData boundaries does not bleed invalid/zero pixels into valid reflectance."""
+    trans_src = Affine(10.0, 0.0, 584980.0, 0.0, -10.0, 2925000.0)
+    trans_dst = Affine(10.0, 0.0, 584985.0, 0.0, -10.0, 2925000.0)
+
+    src_refl = np.full((4, 4), np.nan, dtype=np.float32)
+    src_refl[:, 0:2] = 0.25
+
+    dst = reproject_to_target_grid(
+        src_data=src_refl,
+        src_transform=trans_src,
+        src_crs="EPSG:32645",
+        target_shape=(4, 4),
+        target_transform=trans_dst,
+        target_crs="EPSG:32645",
+        is_categorical=False,
+        src_nodata=np.nan,
+        dst_nodata=np.nan,
+    )
+    assert dst.dtype == np.float32
+    valid_mask = ~np.isnan(dst[:, 0])
+    if np.any(valid_mask):
+        assert np.all(dst[valid_mask, 0] > 0.20)
+
+
+def test_categorical_scl_nearest_neighbor_correctness():
+    """Verify categorical SCL reprojection preserves integer dtype and distinct classes."""
+    trans_src = Affine(20.0, 0.0, 584980.0, 0.0, -20.0, 2925000.0)
+    trans_dst = Affine(10.0, 0.0, 584980.0, 0.0, -10.0, 2925000.0)
+
+    scl_src = np.array([[2, 4], [6, 9]], dtype=np.uint8)
+
+    scl_dst = reproject_to_target_grid(
+        src_data=scl_src,
+        src_transform=trans_src,
+        src_crs="EPSG:32645",
+        target_shape=(4, 4),
+        target_transform=trans_dst,
+        target_crs="EPSG:32645",
+        is_categorical=True,
+        src_nodata=0,
+        dst_nodata=0,
+    )
+    assert scl_dst.dtype == np.uint8
+    unique_vals = set(np.unique(scl_dst))
+    assert unique_vals.issubset({0, 2, 4, 6, 9})
+
+
+def test_differing_scl_policies_produce_distinct_flood_extents():
+    """Verify differing SCL policies produce distinct extent IDs."""
+    id_cons = compute_extent_identity(
+        event_id="evt_test",
+        scene_id="scene_post",
+        baseline_scene_id="scene_pre",
+        method="NDWI",
+        threshold=0.0,
+        artifact_checksum="abc123hash",
+        parameters={"scl_policy": "conservative"},
+    )
+    id_perm = compute_extent_identity(
+        event_id="evt_test",
+        scene_id="scene_post",
+        baseline_scene_id="scene_pre",
+        method="NDWI",
+        threshold=0.0,
+        artifact_checksum="abc123hash",
+        parameters={"scl_policy": "permissive"},
+    )
+    assert id_cons != id_perm
+    assert id_cons.startswith("ext_evt_test_scene_post_NDWI_")
+    assert id_perm.startswith("ext_evt_test_scene_post_NDWI_")
+
+
+def test_differing_radiometric_offsets_produce_distinct_extents():
+    """Verify differing radiometric baseline offsets produce distinct extent IDs."""
+    id_pb02 = compute_extent_identity(
+        event_id="evt_test",
+        scene_id="scene_post",
+        baseline_scene_id="scene_pre",
+        method="NDWI",
+        threshold=0.0,
+        artifact_checksum="abc123hash",
+        parameters={"boa_offset": 0.0},
+    )
+    id_pb04 = compute_extent_identity(
+        event_id="evt_test",
+        scene_id="scene_post",
+        baseline_scene_id="scene_pre",
+        method="NDWI",
+        threshold=0.0,
+        artifact_checksum="abc123hash",
+        parameters={"boa_offset": -1000.0},
+    )
+    assert id_pb02 != id_pb04
+
+
+def test_identical_configurations_remain_idempotent():
+    """Verify identical parameters and inputs produce the exact same deterministic extent ID."""
+    id1 = compute_extent_identity(
+        event_id="evt_test",
+        scene_id="scene_post",
+        baseline_scene_id="scene_pre",
+        method="NDWI",
+        threshold=0.0,
+        artifact_checksum="abc123hash",
+        parameters={"scl_policy": "conservative", "boa_offset": 0.0, "scale_factor": 10000.0},
+    )
+    id2 = compute_extent_identity(
+        event_id="evt_test",
+        scene_id="scene_post",
+        baseline_scene_id="scene_pre",
+        method="NDWI",
+        threshold=0.0,
+        artifact_checksum="abc123hash",
+        parameters={"scl_policy": "conservative", "boa_offset": 0.0, "scale_factor": 10000.0},
+    )
+    assert id1 == id2
+
+
+def test_differently_configured_jobs_can_coexist(client: TestClient, authority_token: str, db_session: Session, synthetic_optical_fixtures):
+    """Verify that jobs with different processing parameters are not blocked by duplicate active job detection."""
+    event = FloodEvent(
+        id=f"evt_coexist_{uuid.uuid4().hex[:6]}",
+        name="Coexistence Test Event",
+        region_id="Koshi",
+        start_at=datetime(2017, 8, 1, tzinfo=timezone.utc),
+        end_at=datetime(2017, 8, 25, tzinfo=timezone.utc),
+    )
+    pre_scene = SatelliteScene(
+        id=f"scene_pre_{uuid.uuid4().hex[:6]}",
+        provider="ESA",
+        sensor="Sentinel-2",
+        modality="optical",
+        captured_at=datetime(2017, 8, 5, tzinfo=timezone.utc),
+        asset_ref=str(synthetic_optical_fixtures["pre_dir"]),
+    )
+    post_scene = SatelliteScene(
+        id=f"scene_post_{uuid.uuid4().hex[:6]}",
+        provider="ESA",
+        sensor="Sentinel-2",
+        modality="optical",
+        captured_at=datetime(2017, 8, 20, tzinfo=timezone.utc),
+        asset_ref=str(synthetic_optical_fixtures["post_dir"]),
+    )
+    db_session.add_all([event, pre_scene, post_scene])
+    db_session.commit()
+
+    # Seed an active (RUNNING) satellite job with conservative SCL policy
+    active_job = SatelliteJob(
+        id=f"sat_job_active_{uuid.uuid4().hex[:6]}",
+        event_id=event.id,
+        scene_id=post_scene.id,
+        baseline_scene_id=pre_scene.id,
+        method="NDWI",
+        threshold=0.0,
+        status="RUNNING",
+        progress_percent=45.0,
+        requested_by="qa@floodlens.org",
+        parameters={
+            "threshold": 0.0,
+            "scene_id": post_scene.id,
+            "baseline_scene_id": pre_scene.id,
+            "method": "NDWI",
+            "event_id": event.id,
+            "scl_policy": "conservative",
+            "boa_offset": 0.0,
+            "scale_factor": 10000.0,
+            "allow_single_scene": False,
+        },
+    )
+    db_session.add(active_job)
+    db_session.commit()
+
+    # 1. Submit exact same configuration while active_job is RUNNING
+    # Duplicate detection MUST match active_job and return it idempotently!
+    res_dup = client.post(
+        "/api/v1/satellite/jobs",
+        json={
+            "event_id": event.id,
+            "scene_id": post_scene.id,
+            "baseline_scene_id": pre_scene.id,
+            "method": "NDWI",
+            "threshold": 0.0,
+            "parameters": {"scl_policy": "conservative"},
+        },
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+    assert res_dup.status_code == 202
+    assert res_dup.json()["job_id"] == active_job.id
+    assert "already in progress" in res_dup.json()["message"]
+
+    # 2. Submit differently configured job with permissive SCL policy
+    # Duplicate detection MUST NOT mistake it for identical job; creates NEW job!
+    res_diff_scl = client.post(
+        "/api/v1/satellite/jobs",
+        json={
+            "event_id": event.id,
+            "scene_id": post_scene.id,
+            "baseline_scene_id": pre_scene.id,
+            "method": "NDWI",
+            "threshold": 0.0,
+            "parameters": {"scl_policy": "permissive"},
+        },
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+    assert res_diff_scl.status_code == 202
+    job_diff_id = res_diff_scl.json()["job_id"]
+    assert job_diff_id != active_job.id
+
+    # 3. Submit differently configured job with different radiometric offset
+    res_diff_offset = client.post(
+        "/api/v1/satellite/jobs",
+        json={
+            "event_id": event.id,
+            "scene_id": post_scene.id,
+            "baseline_scene_id": pre_scene.id,
+            "method": "NDWI",
+            "threshold": 0.0,
+            "parameters": {"scl_policy": "conservative", "boa_offset": -1000.0},
+        },
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+    assert res_diff_offset.status_code == 202
+    job_offset_id = res_diff_offset.json()["job_id"]
+    assert job_offset_id != active_job.id
+    assert job_offset_id != job_diff_id
+
+
+def test_modified_raster_contents_with_unchanged_file_sizes_change_checksums(tmp_path):
+    """Verify that streaming content hashing detects pixel changes even when file sizes and filenames are identical."""
+    dir_path = tmp_path / "raster_hash_test"
+    dir_path.mkdir()
+    raster_file = dir_path / "band.tif"
+
+    profile = {
+        "driver": "GTiff", "height": 10, "width": 10, "count": 1,
+        "dtype": "uint16", "crs": "EPSG:32645",
+        "transform": Affine(10.0, 0.0, 580000.0, 0.0, -10.0, 2920000.0),
+    }
+
+    data_v1 = np.full((10, 10), 1000, dtype=np.uint16)
+    with rasterio.open(raster_file, "w", **profile) as dst:
+        dst.write(data_v1, 1)
+
+    size_v1 = raster_file.stat().st_size
+    checksum_v1 = compute_artifact_checksum(dir_path)
+
+    # Version 2: change one pixel from 1000 to 2000 (same uncompressed byte size)
+    data_v2 = data_v1.copy()
+    data_v2[5, 5] = 2000
+    with rasterio.open(raster_file, "w", **profile) as dst:
+        dst.write(data_v2, 1)
+
+    size_v2 = raster_file.stat().st_size
+    checksum_v2 = compute_artifact_checksum(dir_path)
+
+    assert size_v1 == size_v2
+    assert checksum_v1 != checksum_v2

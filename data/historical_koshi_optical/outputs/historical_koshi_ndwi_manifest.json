@@ -31,18 +31,18 @@
     "scale_factor": 10000.0
   },
   "artifacts": {
-    "flood_mask_tif": "C:\\Users\\ABC\\FloodLens-AI\\FloodLens-AI\\data\\historical_koshi_optical\\outputs\\historical_koshi_ndwi_flood_mask.tif",
-    "pre_ndwi_tif": "C:\\Users\\ABC\\FloodLens-AI\\FloodLens-AI\\data\\historical_koshi_optical\\outputs\\historical_koshi_ndwi_pre_ndwi.tif",
-    "post_ndwi_tif": "C:\\Users\\ABC\\FloodLens-AI\\FloodLens-AI\\data\\historical_koshi_optical\\outputs\\historical_koshi_ndwi_post_ndwi.tif",
-    "flood_extent_geojson": "C:\\Users\\ABC\\FloodLens-AI\\FloodLens-AI\\data\\historical_koshi_optical\\outputs\\historical_koshi_ndwi_flood_extent.geojson",
-    "flood_comparison_png": "C:\\Users\\ABC\\FloodLens-AI\\FloodLens-AI\\data\\historical_koshi_optical\\outputs\\historical_koshi_ndwi_flood_comparison.png"
+    "flood_mask_tif": "data/historical_koshi_optical/outputs/historical_koshi_ndwi_flood_mask.tif",
+    "pre_ndwi_tif": "data/historical_koshi_optical/outputs/historical_koshi_ndwi_pre_ndwi.tif",
+    "post_ndwi_tif": "data/historical_koshi_optical/outputs/historical_koshi_ndwi_post_ndwi.tif",
+    "flood_extent_geojson": "data/historical_koshi_optical/outputs/historical_koshi_ndwi_flood_extent.geojson",
+    "flood_comparison_png": "data/historical_koshi_optical/outputs/historical_koshi_ndwi_flood_comparison.png"
   },
   "inputs": {
-    "pre_green": "C:\\Users\\ABC\\FloodLens-AI\\FloodLens-AI\\data\\historical_koshi_optical\\pre_flood\\pre_flood_B03.tif",
-    "pre_nir": "C:\\Users\\ABC\\FloodLens-AI\\FloodLens-AI\\data\\historical_koshi_optical\\pre_flood\\pre_flood_B08.tif",
-    "pre_scl": "C:\\Users\\ABC\\FloodLens-AI\\FloodLens-AI\\data\\historical_koshi_optical\\pre_flood\\pre_flood_SCL.tif",
-    "post_green": "C:\\Users\\ABC\\FloodLens-AI\\FloodLens-AI\\data\\historical_koshi_optical\\post_flood\\post_flood_B03.tif",
-    "post_nir": "C:\\Users\\ABC\\FloodLens-AI\\FloodLens-AI\\data\\historical_koshi_optical\\post_flood\\post_flood_B08.tif",
-    "post_scl": "C:\\Users\\ABC\\FloodLens-AI\\FloodLens-AI\\data\\historical_koshi_optical\\post_flood\\post_flood_SCL.tif"
+    "pre_green": "data/historical_koshi_optical/pre_flood/pre_flood_B03.tif",
+    "pre_nir": "data/historical_koshi_optical/pre_flood/pre_flood_B08.tif",
+    "pre_scl": "data/historical_koshi_optical/pre_flood/pre_flood_SCL.tif",
+    "post_green": "data/historical_koshi_optical/post_flood/post_flood_B03.tif",
+    "post_nir": "data/historical_koshi_optical/post_flood/post_flood_B08.tif",
+    "post_scl": "data/historical_koshi_optical/post_flood/post_flood_SCL.tif"
   }
 }

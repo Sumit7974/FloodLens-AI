@@ -128,6 +128,53 @@ DEFAULT_NDWI_THRESHOLD = 0.00
 DEFAULT_QUANTIFICATION_VALUE = 10000.0
 
 
+def to_portable_path(p: Optional[Union[Path, str]]) -> Optional[str]:
+    """Convert path to a portable POSIX relative path for manifests.
+
+    Strips machine-specific absolute drive letters and directories so manifests
+    commit cleanly and remain portable across Linux, Windows, and CI environments.
+    """
+    if p is None:
+        return None
+    p_str = str(p).replace("\\", "/")
+    for marker in ("data/", "ml/", "backend/"):
+        if marker in p_str:
+            idx = p_str.index(marker)
+            return p_str[idx:]
+    p_obj = Path(p_str)
+    return p_obj.as_posix()
+
+
+def affine_transforms_equal(
+    trans_a: Any,
+    trans_b: Any,
+    atol: float = 1e-3,
+) -> bool:
+    """Check if two Affine transforms are equal within a strict absolute geospatial tolerance.
+
+    Must NEVER use relative tolerance (rtol), because large projected UTM coordinates
+    (e.g. X ~ 500,000m, Y ~ 3,000,000m) with relative tolerance incorrectly treat 5m to 30m
+    coordinate shifts (e.g. half-pixel or multi-pixel offsets on a 10m grid) as identical!
+
+    Checks all six affine coefficients [a, b, c, d, e, f]:
+    - a: pixel width
+    - b: row rotation/shear
+    - c: upper-left X coordinate (origin easting)
+    - d: column rotation/shear
+    - e: pixel height (negative north-up)
+    - f: upper-left Y coordinate (origin northing)
+    """
+    if trans_a is None or trans_b is None:
+        return False
+    try:
+        for i in range(6):
+            if abs(float(trans_a[i]) - float(trans_b[i])) > atol:
+                return False
+        return True
+    except (IndexError, TypeError, ValueError):
+        return False
+
+
 def dn_to_reflectance(
     dn_array: np.ndarray,
     scale_factor: float = DEFAULT_QUANTIFICATION_VALUE,
@@ -140,20 +187,20 @@ def dn_to_reflectance(
     Reflectance = (DN + boa_offset) / scale_factor
 
     Parameters:
-        dn_array: Input raw DN raster (e.g. uint16).
+        dn_array: Input raw DN raster (e.g. uint16 or float).
         scale_factor: Radiometric quantification value (10000.0 for Sentinel-2 L2A).
         boa_offset: Processing baseline offset:
             - 0.0 for Processing Baseline < 04.00 (e.g. PB 02.12).
             - -1000.0 for Processing Baseline >= 04.00.
         nodata: Value representing NoData in the source raster.
     Returns:
-        float32 array with valid surface reflectance in [0.0, ~1.0], or NaN for invalid.
+        float32 array with valid surface reflectance in [0.0, ~1.0], or NaN for invalid/NoData.
     """
     arr = dn_array.astype(np.float32)
     if nodata is not None:
-        arr[arr == nodata] = np.nan
+        arr[dn_array == nodata] = np.nan
     # Sentinel-2 DN 0 is native NoData
-    arr[arr <= 0] = np.nan
+    arr[dn_array <= 0] = np.nan
 
     with np.errstate(invalid="ignore"):
         refl = (arr + float(boa_offset)) / float(scale_factor)
@@ -214,7 +261,7 @@ def validate_spatial_alignment(
     prof_b: Dict[str, Any],
     label_a: str = "Scene A",
     label_b: str = "Scene B",
-    tolerance: float = 1e-4,
+    tolerance: float = 1e-3,
     require_identical_grid: bool = False,
 ) -> bool:
     """Validate geospatial compatibility between two raster profiles.
@@ -224,9 +271,9 @@ def validate_spatial_alignment(
         prof_b: Rasterio profile of second dataset.
         label_a: Human-readable label for dataset A.
         label_b: Human-readable label for dataset B.
-        tolerance: Coordinate and resolution tolerance.
+        tolerance: Absolute coordinate and resolution tolerance in CRS units (default 1e-3 m).
         require_identical_grid: If True, enforces exact matching CRS, resolution,
-            affine transform, and grid dimensions (e.g. for intra-scene B03 vs B08).
+            affine transform, and grid dimensions across all six coefficients.
             Raises ValueError if grids are not identical.
             If False, verifies CRS and non-disjoint bounding boxes, returning True
             if identical or False if reprojection is required.
@@ -272,20 +319,17 @@ def validate_spatial_alignment(
             f"and {label_b} bounds [{min_x_b}, {min_y_b}, {max_x_b}, {max_y_b}] do not spatially intersect."
         )
 
-    # Check if identical grid
-    res_x_a, res_y_a = abs(trans_a[0]), abs(trans_a[4])
-    res_x_b, res_y_b = abs(trans_b[0]), abs(trans_b[4])
-    res_match = abs(res_x_a - res_x_b) <= tolerance and abs(res_y_a - res_y_b) <= tolerance
-    origin_match = abs(trans_a[2] - trans_b[2]) <= tolerance and abs(trans_a[5] - trans_b[5]) <= tolerance
-    dims_match = (h_a == h_b) and (w_a == w_b)
-
-    is_identical = res_match and origin_match and dims_match
+    # Check if identical grid across all 6 affine coefficients, CRS, and dimensions
+    is_identical = (
+        affine_transforms_equal(trans_a, trans_b, atol=tolerance)
+        and (h_a == h_b)
+        and (w_a == w_b)
+    )
 
     if require_identical_grid and not is_identical:
         raise ValueError(
             f"Exact grid mismatch between {label_a} and {label_b}: "
-            f"resolution=({res_x_a},{res_y_a}) vs ({res_x_b},{res_y_b}), "
-            f"origin=({trans_a[2]},{trans_a[5]}) vs ({trans_b[2]},{trans_b[5]}), "
+            f"transform_a={list(trans_a[:6])} vs transform_b={list(trans_b[:6])}, "
             f"dims=({h_a},{w_a}) vs ({h_b},{w_b})."
         )
 
@@ -307,8 +351,9 @@ def reproject_to_target_grid(
 
     Uses rasterio.warp.reproject:
     - Resampling.nearest for categorical classification layers (e.g. SCL),
-      preserving integer class values without interpolation.
-    - Resampling.bilinear for continuous surface reflectance.
+      preserving integer class values without interpolation and with integer NoData.
+    - Resampling.bilinear for continuous surface reflectance, converting arrays to float32
+      with explicit NaN source/destination NoData to prevent integer truncation or bleed.
 
     Parameters:
         src_data: Source 2D numpy array.
@@ -326,36 +371,49 @@ def reproject_to_target_grid(
     if not HAS_RASTERIO:
         raise RuntimeError("rasterio is required for geospatial raster reprojection.")
 
-    # Fast path if grids are already identical
-    t_match = (
-        np.isclose(src_transform[0], target_transform[0], atol=1e-5)
-        and np.isclose(src_transform[1], target_transform[1], atol=1e-5)
-        and np.isclose(src_transform[2], target_transform[2], atol=1e-5)
-        and np.isclose(src_transform[3], target_transform[3], atol=1e-5)
-        and np.isclose(src_transform[4], target_transform[4], atol=1e-5)
-        and np.isclose(src_transform[5], target_transform[5], atol=1e-5)
-    )
+    # Fast path: genuinely equivalent affine transforms without unintended relative tolerance
+    t_match = affine_transforms_equal(src_transform, target_transform, atol=1e-3)
     crs_match = str(src_crs).upper() == str(target_crs).upper()
-    if t_match and crs_match and src_data.shape == target_shape:
+    dims_match = (src_data.shape == target_shape)
+    if t_match and crs_match and dims_match:
         return src_data.copy()
 
-    resampling_method = Resampling.nearest if is_categorical else Resampling.bilinear
-    dtype = src_data.dtype
-    if dst_nodata is None:
-        dst_data = np.zeros(target_shape, dtype=dtype)
+    if not is_categorical:
+        # Continuous spectral reflectance: convert to float32 representation
+        # uint16 cannot represent NaN as destination NoData
+        if not np.issubdtype(src_data.dtype, np.floating):
+            src_float = src_data.astype(np.float32)
+            if src_nodata is not None:
+                src_float[src_data == src_nodata] = np.nan
+            # Sentinel-2 DN 0 is native NoData
+            src_float[src_data <= 0] = np.nan
+            src_data_to_warp = src_float
+            effective_src_nodata = np.nan
+        else:
+            src_data_to_warp = src_data.astype(np.float32)
+            effective_src_nodata = np.nan if src_nodata is None else float(src_nodata)
+
+        effective_dst_nodata = np.nan if (dst_nodata is None or np.isnan(dst_nodata)) else float(dst_nodata)
+        dst_data = np.full(target_shape, effective_dst_nodata, dtype=np.float32)
+        resampling_method = Resampling.bilinear
     else:
-        dst_data = np.full(target_shape, dst_nodata, dtype=dtype)
+        # Categorical data (e.g. SCL): keep integer dtype and integer NoData
+        src_data_to_warp = src_data
+        effective_src_nodata = 0 if src_nodata is None else int(src_nodata)
+        effective_dst_nodata = 0 if (dst_nodata is None or np.isnan(dst_nodata)) else int(dst_nodata)
+        dst_data = np.full(target_shape, effective_dst_nodata, dtype=src_data.dtype)
+        resampling_method = Resampling.nearest
 
     reproject(
-        source=src_data,
+        source=src_data_to_warp,
         destination=dst_data,
         src_transform=src_transform,
         src_crs=src_crs,
         dst_transform=target_transform,
         dst_crs=target_crs,
         resampling=resampling_method,
-        src_nodata=src_nodata,
-        dst_nodata=dst_nodata,
+        src_nodata=effective_src_nodata,
+        dst_nodata=effective_dst_nodata,
     )
     return dst_data
 
@@ -659,23 +717,30 @@ def process_optical_flood_pair(
         require_identical_grid=False,
     )
 
+    # 3. Radiometric Calibration & Processing-Baseline Scaling (to float32 reflectance)
+    # Continuous spectral arrays are converted to float32 representation before reprojection
+    refl_post_g = dn_to_reflectance(post_green_raw, scale_factor=scale_factor, boa_offset=boa_offset, nodata=nodata_post_g)
+    refl_post_n = dn_to_reflectance(post_nir_raw, scale_factor=scale_factor, boa_offset=boa_offset, nodata=nodata_post_n)
+    refl_pre_g_raw = dn_to_reflectance(pre_green_raw, scale_factor=scale_factor, boa_offset=boa_offset, nodata=nodata_pre_g)
+    refl_pre_n_raw = dn_to_reflectance(pre_nir_raw, scale_factor=scale_factor, boa_offset=boa_offset, nodata=nodata_pre_n)
+
     if is_pre_identical:
-        pre_green_aligned = pre_green_raw
-        pre_nir_aligned = pre_nir_raw
+        refl_pre_g = refl_pre_g_raw
+        refl_pre_n = refl_pre_n_raw
     else:
-        # Geospatially reproject baseline onto target reference grid
-        pre_green_aligned = reproject_to_target_grid(
-            pre_green_raw, pre_green_prof["transform"], pre_green_prof["crs"],
+        # Geospatially reproject baseline calibrated float32 reflectance onto target reference grid
+        refl_pre_g = reproject_to_target_grid(
+            refl_pre_g_raw, pre_green_prof["transform"], pre_green_prof["crs"],
             target_shape, target_transform, target_crs,
-            is_categorical=False, src_nodata=nodata_pre_g, dst_nodata=np.nan,
+            is_categorical=False, src_nodata=np.nan, dst_nodata=np.nan,
         )
-        pre_nir_aligned = reproject_to_target_grid(
-            pre_nir_raw, pre_nir_prof["transform"], pre_nir_prof["crs"],
+        refl_pre_n = reproject_to_target_grid(
+            refl_pre_n_raw, pre_nir_prof["transform"], pre_nir_prof["crs"],
             target_shape, target_transform, target_crs,
-            is_categorical=False, src_nodata=nodata_pre_n, dst_nodata=np.nan,
+            is_categorical=False, src_nodata=np.nan, dst_nodata=np.nan,
         )
 
-    # 3. Read and Reproject SCL using rasterio transforms and nearest-neighbor resampling
+    # 4. Read and Reproject SCL using rasterio transforms and nearest-neighbor resampling
     post_scl = None
     if post_scl_path and post_scl_path.exists():
         with rasterio.open(post_scl_path) as s_src:
@@ -706,12 +771,6 @@ def process_optical_flood_pair(
                 target_shape, target_transform, target_crs,
                 is_categorical=True, src_nodata=0, dst_nodata=0,
             )
-
-    # 4. Radiometric Calibration & Processing-Baseline Scaling
-    refl_post_g = dn_to_reflectance(post_green_raw, scale_factor=scale_factor, boa_offset=boa_offset, nodata=nodata_post_g)
-    refl_post_n = dn_to_reflectance(post_nir_raw, scale_factor=scale_factor, boa_offset=boa_offset, nodata=nodata_post_n)
-    refl_pre_g = dn_to_reflectance(pre_green_aligned, scale_factor=scale_factor, boa_offset=boa_offset, nodata=nodata_pre_g)
-    refl_pre_n = dn_to_reflectance(pre_nir_aligned, scale_factor=scale_factor, boa_offset=boa_offset, nodata=nodata_pre_n)
 
     # 5. Dual-Temporal NDWI Calculation
     ndwi_post = compute_ndwi(refl_post_g, refl_post_n)
@@ -777,7 +836,7 @@ def process_optical_flood_pair(
     out_png_path = out_dir / f"{job_id}_flood_comparison.png"
     plot_optical_comparison(ndwi_pre, ndwi_post, flood_mask, out_png_path, stats=stats)
 
-    # 11. Provenance Manifest
+    # 11. Provenance Manifest with Portable Relative Paths
     result_manifest = {
         "job_id": job_id,
         "method": "NDWI",
@@ -789,19 +848,19 @@ def process_optical_flood_pair(
         },
         "statistics": stats,
         "artifacts": {
-            "flood_mask_tif": str(out_flood_mask_path),
-            "pre_ndwi_tif": str(out_pre_ndwi_path),
-            "post_ndwi_tif": str(out_post_ndwi_path),
-            "flood_extent_geojson": str(out_geojson_path),
-            "flood_comparison_png": str(out_png_path),
+            "flood_mask_tif": to_portable_path(out_flood_mask_path),
+            "pre_ndwi_tif": to_portable_path(out_pre_ndwi_path),
+            "post_ndwi_tif": to_portable_path(out_post_ndwi_path),
+            "flood_extent_geojson": to_portable_path(out_geojson_path),
+            "flood_comparison_png": to_portable_path(out_png_path),
         },
         "inputs": {
-            "pre_green": str(pre_green_path),
-            "pre_nir": str(pre_nir_path),
-            "pre_scl": str(pre_scl_path) if pre_scl_path else None,
-            "post_green": str(post_green_path),
-            "post_nir": str(post_nir_path),
-            "post_scl": str(post_scl_path) if post_scl_path else None,
+            "pre_green": to_portable_path(pre_green_path),
+            "pre_nir": to_portable_path(pre_nir_path),
+            "pre_scl": to_portable_path(pre_scl_path) if pre_scl_path else None,
+            "post_green": to_portable_path(post_green_path),
+            "post_nir": to_portable_path(post_nir_path),
+            "post_scl": to_portable_path(post_scl_path) if post_scl_path else None,
         },
     }
     manifest_out = out_dir / f"{job_id}_manifest.json"
