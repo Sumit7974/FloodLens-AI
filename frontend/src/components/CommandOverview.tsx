@@ -187,6 +187,10 @@ export const CommandOverview: React.FC<CommandOverviewProps> = ({
             incidents={requests}
             selectedIncidentId={selectedIncidentId}
             onSelectIncident={(id) => setSelectedIncidentId(id)}
+            onDispatchIncident={(id) => {
+              if (onHandoffRequest) onHandoffRequest(id);
+              else if (onAssignRequest) onAssignRequest(id, 'FIELD_COMMAND_UNIT_ALPHA');
+            }}
             height="560px"
           />
         </div>

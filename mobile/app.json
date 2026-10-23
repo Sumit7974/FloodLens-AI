@@ -1,29 +1,58 @@
 {
   "expo": {
-    "name": "FloodLens Citizen",
-    "slug": "floodlens-citizen",
-    "scheme": "floodlens",
-    "version": "0.1.0",
+    "name": "FloodLens Mobile",
+    "slug": "floodlens-mobile",
+    "owner": "saksham1906",
+    "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
+    "ios": {
+      "supportsTablet": true
+    },
     "android": {
-      "package": "ai.floodlens.citizen",
+      "package": "com.floodlens.mobile",
+      "versionCode": 1,
+      "usesCleartextTraffic": true,
       "permissions": [
+        "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION"
-      ]
+        "INTERNET",
+        "ACCESS_NETWORK_STATE",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ],
+      "adaptiveIcon": {
+        "backgroundColor": "#030712",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
     },
     "plugins": [
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Allow FloodLens to get your approximate location only when you choose to share it in a test help request."
+          "locationWhenInUsePermission": "Allow FloodLens Mobile to access your real-time GPS coordinates for emergency SOS dispatch and geofencing."
         }
       ],
-      "expo-secure-store"
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ]
     ],
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
     "extra": {
-      "environment": "historical-demo-only"
+      "eas": {
+        "projectId": "0ae2b4f8-a292-4d01-ac07-3b4fdbdb78c4"
+      }
     }
   }
 }
