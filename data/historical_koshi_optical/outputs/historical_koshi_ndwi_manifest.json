@@ -2,39 +2,47 @@
   "job_id": "historical_koshi_ndwi",
   "method": "NDWI",
   "threshold": 0.0,
+  "scl_policy": "conservative",
+  "radiometric_calibration": {
+    "scale_factor": 10000.0,
+    "boa_offset": 0.0
+  },
   "statistics": {
     "total_pixels": 4000000,
-    "valid_shared_pixels": 2025352,
-    "valid_shared_pct": 50.63,
-    "valid_pre_pixels": 2756984,
-    "valid_pre_pct": 68.92,
-    "valid_post_pixels": 2934604,
-    "valid_post_pct": 73.37,
-    "new_flood_pixels": 37148,
-    "persistent_water_pixels": 1941,
-    "dry_land_pixels": 1986263,
-    "unobserved_pixels": 1974648,
+    "valid_shared_pixels": 1234008,
+    "valid_shared_pct": 30.85,
+    "valid_pre_pixels": 2164856,
+    "valid_pre_pct": 54.12,
+    "valid_post_pixels": 2228472,
+    "valid_post_pct": 55.71,
+    "new_flood_pixels": 6429,
+    "persistent_water_pixels": 292,
+    "dry_land_pixels": 1227287,
+    "unobserved_pixels": 2765992,
     "threshold": 0.0,
     "pixel_area_km2": 0.0001,
-    "new_flood_km2": 3.7148,
-    "persistent_water_km2": 0.1941,
-    "dry_land_km2": 198.6263,
-    "valid_shared_km2": 202.5352,
-    "total_scene_km2": 400.0
+    "new_flood_km2": 0.6429,
+    "persistent_water_km2": 0.0292,
+    "dry_land_km2": 122.7287,
+    "valid_shared_km2": 123.4008,
+    "total_scene_km2": 400.0,
+    "scl_policy": "conservative",
+    "boa_offset": 0.0,
+    "scale_factor": 10000.0
   },
   "artifacts": {
-    "flood_mask_tif": "data\\historical_koshi_optical\\outputs\\historical_koshi_ndwi_flood_mask.tif",
-    "pre_ndwi_tif": "data\\historical_koshi_optical\\outputs\\historical_koshi_ndwi_pre_ndwi.tif",
-    "post_ndwi_tif": "data\\historical_koshi_optical\\outputs\\historical_koshi_ndwi_post_ndwi.tif",
-    "flood_extent_geojson": "data\\historical_koshi_optical\\outputs\\historical_koshi_ndwi_flood_extent.geojson",
-    "flood_comparison_png": "data\\historical_koshi_optical\\outputs\\historical_koshi_ndwi_flood_comparison.png"
+    "flood_mask_tif": "C:\\Users\\ABC\\FloodLens-AI\\FloodLens-AI\\data\\historical_koshi_optical\\outputs\\historical_koshi_ndwi_flood_mask.tif",
+    "pre_ndwi_tif": "C:\\Users\\ABC\\FloodLens-AI\\FloodLens-AI\\data\\historical_koshi_optical\\outputs\\historical_koshi_ndwi_pre_ndwi.tif",
+    "post_ndwi_tif": "C:\\Users\\ABC\\FloodLens-AI\\FloodLens-AI\\data\\historical_koshi_optical\\outputs\\historical_koshi_ndwi_post_ndwi.tif",
+    "flood_extent_geojson": "C:\\Users\\ABC\\FloodLens-AI\\FloodLens-AI\\data\\historical_koshi_optical\\outputs\\historical_koshi_ndwi_flood_extent.geojson",
+    "flood_comparison_png": "C:\\Users\\ABC\\FloodLens-AI\\FloodLens-AI\\data\\historical_koshi_optical\\outputs\\historical_koshi_ndwi_flood_comparison.png"
   },
   "inputs": {
-    "pre_green": "data\\historical_koshi_optical\\pre_flood\\pre_flood_B03.tif",
-    "pre_nir": "data\\historical_koshi_optical\\pre_flood\\pre_flood_B08.tif",
-    "pre_scl": "data\\historical_koshi_optical\\pre_flood\\pre_flood_SCL.tif",
-    "post_green": "data\\historical_koshi_optical\\post_flood\\post_flood_B03.tif",
-    "post_nir": "data\\historical_koshi_optical\\post_flood\\post_flood_B08.tif",
-    "post_scl": "data\\historical_koshi_optical\\post_flood\\post_flood_SCL.tif"
+    "pre_green": "C:\\Users\\ABC\\FloodLens-AI\\FloodLens-AI\\data\\historical_koshi_optical\\pre_flood\\pre_flood_B03.tif",
+    "pre_nir": "C:\\Users\\ABC\\FloodLens-AI\\FloodLens-AI\\data\\historical_koshi_optical\\pre_flood\\pre_flood_B08.tif",
+    "pre_scl": "C:\\Users\\ABC\\FloodLens-AI\\FloodLens-AI\\data\\historical_koshi_optical\\pre_flood\\pre_flood_SCL.tif",
+    "post_green": "C:\\Users\\ABC\\FloodLens-AI\\FloodLens-AI\\data\\historical_koshi_optical\\post_flood\\post_flood_B03.tif",
+    "post_nir": "C:\\Users\\ABC\\FloodLens-AI\\FloodLens-AI\\data\\historical_koshi_optical\\post_flood\\post_flood_B08.tif",
+    "post_scl": "C:\\Users\\ABC\\FloodLens-AI\\FloodLens-AI\\data\\historical_koshi_optical\\post_flood\\post_flood_SCL.tif"
   }
 }

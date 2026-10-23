@@ -565,6 +565,7 @@ def _process_optical_bands(
     baseline_path: Optional[Path],
     threshold: float,
     job_id: str,
+    job_parameters: Optional[Dict[str, Any]] = None,
 ) -> Tuple[MultiPolygon, float, str, Optional[str], Optional[str]]:
     """Compute calibrated NDWI from Green (B03) and NIR (B08) bands with SCL quality masking.
 
@@ -582,6 +583,11 @@ def _process_optical_bands(
         return _process_raster_mask(scene_dir_or_file, "NDWI")
 
     from ml.gis_processing.calculate_ndwi import process_optical_flood_pair
+
+    params = job_parameters or {}
+    scl_policy = params.get("scl_policy", "conservative")
+    boa_offset = float(params.get("boa_offset", 0.0))
+    scale_factor = float(params.get("scale_factor", 10000.0))
 
     # Locate target bands
     target_g = list(scene_dir_or_file.glob("*B03*.tif")) + list(scene_dir_or_file.glob("*green*.tif"))
@@ -614,6 +620,9 @@ def _process_optical_bands(
             out_dir=OUTPUT_DIR,
             threshold=threshold,
             job_id=job_id,
+            scl_policy=scl_policy,
+            boa_offset=boa_offset,
+            scale_factor=scale_factor,
         )
 
         merged = result_dict["multipolygon"]
@@ -959,7 +968,7 @@ def execute_satellite_pipeline(
             geom, area_km2, provenance, poly_ref, raster_ref = _process_raster_mask(resolved_target, job.method)
         elif resolved_target.is_dir():
             geom, area_km2, provenance, poly_ref, raster_ref = _process_optical_bands(
-                resolved_target, resolved_base, job.threshold or 0.0, job.id
+                resolved_target, resolved_base, job.threshold or 0.0, job.id, job_parameters=job.parameters
             )
         else:
             raise ValueError(f"Unrecognized optical satellite asset format: {resolved_target.name}")

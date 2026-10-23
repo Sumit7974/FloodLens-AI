@@ -7,33 +7,60 @@ Performs rigorous, reproducible, scientific remote sensing flood detection from
 Sentinel-2 Level-2A surface reflectance optical imagery.
 
 Scientific Pipeline:
-1. Geospatial & Spectral Band Validation:
+1. Exact Affine-Grid & Spectral Band Validation:
    - Sentinel-2 Green (B03, 560 nm, 10m)
    - Sentinel-2 Near Infrared (B08, 842 nm, 10m)
    - Sentinel-2 Scene Classification Layer (SCL, 20m)
-   - Validates CRS, transform metadata, bounds, and spatial alignment.
+   - Validates CRS, affine transform metadata, spatial bounds, and ground alignment.
+   - Enforces exact affine-grid alignment within scenes (e.g. B03 vs B08).
+   - Rejects incompatible input or disjoint bounds instead of comparing shifted pixels by array index.
+   - Reprojects cross-scene or multi-resolution inputs (such as 20m SCL) onto the exact target
+     geospatial reference grid using rasterio transforms and nearest-neighbor resampling.
 2. Scene Classification Layer (SCL) Quality & Cloud Masking:
-   - Masks cloud shadows (class 3), clouds (medium/high prob: classes 8, 9),
-     cirrus (class 10), saturated/defective pixels (class 1), snow/ice (class 11),
-     and NoData (class 0).
-   - Valid observation classes: vegetation (4), bare soil/urban (5), water (6), unclassified (7).
-   - Enforces valid shared-observation coverage: only pixels observed reliably in both
-     pre-flood and post-flood acquisitions are evaluated.
-   - Cloud-occluded pixels are marked as unobserved/unknown (255), NEVER silently treated as dry land.
-3. Dual-Temporal NDWI Calculation:
+   - ESA Sentinel-2 Level-2A SCL class specifications:
+       0: No Data
+       1: Saturated or Defective Pixel
+       2: Cast Shadow / Dark Area Pixels
+       3: Cloud Shadows
+       4: Vegetation
+       5: Not-Vegetated (Bare soil, rock, urban)
+       6: Water
+       7: Unclassified (Ambiguous classification from Sen2Cor)
+       8: Cloud Medium Probability
+       9: Cloud High Probability
+      10: Thin Cirrus
+      11: Snow / Ice
+   - Documented Quality Policies:
+     a) CONSERVATIVE POLICY (DEFAULT):
+        Masks {0, 1, 2, 3, 7, 8, 9, 10, 11}.
+        Retains ONLY certified surface classes: Vegetation (4), Bare Soil (5), Water (6).
+        * Class 2 (Dark area / cast shadows) MUST be masked: topographic cast shadows and
+          dark surface features receive low NIR, artificially inflating NDWI > 0 and causing
+          severe false-positive flood inundation detections.
+        * Class 7 (Unclassified) MUST be masked: Sen2Cor assigns Class 7 to low-confidence pixels
+          (haze, cloud boundaries, mixed pixels). Under conservative flood safety standards,
+          ambiguous surfaces cannot be certified as clear dry land or water and are marked
+          unobserved (255).
+     b) PERMISSIVE POLICY:
+        Masks {0, 1, 3, 8, 9, 10, 11}. Permits Class 2 and Class 7.
+3. Sentinel-2 Radiometric Calibration & Processing-Baseline Offsets:
+   - Converts DN to surface reflectance: Reflectance = (DN + BOA_ADD_OFFSET) / QUANTIFICATION_VALUE.
+   - For Processing Baseline < 04.00 (e.g. PB 02.12 used in our 2017 historical scenes):
+     BOA_ADD_OFFSET = 0.0, QUANTIFICATION_VALUE = 10000.0.
+   - For Processing Baseline >= 04.00 (harmonized post-Jan 2022):
+     BOA_ADD_OFFSET = -1000.0 (prevents negative reflectance truncation).
+4. Dual-Temporal NDWI Calculation:
    - NDWI = (Green - NIR) / (Green + NIR)
-   - Pre-flood NDWI and Post-flood NDWI computed separately on validated reflectance.
-4. Distinguishing Newly Inundated Floodwater from Persistent Water:
+   - Computed separately on validated surface reflectance in [-1.0, 1.0].
+5. Distinguishing Newly Inundated Floodwater from Persistent Water:
    - NEW_FLOOD        = Post-water AND (NOT Pre-water) AND Valid-shared  (Value: 1)
    - PERSISTENT_WATER = Post-water AND Pre-water AND Valid-shared        (Value: 2)
    - DRY_LAND         = (NOT Post-water) AND Valid-shared                (Value: 0)
    - UNOBSERVED       = NOT Valid-shared                                 (Value: 255)
-5. Reproducible GIS Artifacts:
+6. Reproducible GIS Artifacts:
    - Pre-flood NDWI GeoTIFF (pre_ndwi.tif)
    - Post-flood NDWI GeoTIFF (post_ndwi.tif)
-   - Pre-flood water mask (pre_water_mask.tif)
-   - Post-flood water mask (post_water_mask.tif)
-   - Inundation dynamics mask GeoTIFF (flood_mask.tif)
+   - 4-State Inundation Dynamics Mask GeoTIFF (flood_mask.tif)
    - Vectorized newly inundated flood polygons (flood_polygons.geojson, EPSG:4326)
    - Multi-panel visual comparison (flood_comparison.png)
    - Provenance manifest and audit report
@@ -52,6 +79,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
+
 try:
     import matplotlib
     matplotlib.use("Agg")
@@ -83,18 +111,64 @@ except ImportError:
 
 logger = logging.getLogger("floodlens.calculate_ndwi")
 
-# SCL classes according to ESA Sentinel-2 Level-2A product specification
-# Unsuitable/occluded classes:
-# 0: No Data, 1: Saturated/Defective, 3: Cloud Shadows, 8: Cloud Medium Prob,
-# 9: Cloud High Prob, 10: Thin Cirrus, 11: Snow/Ice
-UNSUITABLE_SCL_CLASSES = {0, 1, 3, 8, 9, 10, 11}
+# SCL Quality Policies
+# 1. Conservative Quality Policy (DEFAULT):
+# Excludes: NoData (0), Saturated (1), Cast Shadows / Dark Area (2), Cloud Shadows (3),
+#           Unclassified (7), Cloud Medium (8), Cloud High (9), Cirrus (10), Snow (11).
+# Valid: Vegetation (4), Not-Vegetated (5), Water (6).
+CONSERVATIVE_UNSUITABLE_SCL_CLASSES = {0, 1, 2, 3, 7, 8, 9, 10, 11}
+
+# 2. Permissive Quality Policy (legacy/exploratory):
+# Excludes: NoData (0), Saturated (1), Cloud Shadows (3), Cloud Medium (8),
+#           Cloud High (9), Cirrus (10), Snow (11).
+# Permits Class 2 and Class 7.
+PERMISSIVE_UNSUITABLE_SCL_CLASSES = {0, 1, 3, 8, 9, 10, 11}
+
 DEFAULT_NDWI_THRESHOLD = 0.00
+DEFAULT_QUANTIFICATION_VALUE = 10000.0
+
+
+def dn_to_reflectance(
+    dn_array: np.ndarray,
+    scale_factor: float = DEFAULT_QUANTIFICATION_VALUE,
+    boa_offset: float = 0.0,
+    nodata: Optional[float] = None,
+) -> np.ndarray:
+    """Convert raw digital numbers (DN) to surface reflectance taking into account
+    Sentinel-2 processing baseline offsets.
+
+    Reflectance = (DN + boa_offset) / scale_factor
+
+    Parameters:
+        dn_array: Input raw DN raster (e.g. uint16).
+        scale_factor: Radiometric quantification value (10000.0 for Sentinel-2 L2A).
+        boa_offset: Processing baseline offset:
+            - 0.0 for Processing Baseline < 04.00 (e.g. PB 02.12).
+            - -1000.0 for Processing Baseline >= 04.00.
+        nodata: Value representing NoData in the source raster.
+    Returns:
+        float32 array with valid surface reflectance in [0.0, ~1.0], or NaN for invalid.
+    """
+    arr = dn_array.astype(np.float32)
+    if nodata is not None:
+        arr[arr == nodata] = np.nan
+    # Sentinel-2 DN 0 is native NoData
+    arr[arr <= 0] = np.nan
+
+    with np.errstate(invalid="ignore"):
+        refl = (arr + float(boa_offset)) / float(scale_factor)
+        refl[refl < 0] = np.nan
+    return refl
 
 
 def compute_ndwi(green: np.ndarray, nir: np.ndarray) -> np.ndarray:
     """Compute Normalized Difference Water Index: (Green - NIR) / (Green + NIR).
-    
-    Returns float32 array in [-1.0, 1.0], with NaN for zero-denominator or negative inputs.
+
+    Parameters:
+        green: Surface reflectance in green band (B03, ~560 nm).
+        nir: Surface reflectance in near-infrared band (B08, ~842 nm).
+    Returns:
+        float32 array in [-1.0, 1.0], with NaN for zero-denominator or negative inputs.
     """
     g = green.astype(np.float32)
     n = nir.astype(np.float32)
@@ -106,35 +180,33 @@ def compute_ndwi(green: np.ndarray, nir: np.ndarray) -> np.ndarray:
     return np.clip(ndwi, -1.0, 1.0)
 
 
-def extract_scl_mask(scl: Optional[np.ndarray], shape: Tuple[int, int]) -> np.ndarray:
-    """Return boolean mask of valid observation pixels where SCL is not cloud, shadow, or invalid."""
+def extract_scl_mask(
+    scl: Optional[np.ndarray],
+    shape: Tuple[int, int],
+    policy: str = "conservative",
+) -> np.ndarray:
+    """Return boolean mask of valid ground observation pixels based on Scene Classification Layer.
+
+    Parameters:
+        scl: SCL raster matching target grid shape (uint8).
+        shape: Expected 2D grid shape (height, width).
+        policy: Quality policy:
+            - 'conservative' (DEFAULT): masks {0, 1, 2, 3, 7, 8, 9, 10, 11}.
+              Strictly masks dark features / cast shadows (2) and unclassified / ambiguous (7).
+            - 'permissive': masks {0, 1, 3, 8, 9, 10, 11}.
+    """
     if scl is None:
         return np.ones(shape, dtype=bool)
-    # Ensure SCL matches target shape (resample nearest neighbor if needed)
+
     if scl.shape != shape:
-        scl = resample_array(scl, shape, is_categorical=True)
-    return ~np.isin(scl, list(UNSUITABLE_SCL_CLASSES))
+        raise ValueError(f"SCL array shape {scl.shape} does not match expected grid shape {shape}.")
 
-
-def resample_array(
-    arr: np.ndarray,
-    target_shape: Tuple[int, int],
-    is_categorical: bool = False,
-) -> np.ndarray:
-    """Resample 2D array to target shape using nearest-neighbor (for categorical) or bilinear."""
-    if arr.shape == target_shape:
-        return arr
-    
-    src_h, src_w = arr.shape
-    tgt_h, tgt_w = target_shape
-    
-    # Simple integer scaling optimization (e.g. 20m -> 10m is exact 2x)
-    if tgt_h == src_h * 2 and tgt_w == src_w * 2:
-        return np.repeat(np.repeat(arr, 2, axis=0), 2, axis=1)
-    
-    row_indices = np.linspace(0, src_h - 1, tgt_h).round().astype(int)
-    col_indices = np.linspace(0, src_w - 1, tgt_w).round().astype(int)
-    return arr[np.ix_(row_indices, col_indices)]
+    unsuitable_classes = (
+        CONSERVATIVE_UNSUITABLE_SCL_CLASSES
+        if str(policy).lower() == "conservative"
+        else PERMISSIVE_UNSUITABLE_SCL_CLASSES
+    )
+    return ~np.isin(scl, list(unsuitable_classes))
 
 
 def validate_spatial_alignment(
@@ -143,47 +215,149 @@ def validate_spatial_alignment(
     label_a: str = "Scene A",
     label_b: str = "Scene B",
     tolerance: float = 1e-4,
-) -> None:
-    """Validate that two raster profiles have compatible CRS and geospatial transform."""
+    require_identical_grid: bool = False,
+) -> bool:
+    """Validate geospatial compatibility between two raster profiles.
+
+    Parameters:
+        prof_a: Rasterio profile of first dataset.
+        prof_b: Rasterio profile of second dataset.
+        label_a: Human-readable label for dataset A.
+        label_b: Human-readable label for dataset B.
+        tolerance: Coordinate and resolution tolerance.
+        require_identical_grid: If True, enforces exact matching CRS, resolution,
+            affine transform, and grid dimensions (e.g. for intra-scene B03 vs B08).
+            Raises ValueError if grids are not identical.
+            If False, verifies CRS and non-disjoint bounding boxes, returning True
+            if identical or False if reprojection is required.
+    Returns:
+        bool: True if grids are identical, False if reprojection is required.
+    Raises:
+        ValueError: If CRS is incompatible, bounds do not overlap, or required identical
+            grids are mismatched.
+    """
     crs_a = prof_a.get("crs")
     crs_b = prof_b.get("crs")
+    if not crs_a or not crs_b:
+        raise ValueError(f"Missing CRS metadata: {label_a} has {crs_a}, {label_b} has {crs_b}.")
     if str(crs_a).upper() != str(crs_b).upper():
         raise ValueError(f"CRS mismatch: {label_a} has {crs_a}, but {label_b} has {crs_b}.")
 
     trans_a = prof_a.get("transform")
     trans_b = prof_b.get("transform")
-    if trans_a is not None and trans_b is not None:
-        # Check pixel resolution
-        res_x_a, res_y_a = abs(trans_a[0]), abs(trans_a[4])
-        res_x_b, res_y_b = abs(trans_b[0]), abs(trans_b[4])
-        if abs(res_x_a - res_x_b) > tolerance or abs(res_y_a - res_y_b) > tolerance:
-            raise ValueError(
-                f"Pixel resolution mismatch: {label_a} is ({res_x_a}, {res_y_a}), "
-                f"but {label_b} is ({res_x_b}, {res_y_b})."
-            )
+    if trans_a is None or trans_b is None:
+        raise ValueError(f"Missing geospatial transform: {label_a}={trans_a}, {label_b}={trans_b}.")
 
-        # Check bounding box spatial overlap
-        h_a, w_a = prof_a.get("height", 0), prof_a.get("width", 0)
-        h_b, w_b = prof_b.get("height", 0), prof_b.get("width", 0)
-        if h_a and w_a and h_b and w_b:
-            left_a, top_a = trans_a[2], trans_a[5]
-            right_a = left_a + w_a * trans_a[0]
-            bottom_a = top_a + h_a * trans_a[4]
-            min_x_a, max_x_a = min(left_a, right_a), max(left_a, right_a)
-            min_y_a, max_y_a = min(top_a, bottom_a), max(top_a, bottom_a)
+    h_a, w_a = prof_a.get("height", 0), prof_a.get("width", 0)
+    h_b, w_b = prof_b.get("height", 0), prof_b.get("width", 0)
 
-            left_b, top_b = trans_b[2], trans_b[5]
-            right_b = left_b + w_b * trans_b[0]
-            bottom_b = top_b + h_b * trans_b[4]
-            min_x_b, max_x_b = min(left_b, right_b), max(left_b, right_b)
-            min_y_b, max_y_b = min(top_b, bottom_b), max(top_b, bottom_b)
+    # Calculate exact bounding boxes in projected coordinates
+    left_a, top_a = trans_a[2], trans_a[5]
+    right_a = left_a + w_a * trans_a[0]
+    bottom_a = top_a + h_a * trans_a[4]
+    min_x_a, max_x_a = min(left_a, right_a), max(left_a, right_a)
+    min_y_a, max_y_a = min(top_a, bottom_a), max(top_a, bottom_a)
 
-            disjoint = (max_x_a < min_x_b or max_x_b < min_x_a or max_y_a < min_y_b or max_y_b < min_y_a)
-            if disjoint:
-                raise ValueError(
-                    f"Geospatial transform mismatch: {label_a} bounds [{min_x_a}, {min_y_a}, {max_x_a}, {max_y_a}] "
-                    f"and {label_b} bounds [{min_x_b}, {min_y_b}, {max_x_b}, {max_y_b}] do not spatially overlap."
-                )
+    left_b, top_b = trans_b[2], trans_b[5]
+    right_b = left_b + w_b * trans_b[0]
+    bottom_b = top_b + h_b * trans_b[4]
+    min_x_b, max_x_b = min(left_b, right_b), max(left_b, right_b)
+    min_y_b, max_y_b = min(top_b, bottom_b), max(top_b, bottom_b)
+
+    # Check for non-disjoint intersection
+    disjoint = (max_x_a <= min_x_b or max_x_b <= min_x_a or max_y_a <= min_y_b or max_y_b <= min_y_a)
+    if disjoint:
+        raise ValueError(
+            f"Geospatial transform mismatch: {label_a} bounds [{min_x_a}, {min_y_a}, {max_x_a}, {max_y_a}] "
+            f"and {label_b} bounds [{min_x_b}, {min_y_b}, {max_x_b}, {max_y_b}] do not spatially intersect."
+        )
+
+    # Check if identical grid
+    res_x_a, res_y_a = abs(trans_a[0]), abs(trans_a[4])
+    res_x_b, res_y_b = abs(trans_b[0]), abs(trans_b[4])
+    res_match = abs(res_x_a - res_x_b) <= tolerance and abs(res_y_a - res_y_b) <= tolerance
+    origin_match = abs(trans_a[2] - trans_b[2]) <= tolerance and abs(trans_a[5] - trans_b[5]) <= tolerance
+    dims_match = (h_a == h_b) and (w_a == w_b)
+
+    is_identical = res_match and origin_match and dims_match
+
+    if require_identical_grid and not is_identical:
+        raise ValueError(
+            f"Exact grid mismatch between {label_a} and {label_b}: "
+            f"resolution=({res_x_a},{res_y_a}) vs ({res_x_b},{res_y_b}), "
+            f"origin=({trans_a[2]},{trans_a[5]}) vs ({trans_b[2]},{trans_b[5]}), "
+            f"dims=({h_a},{w_a}) vs ({h_b},{w_b})."
+        )
+
+    return is_identical
+
+
+def reproject_to_target_grid(
+    src_data: np.ndarray,
+    src_transform: Any,
+    src_crs: Any,
+    target_shape: Tuple[int, int],
+    target_transform: Any,
+    target_crs: Any,
+    is_categorical: bool = False,
+    src_nodata: Optional[float] = None,
+    dst_nodata: Optional[float] = None,
+) -> np.ndarray:
+    """Geospatially reproject or resample source raster onto the target reference grid.
+
+    Uses rasterio.warp.reproject:
+    - Resampling.nearest for categorical classification layers (e.g. SCL),
+      preserving integer class values without interpolation.
+    - Resampling.bilinear for continuous surface reflectance.
+
+    Parameters:
+        src_data: Source 2D numpy array.
+        src_transform: Affine transform of source.
+        src_crs: CRS of source.
+        target_shape: Destination (height, width).
+        target_transform: Affine transform of destination grid.
+        target_crs: CRS of destination grid.
+        is_categorical: If True, uses Resampling.nearest; else Resampling.bilinear.
+        src_nodata: Source NoData value.
+        dst_nodata: Destination NoData value.
+    Returns:
+        2D numpy array matching target_shape and target_transform.
+    """
+    if not HAS_RASTERIO:
+        raise RuntimeError("rasterio is required for geospatial raster reprojection.")
+
+    # Fast path if grids are already identical
+    t_match = (
+        np.isclose(src_transform[0], target_transform[0], atol=1e-5)
+        and np.isclose(src_transform[1], target_transform[1], atol=1e-5)
+        and np.isclose(src_transform[2], target_transform[2], atol=1e-5)
+        and np.isclose(src_transform[3], target_transform[3], atol=1e-5)
+        and np.isclose(src_transform[4], target_transform[4], atol=1e-5)
+        and np.isclose(src_transform[5], target_transform[5], atol=1e-5)
+    )
+    crs_match = str(src_crs).upper() == str(target_crs).upper()
+    if t_match and crs_match and src_data.shape == target_shape:
+        return src_data.copy()
+
+    resampling_method = Resampling.nearest if is_categorical else Resampling.bilinear
+    dtype = src_data.dtype
+    if dst_nodata is None:
+        dst_data = np.zeros(target_shape, dtype=dtype)
+    else:
+        dst_data = np.full(target_shape, dst_nodata, dtype=dtype)
+
+    reproject(
+        source=src_data,
+        destination=dst_data,
+        src_transform=src_transform,
+        src_crs=src_crs,
+        dst_transform=target_transform,
+        dst_crs=target_crs,
+        resampling=resampling_method,
+        src_nodata=src_nodata,
+        dst_nodata=dst_nodata,
+    )
+    return dst_data
 
 
 def classify_flood_dynamics(
@@ -193,22 +367,29 @@ def classify_flood_dynamics(
     valid_post: np.ndarray,
     threshold: float = DEFAULT_NDWI_THRESHOLD,
 ) -> Tuple[np.ndarray, Dict[str, Any]]:
-    """Classify 4-state flood dynamics:
-    
-    0   = Dry land (validly observed dry surface in post)
+    """Classify 4-state flood dynamics on validated shared-observation coverage:
+
+    0   = Dry land (validly observed non-water in post)
     1   = Newly inundated floodwater (post > threshold AND pre <= threshold AND valid shared)
     2   = Persistent water (pre > threshold AND post > threshold AND valid shared)
-    255 = Unobserved / cloud / shadow / NoData
+    255 = Unobserved / cloud / shadow / NoData / ambiguous unclassified
+
+    Parameters:
+        ndwi_pre: Valid pre-flood NDWI raster.
+        ndwi_post: Valid post-flood NDWI raster.
+        valid_pre: Boolean clear-observation mask for pre-flood.
+        valid_post: Boolean clear-observation mask for post-flood.
+        threshold: NDWI water threshold (default 0.00).
     """
     valid_shared = valid_pre & valid_post & ~np.isnan(ndwi_pre) & ~np.isnan(ndwi_post)
-    
+
     water_pre = (ndwi_pre > threshold) & valid_pre & ~np.isnan(ndwi_pre)
     water_post = (ndwi_post > threshold) & valid_post & ~np.isnan(ndwi_post)
-    
+
     new_flood = water_post & (~water_pre) & valid_shared
     persistent_water = water_post & water_pre & valid_shared
     dry_land = (~water_post) & valid_shared
-    
+
     flood_mask = np.full(ndwi_post.shape, 255, dtype=np.uint8)
     flood_mask[dry_land] = 0
     flood_mask[persistent_water] = 2
@@ -241,7 +422,7 @@ def classify_flood_dynamics(
 
 
 def compute_metric_area_km2(geom_wgs84: Any) -> float:
-    """Calculate exact ground area in km² projected into UTM Zone 45N (EPSG:32645)."""
+    """Calculate exact ground surface area in km² projected into UTM Zone 45N (EPSG:32645)."""
     if not HAS_SHAPELY or geom_wgs84 is None or geom_wgs84.is_empty:
         return 0.0
     transformer = pyproj.Transformer.from_crs("EPSG:4326", "EPSG:32645", always_xy=True)
@@ -320,6 +501,7 @@ def plot_optical_comparison(
     title: str = "FloodLens AI — Pre/Post Optical NDWI Flood Detection",
     stats: Optional[Dict[str, Any]] = None,
 ) -> None:
+    """Generate 3-panel visual rendering showing Pre-NDWI, Post-NDWI, and Flood Dynamics."""
     if not HAS_MATPLOTLIB:
         logger.warning("matplotlib not installed; skipping PNG comparison plot.")
         return
@@ -366,23 +548,24 @@ def plot_optical_comparison(
     rgb[mask_disp == 255] = COLOR_UNOBSERVED
 
     ax.imshow(rgb, interpolation="nearest")
-    ax.set_title("Optical Flood Dynamics Mask\n(SCL-Masked Shared Coverage)", fontsize=11, fontweight="bold", pad=8)
+    ax.set_title("Optical Flood Dynamics Mask\n(Conservative SCL-Masked)", fontsize=11, fontweight="bold", pad=8)
     ax.axis("off")
 
     legend_items = [
         Patch(facecolor=COLOR_NEW_FLOOD, edgecolor="navy", label="Newly Inundated Floodwater"),
         Patch(facecolor=COLOR_PERSISTENT, edgecolor="black", label="Persistent Water (Rivers/Ponds)"),
         Patch(facecolor=COLOR_LAND, edgecolor="saddlebrown", label="Dry Land / Non-Water"),
-        Patch(facecolor=COLOR_UNOBSERVED, edgecolor="grey", label="Unobserved (Cloud/Shadow/NoData)"),
+        Patch(facecolor=COLOR_UNOBSERVED, edgecolor="grey", label="Unobserved (Cloud/Shadow/NoData/Ambiguous)"),
     ]
     ax.legend(handles=legend_items, loc="lower right", fontsize=8, framealpha=0.9)
 
     if stats:
         fl_km2 = stats.get("new_flood_km2", 0.0)
         cov_pct = stats.get("valid_shared_pct", 0.0)
+        policy_lbl = stats.get("scl_policy", "conservative").capitalize()
         ax.text(
             0.03, 0.03,
-            f"New Flood Extent: {fl_km2:.2f} km²\nShared Valid Coverage: {cov_pct:.1f}%",
+            f"Policy: {policy_lbl}\nNew Flood Extent: {fl_km2:.2f} km²\nShared Valid Coverage: {cov_pct:.1f}%",
             transform=ax.transAxes,
             fontsize=8,
             color="white",
@@ -406,90 +589,144 @@ def process_optical_flood_pair(
     post_scl_path: Optional[Path] = None,
     threshold: float = DEFAULT_NDWI_THRESHOLD,
     job_id: str = "optical_flood",
+    scl_policy: str = "conservative",
+    boa_offset: float = 0.0,
+    scale_factor: float = DEFAULT_QUANTIFICATION_VALUE,
 ) -> Dict[str, Any]:
-    """Execute complete reproducible pre/post optical flood processing pipeline."""
+    """Execute complete reproducible pre/post optical flood processing pipeline.
+
+    Parameters:
+        pre_green_path: Path to pre-flood Green band (B03).
+        pre_nir_path: Path to pre-flood NIR band (B08).
+        post_green_path: Path to post-flood Green band (B03) — defines target reference grid.
+        post_nir_path: Path to post-flood NIR band (B08).
+        out_dir: Destination directory for GeoTIFF and GeoJSON artifacts.
+        pre_scl_path: Path to pre-flood SCL quality layer.
+        post_scl_path: Path to post-flood SCL quality layer.
+        threshold: NDWI water threshold (default 0.00).
+        job_id: Identifier for job outputs.
+        scl_policy: 'conservative' (DEFAULT, masks 0,1,2,3,7,8,9,10,11) or 'permissive'.
+        boa_offset: Radiometric BOA offset (0.0 for PB < 04.00, -1000.0 for PB >= 04.00).
+        scale_factor: DN quantification value (10000.0).
+    """
     if not HAS_RASTERIO:
         raise RuntimeError("rasterio is required for optical flood processing.")
 
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # 1. Read post-flood (target) Green and NIR
+    # 1. Target reference grid defined by Post-Flood Green (B03)
     with rasterio.open(post_green_path) as g_src:
-        post_green = g_src.read(1).astype(np.float32)
-        profile = g_src.profile.copy()
-        crs = g_src.crs
-        transform = g_src.transform
-        nodata_g = g_src.nodata
+        post_green_raw = g_src.read(1)
+        target_profile = g_src.profile.copy()
+        target_crs = g_src.crs
+        target_transform = g_src.transform
         target_shape = g_src.shape
+        nodata_post_g = g_src.nodata
 
+    # Validate Post-Flood NIR (B08) on the EXACT same affine grid
     with rasterio.open(post_nir_path) as n_src:
-        post_nir = n_src.read(1).astype(np.float32)
-        crs_n = n_src.crs
-        shape_n = n_src.shape
-        nodata_n = n_src.nodata
+        post_nir_raw = n_src.read(1)
+        post_nir_prof = n_src.profile.copy()
+        nodata_post_n = n_src.nodata
 
-    if crs != crs_n or target_shape != shape_n:
-        raise ValueError("Post-flood Green and NIR bands have mismatched CRS or dimensions.")
+    validate_spatial_alignment(
+        target_profile, post_nir_prof,
+        label_a="Post-flood Green (B03)", label_b="Post-flood NIR (B08)",
+        require_identical_grid=True,
+    )
 
-    # 2. Read pre-flood (baseline) Green and NIR
+    # 2. Baseline Pre-Flood Green and NIR
     with rasterio.open(pre_green_path) as bg_src:
-        pre_green = bg_src.read(1).astype(np.float32)
-        pre_prof = bg_src.profile.copy()
-        pre_crs = bg_src.crs
-        pre_shape = bg_src.shape
-        nodata_bg = bg_src.nodata
+        pre_green_raw = bg_src.read(1)
+        pre_green_prof = bg_src.profile.copy()
+        nodata_pre_g = bg_src.nodata
 
     with rasterio.open(pre_nir_path) as bn_src:
-        pre_nir = bn_src.read(1).astype(np.float32)
-        pre_crs_n = bn_src.crs
-        pre_shape_n = bn_src.shape
-        nodata_bn = bn_src.nodata
+        pre_nir_raw = bn_src.read(1)
+        pre_nir_prof = bn_src.profile.copy()
+        nodata_pre_n = bn_src.nodata
 
-    if pre_crs != pre_crs_n or pre_shape != pre_shape_n:
-        raise ValueError("Pre-flood Green and NIR bands have mismatched CRS or dimensions.")
+    validate_spatial_alignment(
+        pre_green_prof, pre_nir_prof,
+        label_a="Pre-flood Green (B03)", label_b="Pre-flood NIR (B08)",
+        require_identical_grid=True,
+    )
 
-    # Validate spatial alignment between pre and post
-    validate_spatial_alignment(profile, pre_prof, label_a="Post-flood", label_b="Pre-flood")
+    # Validate pre/post spatial overlap and reproject onto target reference grid if needed
+    is_pre_identical = validate_spatial_alignment(
+        target_profile, pre_green_prof,
+        label_a="Post-flood Target Grid", label_b="Pre-flood Baseline Grid",
+        require_identical_grid=False,
+    )
 
-    # If shapes differ, resample pre to match post
-    if pre_shape != target_shape:
-        pre_green = resample_array(pre_green, target_shape)
-        pre_nir = resample_array(pre_nir, target_shape)
+    if is_pre_identical:
+        pre_green_aligned = pre_green_raw
+        pre_nir_aligned = pre_nir_raw
+    else:
+        # Geospatially reproject baseline onto target reference grid
+        pre_green_aligned = reproject_to_target_grid(
+            pre_green_raw, pre_green_prof["transform"], pre_green_prof["crs"],
+            target_shape, target_transform, target_crs,
+            is_categorical=False, src_nodata=nodata_pre_g, dst_nodata=np.nan,
+        )
+        pre_nir_aligned = reproject_to_target_grid(
+            pre_nir_raw, pre_nir_prof["transform"], pre_nir_prof["crs"],
+            target_shape, target_transform, target_crs,
+            is_categorical=False, src_nodata=nodata_pre_n, dst_nodata=np.nan,
+        )
 
-    # Handle NoData in bands
-    for arr, nd in [(post_green, nodata_g), (post_nir, nodata_n), (pre_green, nodata_bg), (pre_nir, nodata_bn)]:
-        if nd is not None:
-            arr[arr == nd] = np.nan
-        arr[arr < 0] = np.nan
-
-    # 3. Read and process SCL quality masks if available
-    scl_pre = None
-    if pre_scl_path and pre_scl_path.exists():
-        with rasterio.open(pre_scl_path) as s_src:
-            scl_pre = s_src.read(1)
-            if scl_pre.shape != target_shape:
-                scl_pre = resample_array(scl_pre, target_shape, is_categorical=True)
-
-    scl_post = None
+    # 3. Read and Reproject SCL using rasterio transforms and nearest-neighbor resampling
+    post_scl = None
     if post_scl_path and post_scl_path.exists():
         with rasterio.open(post_scl_path) as s_src:
-            scl_post = s_src.read(1)
-            if scl_post.shape != target_shape:
-                scl_post = resample_array(scl_post, target_shape, is_categorical=True)
+            scl_raw = s_src.read(1)
+            # Verify spatial overlap with target grid
+            validate_spatial_alignment(
+                target_profile, s_src.profile,
+                label_a="Post-flood Target Grid", label_b="Post-flood SCL",
+                require_identical_grid=False,
+            )
+            post_scl = reproject_to_target_grid(
+                scl_raw, s_src.transform, s_src.crs,
+                target_shape, target_transform, target_crs,
+                is_categorical=True, src_nodata=0, dst_nodata=0,
+            )
 
-    valid_pre = extract_scl_mask(scl_pre, target_shape) & ~np.isnan(pre_green) & ~np.isnan(pre_nir) & (pre_green > 0)
-    valid_post = extract_scl_mask(scl_post, target_shape) & ~np.isnan(post_green) & ~np.isnan(post_nir) & (post_green > 0)
+    pre_scl = None
+    if pre_scl_path and pre_scl_path.exists():
+        with rasterio.open(pre_scl_path) as ps_src:
+            pscl_raw = ps_src.read(1)
+            validate_spatial_alignment(
+                target_profile, ps_src.profile,
+                label_a="Post-flood Target Grid", label_b="Pre-flood SCL",
+                require_identical_grid=False,
+            )
+            pre_scl = reproject_to_target_grid(
+                pscl_raw, ps_src.transform, ps_src.crs,
+                target_shape, target_transform, target_crs,
+                is_categorical=True, src_nodata=0, dst_nodata=0,
+            )
 
-    # 4. Compute NDWI
-    ndwi_pre = compute_ndwi(pre_green, pre_nir)
-    ndwi_post = compute_ndwi(post_green, post_nir)
+    # 4. Radiometric Calibration & Processing-Baseline Scaling
+    refl_post_g = dn_to_reflectance(post_green_raw, scale_factor=scale_factor, boa_offset=boa_offset, nodata=nodata_post_g)
+    refl_post_n = dn_to_reflectance(post_nir_raw, scale_factor=scale_factor, boa_offset=boa_offset, nodata=nodata_post_n)
+    refl_pre_g = dn_to_reflectance(pre_green_aligned, scale_factor=scale_factor, boa_offset=boa_offset, nodata=nodata_pre_g)
+    refl_pre_n = dn_to_reflectance(pre_nir_aligned, scale_factor=scale_factor, boa_offset=boa_offset, nodata=nodata_pre_n)
 
-    # 5. Classify flood dynamics
+    # 5. Dual-Temporal NDWI Calculation
+    ndwi_post = compute_ndwi(refl_post_g, refl_post_n)
+    ndwi_pre = compute_ndwi(refl_pre_g, refl_pre_n)
+
+    # 6. SCL Quality Masking according to documented policy
+    valid_post = extract_scl_mask(post_scl, target_shape, policy=scl_policy) & ~np.isnan(ndwi_post)
+    valid_pre = extract_scl_mask(pre_scl, target_shape, policy=scl_policy) & ~np.isnan(ndwi_pre)
+
+    # 7. Classify 4-State Flood Dynamics
     flood_mask, stats = classify_flood_dynamics(ndwi_pre, ndwi_post, valid_pre, valid_post, threshold=threshold)
 
-    # Compute metric areas from affine resolution
-    res_x = abs(transform[0])
-    res_y = abs(transform[4])
+    # Compute metric area in km² using projected affine resolution
+    res_x = abs(target_transform[0])
+    res_y = abs(target_transform[4])
     pixel_area_km2 = (res_x * res_y) / 1e6
     stats["pixel_area_km2"] = pixel_area_km2
     stats["new_flood_km2"] = round(stats["new_flood_pixels"] * pixel_area_km2, 4)
@@ -497,16 +734,19 @@ def process_optical_flood_pair(
     stats["dry_land_km2"] = round(stats["dry_land_pixels"] * pixel_area_km2, 4)
     stats["valid_shared_km2"] = round(stats["valid_shared_pixels"] * pixel_area_km2, 4)
     stats["total_scene_km2"] = round(stats["total_pixels"] * pixel_area_km2, 4)
+    stats["scl_policy"] = scl_policy
+    stats["boa_offset"] = boa_offset
+    stats["scale_factor"] = scale_factor
 
-    # 6. Save GeoTIFF products
+    # 8. Save Output GeoTIFFs
     out_flood_mask_path = out_dir / f"{job_id}_flood_mask.tif"
-    prof_mask = profile.copy()
+    prof_mask = target_profile.copy()
     prof_mask.update(driver="GTiff", dtype="uint8", count=1, nodata=255, compress="deflate")
     with rasterio.open(out_flood_mask_path, "w", **prof_mask) as dst:
         dst.write(flood_mask, 1)
 
     out_pre_ndwi_path = out_dir / f"{job_id}_pre_ndwi.tif"
-    prof_float = profile.copy()
+    prof_float = target_profile.copy()
     prof_float.update(driver="GTiff", dtype="float32", count=1, nodata=np.nan, compress="deflate")
     with rasterio.open(out_pre_ndwi_path, "w", **prof_float) as dst:
         dst.write(ndwi_pre.astype(np.float32), 1)
@@ -515,14 +755,14 @@ def process_optical_flood_pair(
     with rasterio.open(out_post_ndwi_path, "w", **prof_float) as dst:
         dst.write(ndwi_post.astype(np.float32), 1)
 
-    # 7. Vectorize newly inundated flood extent (target_value == 1)
-    mp_geom, area_km2, fc_dict = vectorize_mask(flood_mask, transform, crs, target_value=1)
-    # Ensure vector properties record all quality fields
+    # 9. Vectorize Newly Inundated Flood Mask
+    mp_geom, area_km2, fc_dict = vectorize_mask(flood_mask, target_transform, target_crs, target_value=1)
     for feat in fc_dict.get("features", []):
         feat["properties"].update({
             "job_id": job_id,
             "method": "NDWI",
             "threshold": threshold,
+            "scl_policy": scl_policy,
             "new_flood_area_km2": stats["new_flood_km2"],
             "persistent_water_km2": stats["persistent_water_km2"],
             "valid_shared_area_km2": stats["valid_shared_km2"],
@@ -533,15 +773,20 @@ def process_optical_flood_pair(
     with open(out_geojson_path, "w", encoding="utf-8") as f:
         json.dump(fc_dict, f, indent=2)
 
-    # 8. Visualization
+    # 10. Visualization Plot
     out_png_path = out_dir / f"{job_id}_flood_comparison.png"
     plot_optical_comparison(ndwi_pre, ndwi_post, flood_mask, out_png_path, stats=stats)
 
-    # 9. Provenance manifest
+    # 11. Provenance Manifest
     result_manifest = {
         "job_id": job_id,
         "method": "NDWI",
         "threshold": threshold,
+        "scl_policy": scl_policy,
+        "radiometric_calibration": {
+            "scale_factor": scale_factor,
+            "boa_offset": boa_offset,
+        },
         "statistics": stats,
         "artifacts": {
             "flood_mask_tif": str(out_flood_mask_path),
@@ -572,11 +817,12 @@ def main():
     parser = argparse.ArgumentParser(description="FloodLens AI Optical NDWI Flood Detection")
     parser.add_argument("--pre-dir", type=Path, default=Path("data/historical_koshi_optical/pre_flood"))
     parser.add_argument("--post-dir", type=Path, default=Path("data/historical_koshi_optical/post_flood"))
-    parser.add_argument("--out-dir", type=Path, default=Path("ml/gis_processing/downloads"))
+    parser.add_argument("--out-dir", type=Path, default=Path("data/historical_koshi_optical/outputs"))
     parser.add_argument("--threshold", type=float, default=0.00)
+    parser.add_argument("--scl-policy", type=str, default="conservative", choices=["conservative", "permissive"])
+    parser.add_argument("--boa-offset", type=float, default=0.0)
     args = parser.parse_args()
 
-    # Search for files
     def _find(d: Path, pattern: str) -> Optional[Path]:
         matches = list(d.glob(pattern))
         return matches[0] if matches else None
@@ -592,7 +838,7 @@ def main():
         print(f"Error: Missing required bands in {args.pre_dir} or {args.post_dir}")
         sys.exit(1)
 
-    print("Running Optical Pre/Post NDWI Flood Detection...")
+    print(f"Running Optical Pre/Post NDWI Flood Detection (Policy: {args.scl_policy})...")
     res = process_optical_flood_pair(
         pre_green_path=pre_g,
         pre_nir_path=pre_n,
@@ -603,12 +849,17 @@ def main():
         out_dir=args.out_dir,
         threshold=args.threshold,
         job_id="historical_koshi_ndwi",
+        scl_policy=args.scl_policy,
+        boa_offset=args.boa_offset,
     )
     stats = res["statistics"]
     print("\nProcessing complete:")
-    print(f"  Valid shared observation: {stats['valid_shared_km2']:.2f} km² ({stats['valid_shared_pct']}%)")
-    print(f"  Persistent water:          {stats['persistent_water_km2']:.2f} km²")
-    print(f"  Newly inundated flood:     {stats['new_flood_km2']:.2f} km² ({stats['new_flood_pixels']:,} px)")
+    print(f"  Quality Policy:            {stats['scl_policy']}")
+    print(f"  Valid shared observation: {stats['valid_shared_km2']:.4f} km² ({stats['valid_shared_pct']}%)")
+    print(f"  Persistent water:          {stats['persistent_water_km2']:.4f} km²")
+    print(f"  Newly inundated flood:     {stats['new_flood_km2']:.4f} km² ({stats['new_flood_pixels']:,} px)")
+    print(f"  Dry land:                  {stats['dry_land_km2']:.4f} km²")
+    print(f"  Unobserved:                {(stats['total_pixels'] - stats['valid_shared_pixels']) * stats['pixel_area_km2']:.4f} km²")
     print(f"  Artifacts written to:      {args.out_dir}")
 
 

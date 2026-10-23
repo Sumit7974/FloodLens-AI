@@ -21,6 +21,13 @@
   "license": "Copernicus Open Access Policy / Creative Commons CC BY 4.0",
   "provider": "European Space Agency (ESA) Copernicus via Microsoft Planetary Computer",
   "processing_level": "Level-2A Bottom-Of-Atmosphere (BOA) Surface Reflectance",
+  "radiometric_calibration": {
+    "processing_baseline": "02.12",
+    "quantification_value": 10000.0,
+    "boa_add_offset": 0.0,
+    "scl_policy": "conservative",
+    "policy_description": "Excludes classes {0,1,2,3,7,8,9,10,11}. Class 2 (dark features/shadows) masked to avoid false water detection; Class 7 (unclassified) masked to avoid treating ambiguous pixels as dry land."
+  },
   "scenes": {
     "pre_flood": {
       "product_id": "S2A_MSIL2A_20170604T043701_R033_T45RWK_20210209T202032",

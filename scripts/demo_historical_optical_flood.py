@@ -76,6 +76,10 @@ def run_demo():
     try:
         # Create tables if not present
         Base.metadata.create_all(bind=engine)
+        db_engine_name = engine.dialect.name
+        is_postgis = "postgres" in db_engine_name.lower()
+        backend_desc = "PostgreSQL 16 + PostGIS 3.4 (Production Spatial Database)" if is_postgis else f"SQLite Simulation Mode ({db_engine_name.upper()} - Dev/Testing)"
+        print(f"  [DATABASE ENGINE] Using: {backend_desc}")
 
         # 1. Authenticate authority user
         from app.core.security import hash_password
