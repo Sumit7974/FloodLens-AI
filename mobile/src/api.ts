@@ -75,10 +75,13 @@ export async function signOut(): Promise<void> {
   try { await SecureStore.deleteItemAsync(TOKEN_KEY); } catch { /* Logout even if keystore is unavailable. */ }
 }
 
-async function jsonRequest<T>(path: string, init: RequestInit = {}, authenticated = false): Promise<T> {
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+async function executeFetch<T>(path: string, init: RequestInit, authenticated: boolean, timeoutMs: number): Promise<T> {
   if (authenticated && !token) throw new ApiError(401, 'Sign in to continue.');
   const controller = new AbortController();
-  const handle = setTimeout(() => controller.abort(), 12000);
+  const handle = setTimeout(() => controller.abort(), timeoutMs);
+
   try {
     const response = await fetch(`${API_BASE}${path}`, {
       ...init,
@@ -90,6 +93,7 @@ async function jsonRequest<T>(path: string, init: RequestInit = {}, authenticate
         ...init.headers,
       },
     });
+
     const parsed: unknown = await response.json().catch(() => ({}));
     if (!response.ok) {
       if (response.status === 401 && authenticated) await signOut();
@@ -99,12 +103,36 @@ async function jsonRequest<T>(path: string, init: RequestInit = {}, authenticate
       throw new ApiError(response.status, `${message} (HTTP ${response.status})`);
     }
     return parsed as T;
-  } catch (error) {
-    if (error instanceof ApiError) throw error;
-    throw new Error('Cannot reach FloodLens FastAPI. Check the network and configured API address.');
   } finally {
     clearTimeout(handle);
   }
+}
+
+async function jsonRequest<T>(path: string, init: RequestInit = {}, authenticated = false): Promise<T> {
+  const isSafeMethod = !init.method || init.method.toUpperCase() === 'GET';
+  const timeoutMs = isSafeMethod ? 25000 : 25000;
+  const maxAttempts = isSafeMethod ? 2 : 1;
+
+  let lastError: unknown = null;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await executeFetch<T>(path, init, authenticated, timeoutMs);
+    } catch (error) {
+      lastError = error;
+      if (error instanceof ApiError) {
+        // Do not retry client/auth errors (4xx)
+        throw error;
+      }
+      // If it's a safe GET request and we have attempts remaining, back off and retry (Render cold starts)
+      if (attempt < maxAttempts) {
+        await sleep(1500 * attempt);
+        continue;
+      }
+    }
+  }
+
+  if (lastError instanceof ApiError) throw lastError;
+  throw new Error('Cannot reach FloodLens FastAPI. Server may be spinning up from sleep (Render free tier) or network is slow. Please try again.');
 }
 
 export function getHealth(): Promise<{ status: string; database?: { connected: boolean } }> {
@@ -145,6 +173,7 @@ export const getLatestForecast = (locationId: string): Promise<Forecast> =>
   jsonRequest(`/predictions/latest?location_id=${encodeURIComponent(locationId)}`);
 export const getHistoricalEvents = async (): Promise<FloodEvent[]> => {
   const events = await jsonRequest<FloodEvent[]>('/flood-events');
+  if (!Array.isArray(events)) return [];
   return events.filter(e => e.mode === 'historical_demo' || e.mode === 'test');
 };
 export const getObservedExtent = (eventId: string): Promise<ExtentFeature> =>
@@ -152,22 +181,31 @@ export const getObservedExtent = (eventId: string): Promise<ExtentFeature> =>
 export const getAlerts = async (includeDemo = true): Promise<AlertRecord[]> => {
   if (includeDemo && token) {
     try {
-      return await jsonRequest<AlertRecord[]>('/alerts?include_demo=true', {}, true);
+      const res = await jsonRequest<AlertRecord[]>('/alerts?include_demo=true', {}, true);
+      return Array.isArray(res) ? res : [];
     } catch (err) {
       if (err instanceof ApiError && err.status === 403) {
-        return await jsonRequest<AlertRecord[]>('/alerts', {}, Boolean(token));
+        const res = await jsonRequest<AlertRecord[]>('/alerts', {}, Boolean(token));
+        return Array.isArray(res) ? res : [];
       }
       throw err;
     }
   }
-  return jsonRequest<AlertRecord[]>('/alerts', {}, Boolean(token));
+  const res = await jsonRequest<AlertRecord[]>('/alerts', {}, Boolean(token));
+  return Array.isArray(res) ? res : [];
 };
-export const getShelters = async (): Promise<{ shelters: Facility[]; data_notes?: string }> =>
-  jsonRequest('/facilities/shelters');
-export const getHospitals = async (): Promise<{ hospitals: Facility[]; data_notes?: string }> =>
-  jsonRequest('/facilities/hospitals');
-export const getMyRequests = (): Promise<AssistanceRecord[]> =>
-  jsonRequest('/assistance/mine', {}, true);
+export const getShelters = async (): Promise<{ shelters: Facility[]; data_notes?: string }> => {
+  const res = await jsonRequest<{ shelters: Facility[]; data_notes?: string }>('/facilities/shelters');
+  return { shelters: Array.isArray(res?.shelters) ? res.shelters : [], data_notes: res?.data_notes };
+};
+export const getHospitals = async (): Promise<{ hospitals: Facility[]; data_notes?: string }> => {
+  const res = await jsonRequest<{ hospitals: Facility[]; data_notes?: string }>('/facilities/hospitals');
+  return { hospitals: Array.isArray(res?.hospitals) ? res.hospitals : [], data_notes: res?.data_notes };
+};
+export const getMyRequests = async (): Promise<AssistanceRecord[]> => {
+  const res = await jsonRequest<AssistanceRecord[]>('/assistance/mine', {}, true);
+  return Array.isArray(res) ? res : [];
+};
 export const submitHelpRequest = (payload: {
   latitude: number; longitude: number;
   category: AssistanceRecord['category']; details: string; people_count: number;

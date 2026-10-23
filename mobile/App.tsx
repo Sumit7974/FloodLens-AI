@@ -1,10 +1,9 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert as RNAlert, AppState, Pressable, ScrollView, StatusBar,
   StyleSheet, Text, View,
 } from 'react-native';
 import * as Location from 'expo-location';
-import MapView, { Marker, Polygon } from 'react-native-maps';
 import {
   API_BASE, ApiError, getAlerts, getHealth, getHistoricalEvents, getHospitals,
   getLatestForecast, getLocations, getMyRequests, getObservedExtent, getProfile,
@@ -13,6 +12,7 @@ import {
   type FloodEvent, type Forecast, type LocationRecord, type ExtentFeature,
 } from './src/api';
 import { exteriorRings, geometryCenter, pointFromFacility } from './src/geo';
+import { MapViewFallback, type MapMarker, type MapPolygon } from './src/MapViewFallback';
 import {
   Action, Banner, C, Field, Heading, Label, Panel, Pill,
   Placeholder, evidenceAge, formatUtc,
@@ -95,7 +95,7 @@ function MyAreaScreen({ selectedId, setSelectedId, locations, setLocations, go }
   locations: LocationRecord[]; setLocations: (v: LocationRecord[]) => void;
   go: (s: Screen) => void;
 }) {
-  const [health, setHealth] = useState<string>('Checking…');
+  const [health, setHealth] = useState<string>('Checking backend…');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const refresh = useCallback(async () => {
@@ -103,13 +103,15 @@ function MyAreaScreen({ selectedId, setSelectedId, locations, setLocations, go }
     const [healthRes, locationRes] = await Promise.allSettled([getHealth(), getLocations()]);
     setHealth(healthRes.status === 'fulfilled'
       ? `FastAPI ${healthRes.value.status} · Database ${healthRes.value.database?.connected ? 'connected' : 'unavailable'}`
-      : 'Backend unreachable');
+      : 'Backend unreachable (server may be starting)');
     if (locationRes.status === 'fulfilled') {
       setLocations(locationRes.value);
-      if (!selectedId && locationRes.value.length) setSelectedId(locationRes.value[0].id);
+      if (locationRes.value.length > 0) {
+        setSelectedId(locationRes.value[0].id);
+      }
     } else { setError(errorText(locationRes.reason)); }
     setBusy(false);
-  }, [selectedId, setSelectedId, setLocations]);
+  }, [setLocations, setSelectedId]);
   useEffect(() => { void refresh(); }, [refresh]);
   const selected = locations.find(l => l.id === selectedId);
   return <View style={styles.stack}>
@@ -123,7 +125,7 @@ function MyAreaScreen({ selectedId, setSelectedId, locations, setLocations, go }
     </Panel>
     {error && <ErrorPanel message={error} retry={() => void refresh()} />}
     <Label muted>Available mapped locations ({locations.length})</Label>
-    {locations.length === 0 && <Placeholder>No locations have been imported. Member 2's GIS package must be connected to FastAPI first.</Placeholder>}
+    {locations.length === 0 && !busy && !error && <Placeholder>No locations have been imported. Member 2's GIS package must be connected to FastAPI first.</Placeholder>}
     {locations.slice(0, 75).map(location => <Pressable
       key={location.id}
       onPress={() => setSelectedId(location.id)}
@@ -189,6 +191,7 @@ function RiskMapScreen({ location }: { location: LocationRecord | undefined }) {
   const [extent, setExtent] = useState<ExtentFeature | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
   useEffect(() => {
     let live = true;
     getHistoricalEvents().then(data => {
@@ -198,6 +201,7 @@ function RiskMapScreen({ location }: { location: LocationRecord | undefined }) {
     }).catch(err => { if (live) setError(errorText(err)); });
     return () => { live = false; };
   }, []);
+
   useEffect(() => {
     if (!eventId) return;
     let live = true; setLoading(true); setExtent(null); setError('');
@@ -206,8 +210,34 @@ function RiskMapScreen({ location }: { location: LocationRecord | undefined }) {
       .finally(() => { if (live) setLoading(false); });
     return () => { live = false; };
   }, [eventId]);
-  const rings = exteriorRings(extent?.geometry);
-  const center = geometryCenter(extent?.geometry) || geometryCenter(location?.geometry);
+
+  const rings = useMemo(() => exteriorRings(extent?.geometry), [extent?.geometry]);
+  const center = useMemo(() => geometryCenter(rings) || geometryCenter(location?.geometry), [rings, location?.geometry]);
+
+  // Simplify/cap polygons for performance: take up to 80 largest rings by point count
+  const displayPolygons = useMemo((): MapPolygon[] => {
+    if (!rings.length) return [];
+    const sorted = [...rings].sort((a, b) => b.length - a.length).slice(0, 80);
+    return sorted.map(r => ({
+      coordinates: r,
+      strokeColor: C.aqua,
+      fillColor: 'rgba(20,179,191,0.28)',
+      strokeWidth: 2,
+    }));
+  }, [rings]);
+
+  const markers = useMemo((): MapMarker[] => {
+    if (!location) return [];
+    const locCenter = geometryCenter(location.geometry);
+    if (!locCenter) return [];
+    return [{
+      coordinate: locCenter,
+      title: location.name,
+      description: 'Mapped location, not current GPS position',
+      color: C.aqua,
+    }];
+  }, [location]);
+
   return <View style={styles.stack}>
     <Heading>Historical flood map</Heading>
     <Banner warning>The polygons below come from the backend's recorded historical satellite extent, not real-time flooding, forecast depth, or a navigation recommendation.</Banner>
@@ -226,35 +256,20 @@ function RiskMapScreen({ location }: { location: LocationRecord | undefined }) {
     {error && <ErrorPanel message={error} />}
     {!loading && !extent && !error && <Placeholder>Select a historical event with an imported observed flood extent.</Placeholder>}
     {extent && <Panel>
-      <Label>Mapped area: {extent.properties.area_km2} km²</Label>
-      <Label muted>Observation: {formatUtc(extent.properties.observed_at)}</Label>
-      <Label muted>Method: {extent.properties.method} · Confidence: {extent.properties.confidence == null ? 'Not reported' : extent.properties.confidence.toFixed(2)}</Label>
+      <Label>Mapped area: {extent.properties?.area_km2 ?? 'Unknown'} km²</Label>
+      <Label muted>Observation: {formatUtc(extent.properties?.observed_at || '')}</Label>
+      <Label muted>Method: {extent.properties?.method ?? 'Satellite'} · Confidence: {extent.properties?.confidence == null ? 'Not reported' : extent.properties.confidence.toFixed(2)}</Label>
       {rings.length === 0 && <Label style={{ color: C.yellow }}>The backend extent does not contain displayable polygons.</Label>}
     </Panel>}
     {center && rings.length > 0 ? <View style={styles.mapWrap}>
-      <MapView
+      <MapViewFallback
         key={eventId}
-        style={styles.map}
-        initialRegion={{
-          latitude: center.latitude, longitude: center.longitude,
-          latitudeDelta: 0.4, longitudeDelta: 0.4,
-        }}
-      >
-        {rings.map((ring, i) => <Polygon
-          key={i}
-          coordinates={ring}
-          strokeColor={C.aqua}
-          fillColor="rgba(20,179,191,0.28)"
-          strokeWidth={2}
-        />)}
-        {location && geometryCenter(location.geometry) && <Marker
-          coordinate={geometryCenter(location.geometry)!}
-          title={location.name}
-          description="Mapped location, not current GPS position"
-        />}
-      </MapView>
+        center={center}
+        polygons={displayPolygons}
+        markers={markers}
+      />
     </View> : <Placeholder>Map unavailable until a historical GeoJSON extent with valid coordinates is loaded.</Placeholder>}
-    <Label muted>Visual-only 2D map. No suggested routes or real-time road safety guarantees.</Label>
+    <Label muted>Visual-only interactive map. No suggested routes or real-time road safety guarantees.</Label>
   </View>;
 }
 
@@ -312,8 +327,24 @@ function FacilitiesScreen() {
     setLoading(false);
   }, []);
   useEffect(() => { void reload(); }, [reload]);
+
   const rows = mode === 'shelters' ? shelters : hospitals;
-  const mapped = rows.filter(f => pointFromFacility(f.latitude, f.longitude));
+  const mapped = useMemo(() => rows.filter(f => pointFromFacility(f.latitude, f.longitude)), [rows]);
+
+  const markers = useMemo((): MapMarker[] => {
+    return mapped.map(f => ({
+      id: f.id,
+      coordinate: { latitude: f.latitude!, longitude: f.longitude! },
+      title: f.name,
+      description: `Verification: ${f.verification_status}`,
+      color: f.verification_status === 'verified' ? C.green : C.yellow,
+    }));
+  }, [mapped]);
+
+  const center = useMemo(() => {
+    return markers.length > 0 ? markers[0].coordinate : null;
+  }, [markers]);
+
   return <View style={styles.stack}>
     <Heading>Places and facilities</Heading>
     <Banner warning>Presence on this map is not proof that a facility is open, staffed, accessible or safe during a flood. Contact local authorities to confirm.</Banner>
@@ -324,17 +355,11 @@ function FacilitiesScreen() {
     <Action title="Refresh facilities" busy={loading} secondary onPress={() => void reload()} />
     {error && <ErrorPanel message={error} retry={() => void reload()} />}
     {mapped.length > 0 && <View style={styles.mapWrap}>
-      <MapView key={mode} style={styles.map} initialRegion={{
-        latitude: mapped[0].latitude!, longitude: mapped[0].longitude!,
-        latitudeDelta: 0.45, longitudeDelta: 0.45,
-      }}>
-        {mapped.map(f => <Marker key={f.id}
-          coordinate={{ latitude: f.latitude!, longitude: f.longitude! }}
-          title={f.name}
-          description={`Verification: ${f.verification_status}`}
-          pinColor={f.verification_status === 'verified' ? C.green : C.yellow}
-        />)}
-      </MapView>
+      <MapViewFallback
+        key={mode}
+        center={center}
+        markers={markers}
+      />
     </View>}
     {rows.length === 0 && !error && !loading && <Placeholder>No facilities have been imported for this category.</Placeholder>}
     {rows.map(f => <Panel key={f.id}>
@@ -508,7 +533,7 @@ export default function App() {
     return () => sub.remove();
   }, []);
   const selected = locations.find(l => l.id === selectedId);
-  const changeScreen = (next: Screen) => { setScreen(next); setRefreshKey(k => k + 1); };
+  const changeScreen = (next: Screen) => { setScreen(next); };
   const onAuth = (next: CitizenProfile | null) => {
     setProfile(next);
     if (next) changeScreen('requests');
@@ -570,7 +595,6 @@ const styles = StyleSheet.create({
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   chip: { paddingVertical: 7, paddingHorizontal: 10, borderRadius: 10, backgroundColor: C.surface, borderColor: C.border, borderWidth: 1 },
   mapWrap: { height: 300, borderColor: C.border, borderRadius: 14, borderWidth: 1, overflow: 'hidden', backgroundColor: C.surface },
-  map: { width: '100%', height: '100%' },
   footer: { paddingTop: 14, borderTopWidth: 1, borderColor: C.border, gap: 5 },
   footerText: { fontSize: 10, color: C.muted },
 });
