@@ -148,6 +148,7 @@ async def import_flood_extent(
         area_km2=extent_in.area_km2,
         source_scene_ids=extent_in.source_scene_ids,
         confidence=extent_in.confidence,
+        provenance=extent_in.provenance,
         geometry=geometry_element,
     )
     db.add(new_extent)
@@ -174,6 +175,7 @@ async def import_flood_extent(
         area_km2=new_extent.area_km2,
         source_scene_ids=new_extent.source_scene_ids or [],
         confidence=new_extent.confidence,
+        provenance=new_extent.provenance,
         geometry=geometry_to_geojson(new_extent.geometry),
     )
 
@@ -190,7 +192,7 @@ async def get_flood_extent(event_id: str, db: Session = Depends(get_db)) -> Floo
     extent = (
         db.query(FloodExtent)
         .filter(FloodExtent.event_id == event_id)
-        .order_by(FloodExtent.observed_at.desc())
+        .order_by(FloodExtent.observed_at.desc(), FloodExtent.created_at.desc())
         .first()
     )
     if not extent:
@@ -206,6 +208,7 @@ async def get_flood_extent(event_id: str, db: Session = Depends(get_db)) -> Floo
         area_km2=extent.area_km2,
         source_scene_ids=extent.source_scene_ids or [],
         confidence=extent.confidence,
+        provenance=extent.provenance,
         geometry=geometry_to_geojson(extent.geometry),
     )
 
@@ -221,7 +224,7 @@ async def get_flood_extent_geojson(event_id: str, db: Session = Depends(get_db))
     extent = (
         db.query(FloodExtent)
         .filter(FloodExtent.event_id == event_id)
-        .order_by(FloodExtent.observed_at.desc())
+        .order_by(FloodExtent.observed_at.desc(), FloodExtent.created_at.desc())
         .first()
     )
     if not extent:
@@ -237,6 +240,7 @@ async def get_flood_extent_geojson(event_id: str, db: Session = Depends(get_db))
             "method": extent.method,
             "area_km2": extent.area_km2,
             "confidence": extent.confidence,
+            "provenance": extent.provenance,
             "source_scene_ids": extent.source_scene_ids,
         },
         "geometry": gj,
@@ -261,7 +265,7 @@ async def get_affected_settlements(
     extent = (
         db.query(FloodExtent)
         .filter(FloodExtent.event_id == event_id)
-        .order_by(FloodExtent.observed_at.desc())
+        .order_by(FloodExtent.observed_at.desc(), FloodExtent.created_at.desc())
         .first()
     )
 
