@@ -5,11 +5,19 @@
   "build": {
     "preview": {
       "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://floodlens-backend-4pt5.onrender.com",
+        "EXPO_PUBLIC_ENABLE_TEST_SOS": "true"
+      },
       "android": {
         "buildType": "apk"
       }
     },
     "production": {
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://floodlens-backend-4pt5.onrender.com",
+        "EXPO_PUBLIC_ENABLE_TEST_SOS": "true"
+      },
       "android": {
         "buildType": "app-bundle"
       }

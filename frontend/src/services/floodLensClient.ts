@@ -32,7 +32,7 @@ export class FloodLensClient {
   private static instance: FloodLensClient;
   private readonly baseUrl: string;
   private readonly useMockData: boolean;
-  private readonly requestTimeoutMs = 4500;
+  private readonly requestTimeoutMs = 20000;
 
   private constructor() {
     const rawBackendUrl = import.meta.env.VITE_BACKEND_URL;

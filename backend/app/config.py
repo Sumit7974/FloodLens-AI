@@ -1,6 +1,6 @@
 """Application configuration using Pydantic Settings."""
 from functools import lru_cache
-from typing import List, Union
+from typing import List, Optional, Union
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -43,15 +43,18 @@ class Settings(BaseSettings):
         "http://localhost:8081",
         "http://127.0.0.1:3000",
         "http://127.0.0.1:5173",
+        "https://floodlens-dashboard.vercel.app",
     ]
 
     # Operational Mode: historical_demo, test, live_observation, model_estimate
     operational_mode: str = "historical_demo"
 
     # Geospatial & Storage
+    floodlens_repo_root: Optional[str] = None
     data_dir: str = "./data"
     raster_storage_path: str = "./data/rasters"
     reports_storage_path: str = "./data/reports"
+    satellite_output_dir: Optional[str] = None
 
     # Logging
     log_level: str = "INFO"
@@ -59,12 +62,25 @@ class Settings(BaseSettings):
     # Demo Participant Allowlist (authenticated user IDs only; email authorization is forbidden)
     demo_participant_ids: Union[List[str], str] = Field(
         default_factory=lambda: [
+            "usr_citizen_demo",
             "user_demo_participant_01",
             "user_test_participant_01",
             "demo_participant_field_01",
         ],
         description="Allowlist of authenticated user IDs authorized for demo simulation alerts",
     )
+
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def normalize_database_url(cls, v: str) -> str:
+        """Normalize cloud hosted postgres connection URLs (Render, Neon, Supabase, Heroku)."""
+        if isinstance(v, str):
+            v = v.strip()
+            if v.startswith("postgres://"):
+                v = "postgresql+psycopg2://" + v[len("postgres://"):]
+            elif v.startswith("postgresql://") and not v.startswith("postgresql+"):
+                v = "postgresql+psycopg2://" + v[len("postgresql://"):]
+        return v
 
     @field_validator("cors_origins", "demo_participant_ids", mode="before")
     @classmethod

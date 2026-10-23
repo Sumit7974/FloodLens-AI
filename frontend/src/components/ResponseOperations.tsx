@@ -94,6 +94,7 @@ export const ResponseOperations: React.FC<ResponseOperationsProps> = ({
   };
 
   const handleUpdateLifecycle = async (status: AuthorityHandoffStatus, note: string) => {
+    if (!selectedRequest) return;
     const saved = await onUpdateRequestStatus(selectedRequest.id, status, note);
     notify(saved ? `Demo/test status recorded for #${selectedRequest.id}; no dispatch.` : `NOT SAVED: #${selectedRequest.id}. Review backend authentication.`);
   };
@@ -105,6 +106,7 @@ export const ResponseOperations: React.FC<ResponseOperationsProps> = ({
 
   // Generate standardized incident packet for DEOC
   const generateDeocPacket = () => {
+    if (!selectedRequest) return null;
     return {
       incident_id: selectedRequest.id,
       timestamp_logged: selectedRequest.timestamp,
@@ -249,7 +251,11 @@ export const ResponseOperations: React.FC<ResponseOperationsProps> = ({
           </div>
 
           <GeospatialTerrainMap
-            center={[selectedRequest.coordinates[1], selectedRequest.coordinates[0]]}
+            center={
+              selectedRequest
+                ? [selectedRequest.coordinates[1], selectedRequest.coordinates[0]]
+                : (currentScene.center || [87.05, 26.65])
+            }
             zoom={11.5}
             pitch={55}
             bearing={-15}
@@ -353,6 +359,11 @@ export const ResponseOperations: React.FC<ResponseOperationsProps> = ({
                     </div>
                   );
                 })}
+                {filteredRequests.length === 0 && (
+                  <div className="p-4 text-center text-slate-400 font-mono text-xs border border-dashed border-[#1e3a5f]/60 rounded-lg">
+                    No citizen assistance requests in current queue.
+                  </div>
+                )}
               </div>
 
               {/* Selected Incident Authority Handoff Console */}

@@ -51,6 +51,7 @@ export function App() {
 
   // Backend Connection Health State
   const [isBackendConnected, setIsBackendConnected] = useState(false);
+  const [backendConnectionStatus, setBackendConnectionStatus] = useState<'connected' | 'connecting' | 'unreachable'>('connecting');
   const [authSession, setAuthSession] = useState<AuthSession | null>(null);
   const [websocketConnected, setWebsocketConnected] = useState(false);
   const [dataSyncError, setDataSyncError] = useState('');
@@ -80,7 +81,10 @@ export function App() {
     let isMounted = true;
     const probe = async () => {
       const ok = await ApiService.checkHealth();
-      if (isMounted) setIsBackendConnected(ok);
+      if (isMounted) {
+        setIsBackendConnected(ok);
+        setBackendConnectionStatus(ApiService.getConnectionStatus());
+      }
     };
     probe();
     const interval = setInterval(probe, 25000);
@@ -367,7 +371,7 @@ export function App() {
         onTriggerSimulationEvent={() => DEMO_MODE ? triggerSimulationEvent() : showToast('Surge injection is disabled in backend mode. This screen never starts real alerts.')}
       />
 
-      <BackendAccessPanel session={authSession} backendOnline={isBackendConnected} websocketOnline={websocketConnected} onSessionChange={handleAuthSessionChange} />
+      <BackendAccessPanel session={authSession} backendOnline={isBackendConnected} websocketOnline={websocketConnected} connectionStatus={backendConnectionStatus} onSessionChange={handleAuthSessionChange} />
       {!DEMO_MODE && (
         <div className="border-b border-sky-800/50 bg-slate-950 px-5 py-2 text-xs text-amber-200" role="status">
           Displayed overview metrics, benchmark maps and depth values are illustrative until a verified historical GIS/ML dataset is loaded.

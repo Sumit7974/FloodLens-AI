@@ -6,7 +6,7 @@ import {
   Radio,
 } from 'lucide-react';
 import type { Alert } from '../types';
-import { InteractiveHoverButton } from '@/components/ui/interactive-hover-button';
+import { InteractiveHoverButton } from './ui/interactive-hover-button';
 
 interface WarningBulletinsProps {
   alerts: Alert[];
@@ -14,11 +14,51 @@ interface WarningBulletinsProps {
 }
 
 export const WarningBulletins: React.FC<WarningBulletinsProps> = ({
-  alerts,
+  alerts = [],
   onBroadcastRevision,
 }) => {
   const [activeAlertIndex, setActiveAlertIndex] = useState(0);
-  const latestAlert = alerts[activeAlertIndex] || alerts[0];
+
+  // If no alerts exist, render a clean and properly styled empty state
+  if (!alerts || alerts.length === 0) {
+    return (
+      <div className="rounded-lg bg-[#071326]/85 border border-[#1e3a5f]/80 overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.5)] flex flex-col backdrop-blur-xl">
+        {/* Header */}
+        <div className="px-4 py-3.5 border-b border-[#1e3a5f]/80 bg-[#091a32]/85 flex items-center justify-between">
+          <div>
+            <h3 className="font-display text-sm sm:text-base tracking-[1.4px] uppercase font-bold text-white flex items-center gap-2.5">
+              <Radio className="w-4 h-4 text-slate-400" />
+              Civil Warning Bulletins
+              <span className="font-mono text-xs text-slate-400 font-bold">
+                // 0 BROADCAST
+              </span>
+            </h3>
+            <p className="font-mono text-xs text-[#94a3b8] uppercase mt-0.5 font-bold tracking-wider">
+              PUBLIC EMERGENCY DIRECTIVES
+            </p>
+          </div>
+        </div>
+
+        {/* Empty State Body */}
+        <div className="p-8 flex flex-col items-center justify-center text-center space-y-3 flex-1">
+          <div className="p-3.5 rounded-full bg-slate-900/80 border border-slate-700/60 text-slate-400">
+            <Radio className="w-6 h-6 text-slate-400" />
+          </div>
+          <div className="space-y-1">
+            <h4 className="font-display text-sm font-bold text-slate-200 uppercase tracking-wider">
+              No Demo Bulletins Available
+            </h4>
+            <p className="font-mono text-xs text-slate-400 max-w-sm leading-relaxed">
+              No civil warning bulletins are currently active in the authority log. Issue an alert or create a draft via the Alert Dispatcher to broadcast.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const safeIndex = activeAlertIndex >= 0 && activeAlertIndex < alerts.length ? activeAlertIndex : 0;
+  const latestAlert = alerts[safeIndex] || alerts[0];
 
   return (
     <div className="rounded-lg bg-[#071326]/85 border border-[#1e3a5f]/80 overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.5)] flex flex-col backdrop-blur-xl">
@@ -45,7 +85,7 @@ export const WarningBulletins: React.FC<WarningBulletinsProps> = ({
                 key={idx}
                 onClick={() => setActiveAlertIndex(idx)}
                 className={`px-2.5 py-1 text-xs font-mono uppercase font-bold transition-all rounded ${
-                  activeAlertIndex === idx
+                  safeIndex === idx
                     ? 'bg-[#e86e25] text-white shadow-sm'
                     : 'text-[#94a3b8] hover:text-white'
                 }`}

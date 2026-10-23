@@ -60,53 +60,100 @@ Required environment variables:
 
 ---
 
-## B. Service Startup & Verification
+---
 
-### 1. Database Startup (PostgreSQL 16 + PostGIS 3.4)
-Using Docker Compose:
+## B. Production & Container Deployment (Task 2 Architecture)
+
+FloodLens AI packages a single, multi-purpose container image that can execute as:
+1. **FastAPI Web API Service** (serving HTTP REST, OpenAPI docs, and WebSockets)
+2. **Database Migration Runner** (executing Alembic migrations deterministically)
+3. **Durable Satellite Background Worker** (polling and processing GIS optical/SAR jobs with atomic leases)
+
+### 1. Image Build & Specifications
+- **Build Context:** Repository root (`.`)
+- **Dockerfile Path:** `Dockerfile` (or `backend/Dockerfile`)
+- **System Dependencies:** Python 3.11, PostgreSQL client, GDAL, GEOS, PROJ C-libraries
+- **Working Directory:** `/app/backend`
+- **Environment Roots:** `FLOODLENS_REPO_ROOT=/app`, `PYTHONPATH=/app/backend:/app`
+
+Build command:
 ```bash
-docker compose up -d db
+docker build -t floodlens-backend:latest -f Dockerfile .
 ```
-Wait for PostgreSQL to become healthy:
+
+### 2. Service Commands & Execution Modes
+
+| Service Role | Startup Command | Port / Protocol | Notes |
+|---|---|---|---|
+| **Web API Server** | `uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}` | `8000` (or dynamic `$PORT`) | Production mode without `--reload` |
+| **Database Migrations** | `alembic upgrade head` | None (one-shot exit 0) | Run before replicas or workers start |
+| **Satellite Worker Daemon** | `python -m app.workers.satellite_worker --interval 2.0` | None (background worker) | Atomic leases & crash recovery |
+
+### 3. Required Persistent Storage & Volumes
+
+| Volume / Mount | Container Path | Purpose |
+|---|---|---|
+| `floodlens_pgdata` | `/var/lib/postgresql/data` | Persistent PostgreSQL 16 + PostGIS 3.4 database storage |
+| `floodlens_satellite_outputs` | `/app/backend/app/storage/satellite_outputs` | Persisted satellite raster masks, GeoJSON extents, and comparison PNGs |
+| `./data` (Host Mount) | `/app/data` | Provides local GIS layers and authentic Sentinel-2 GeoTIFF inputs without committing binary rasters to Git |
+
+### 4. Deploying with Docker Compose (Turnkey Prototype)
+
+The repository provides a complete, multi-container orchestration in `docker-compose.yml`:
 ```bash
+# 1. Copy and customize environment file (optional; defaults work for local demo)
+cp .env.example .env
+
+# 2. Build and start services (db, migration, backend, satellite-worker)
+docker compose up -d
+
+# 3. View service status
 docker compose ps
 ```
+The Compose setup:
+- Launches `db` (`postgis/postgis:16-3.4`) and validates `pg_isready` healthcheck.
+- Executes `migration` (`alembic upgrade head`) deterministically to head revision `0003_satellite_worker_lease`.
+- Starts `backend` and `satellite-worker` only after migrations successfully complete.
+- Shares `floodlens_satellite_outputs` and `./data` across both `backend` and `satellite-worker`.
 
-### 2. Database Migrations (Alembic)
-Run migrations to initialize the PostGIS extension and all schema tables:
-```bash
-cd backend
-alembic upgrade head
-```
-To verify the migration status:
-```bash
-alembic current
-```
+### 5. Deploying to Container-Hosting Cloud Platforms (Render, Railway, Fly.io, etc.)
 
-### 3. FastAPI Service Startup
-Start the backend ASGI server:
-```bash
-cd backend
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-```
+When deploying to a container hosting provider with managed PostgreSQL/PostGIS (e.g. Neon, Supabase, Render Postgres, AWS RDS):
+1. **Database:** Provision PostgreSQL 16 with PostGIS extension (`CREATE EXTENSION IF NOT EXISTS postgis;`).
+2. **Web Service Configuration:**
+   - **Build Context:** `.` (repository root)
+   - **Dockerfile Path:** `Dockerfile`
+   - **Start Command:** `uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}`
+   - **Pre-deploy / Migration Command:** `alembic upgrade head`
+   - **Healthcheck Path:** `/health` (or `/ready`)
+3. **Background Worker Service Configuration:**
+   - Deploy from the same Docker image / repository.
+   - **Start Command:** `python -m app.workers.satellite_worker --interval 2.0`
+4. **Environment Variables Required:**
+   ```ini
+   ENVIRONMENT=production
+   DEBUG=false
+   DATABASE_URL=postgresql+psycopg2://<user>:<password>@<db-host>:<db-port>/<db-name>
+   JWT_SECRET=<random-32-plus-character-secret>
+   CORS_ORIGINS=https://your-frontend-domain.com
+   OPERATIONAL_MODE=historical_demo
+   FLOODLENS_REPO_ROOT=/app
+   PYTHONPATH=/app/backend:/app
+   ```
+5. **Making Historical Sentinel-2 Rasters Available:**
+   - In container hosting, mount a persistent disk at `/app/data` and copy/rsync `data/historical_koshi_optical/` into `/app/data/historical_koshi_optical/`.
+   - Alternatively, mount an S3/GCS bucket or pre-populate the deployment volume using a setup script.
 
-### 4. Health & Readiness Verification
-Check service liveness and database connection latency:
+### 6. Health & Readiness Verification
 ```bash
 # Liveness probe
-curl -s http://localhost:8000/api/v1/health
+curl -fsS http://localhost:8000/health
 
-# Readiness probe (verifies database & PostGIS availability)
-curl -s http://localhost:8000/api/v1/ready
-```
-Expected readiness response (`200 OK`):
-```json
-{
-  "status": "ready",
-  "database": "connected",
-  "postgis": "available",
-  "timestamp": "2026-10-20T14:30:00Z"
-}
+# Readiness probe (verifies database & PostGIS connectivity)
+curl -fsS http://localhost:8000/ready
+
+# API v1 Health probe
+curl -fsS http://localhost:8000/api/v1/health
 ```
 
 ---

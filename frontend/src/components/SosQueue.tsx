@@ -146,6 +146,11 @@ export const SosQueue: React.FC<SosQueueProps> = ({
               </div>
             );
           })}
+          {topRequests.length === 0 && (
+            <div className="p-8 text-center text-slate-400 font-mono text-xs">
+              No active citizen assistance requests in queue.
+            </div>
+          )}
         </div>
       </div>
 

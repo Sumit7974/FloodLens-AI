@@ -7,8 +7,9 @@ from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-# Add backend directory to sys.path
+# Add backend and repo root directories to sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 # Configure test environment
 os.environ["ENVIRONMENT"] = "testing"
@@ -88,8 +89,9 @@ def is_postgres() -> bool:
 
 @pytest.fixture
 def client(db_session: Session) -> Generator[TestClient, None, None]:
+    """TestClient configured with overridden get_db dependency and test worker session hook."""
+    from app.services.satellite_processor import set_test_db_session
 
-    """TestClient configured with overridden get_db dependency."""
     app = create_application()
 
     def override_get_db():
@@ -99,11 +101,14 @@ def client(db_session: Session) -> Generator[TestClient, None, None]:
             pass
 
     app.dependency_overrides[get_db] = override_get_db
+    set_test_db_session(db_session)
 
-    with TestClient(app) as test_client:
-        yield test_client
-
-    app.dependency_overrides.clear()
+    try:
+        with TestClient(app) as test_client:
+            yield test_client
+    finally:
+        set_test_db_session(None)
+        app.dependency_overrides.clear()
 
 
 @pytest.fixture

@@ -179,24 +179,38 @@ async function request<T>(path: string, init: RequestInit = {}, allowInDemo = fa
   headers.set('Accept', 'application/json');
   if (init.body != null) headers.set('Content-Type', 'application/json');
   if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
-  const abort = new AbortController();
-  const timeout = setTimeout(() => abort.abort(), 8000);
-  try {
-    const response = await fetch(`${API_URL}${path}`, { ...init, headers, signal: abort.signal });
-    if (!response.ok) {
-      const body = await response.json().catch(() => ({})) as {
-        error?: { message?: string; code?: string; details?: unknown };
-        detail?: string;
-      };
-      if (response.status === 401) clearSession();
-      const code = body.error?.code || (response.status === 401 ? 'UNAUTHORIZED' : response.status === 403 ? 'FORBIDDEN' : response.status === 404 ? 'NOT_FOUND' : response.status === 409 ? 'CONFLICT' : `HTTP_${response.status}`);
-      const message = body.error?.message || (typeof body.detail === 'string' ? body.detail : null) || `HTTP ${response.status}`;
-      throw new BackendRequestError(response.status, message, code);
+  const isGet = !init.method || init.method.toUpperCase() === 'GET';
+  const maxAttempts = isGet ? 2 : 1;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const abort = new AbortController();
+    // 25-second timeout handles Render free-tier cold-start latency gracefully
+    const timeout = setTimeout(() => abort.abort(), 25000);
+    try {
+      const response = await fetch(`${API_URL}${path}`, { ...init, headers, signal: abort.signal });
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({})) as {
+          error?: { message?: string; code?: string; details?: unknown };
+          detail?: string;
+        };
+        if (response.status === 401) clearSession();
+        const code = body.error?.code || (response.status === 401 ? 'UNAUTHORIZED' : response.status === 403 ? 'FORBIDDEN' : response.status === 404 ? 'NOT_FOUND' : response.status === 409 ? 'CONFLICT' : `HTTP_${response.status}`);
+        const message = body.error?.message || (typeof body.detail === 'string' ? body.detail : null) || `HTTP ${response.status}`;
+        throw new BackendRequestError(response.status, message, code);
+      }
+      return (await response.json()) as T;
+    } catch (err) {
+      if (err instanceof BackendRequestError) throw err;
+      if (attempt < maxAttempts) {
+        await new Promise(r => setTimeout(r, 2000));
+        continue;
+      }
+      throw err;
+    } finally {
+      clearTimeout(timeout);
     }
-    return (await response.json()) as T;
-  } finally {
-    clearTimeout(timeout);
   }
+  throw new Error('Request failed after retries');
 }
 
 export async function login(email: string, password: string): Promise<AuthSession> {

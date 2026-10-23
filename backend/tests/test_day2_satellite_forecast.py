@@ -232,24 +232,75 @@ def test_list_and_get_satellite_scenes(client: TestClient, authority_token: str)
 
 
 def test_satellite_job_workflow(client: TestClient, authority_token: str):
-    """Authority POST /satellite/jobs explicitly reports that processing is not implemented/connected."""
+    """Authority POST /satellite/jobs dispatches durable background processing job."""
+    # 1. Register valid optical scene
+    scene_id = f"scene_opt_flow_{uuid.uuid4().hex[:6]}"
+    reg_res = client.post(
+        "/api/v1/satellite/scenes",
+        json={
+            "id": scene_id,
+            "provider": "ESA Copernicus",
+            "sensor": "Sentinel-2",
+            "modality": "optical",
+            "captured_at": datetime.now(timezone.utc).isoformat(),
+            "cloud_quality": 0.05,
+            "asset_ref": "backend/tests/fixtures/optical_flood_sample.geojson",
+        },
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+    assert reg_res.status_code == status.HTTP_201_CREATED
+
+    # 2. Dispatch valid NDWI processing job with explicit flood event
+    evt_id = f"evt_flow_{uuid.uuid4().hex[:6]}"
+    client.post(
+        "/api/v1/flood-events",
+        json={
+            "id": evt_id,
+            "region_id": "nepal_terai",
+            "name": "Koshi River Historical Workflow",
+            "start_at": datetime.now(timezone.utc).isoformat(),
+        },
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+
     job_payload = {
-        "method": "MNDWI",
-        "scene_id": "scene_s2_001",
-        "baseline_scene_id": "scene_s2_pre",
-        "threshold": 0.12,
+        "event_id": evt_id,
+        "method": "NDWI",
+        "scene_id": scene_id,
+        "threshold": 0.10,
     }
     create_res = client.post(
         "/api/v1/satellite/jobs",
         json=job_payload,
         headers={"Authorization": f"Bearer {authority_token}"},
     )
-    assert create_res.status_code == status.HTTP_501_NOT_IMPLEMENTED
-    err = create_res.json()["error"]
-    assert err["code"] == "PROCESSING_NOT_IMPLEMENTED"
-    assert "not connected" in err["message"] or "not implemented" in err["message"]
+    assert create_res.status_code == status.HTTP_202_ACCEPTED
+    body = create_res.json()
+    assert "job_id" in body
+    assert body["status"] == "QUEUED"
+    job_id = body["job_id"]
 
-    # Unknown job IDs must continue to return 404
+    # 3. Poll job status with authorization
+    poll_res = client.get(
+        f"/api/v1/satellite/jobs/{job_id}",
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+    assert poll_res.status_code == status.HTTP_200_OK
+    poll_body = poll_res.json()
+    assert poll_body["job_id"] == job_id
+    assert poll_body["method"] == "NDWI"
+    assert poll_body["status"] in ("QUEUED", "RUNNING", "COMPLETED")
+
+    # 4. Unsupported method MNDWI is rejected with 400
+    mndwi_res = client.post(
+        "/api/v1/satellite/jobs",
+        json={"event_id": evt_id, "method": "MNDWI", "scene_id": scene_id},
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+    assert mndwi_res.status_code == status.HTTP_400_BAD_REQUEST
+    assert mndwi_res.json()["error"]["code"] == "UNSUPPORTED_PROCESSING_METHOD"
+
+    # 5. Unknown job IDs must continue to return 404
     status_res = client.get("/api/v1/satellite/jobs/sat_job_nonexistent_999")
     assert status_res.status_code == status.HTTP_404_NOT_FOUND
     assert status_res.json()["error"]["code"] == "JOB_NOT_FOUND"

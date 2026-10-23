@@ -35,6 +35,7 @@ from app.schemas.health import DatabaseHealth, HealthResponse, ReadinessCheck, R
 from app.schemas.location import LocationCreate, LocationResponse
 from app.schemas.satellite import (
     SatelliteJobCreate,
+    SatelliteJobDetailResponse,
     SatelliteJobResponse,
     SatelliteSceneCreate,
     SatelliteSceneResponse,
@@ -88,6 +89,7 @@ __all__ = [
     "RouteAssessResponse",
     "RouteHazardIntersection",
     "SatelliteJobCreate",
+    "SatelliteJobDetailResponse",
     "SatelliteJobResponse",
     "SatelliteSceneCreate",
     "SatelliteSceneResponse",

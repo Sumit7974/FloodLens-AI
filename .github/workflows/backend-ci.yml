@@ -36,6 +36,8 @@ jobs:
       TEST_DATABASE_URL: postgresql+psycopg2://floodlens_user:floodlens_secure_password_test_12345@localhost:5432/floodlens_test_db
       JWT_SECRET: ci-secure-jwt-secret-testing-32-chars-floodlens
       DEBUG: "false"
+      DEMO_AUTHORITY_PASSWORD: CIPostGISTestAuthPassword123!
+      DEMO_CITIZEN_PASSWORD: CIPostGISTestCitizenPassword123!
 
     steps:
       - name: Checkout repository
@@ -95,7 +97,14 @@ jobs:
       - name: Run full pytest suite against PostGIS
         working-directory: backend
         run: |
-          pytest -v --tb=short
+          pytest -v --ignore=tests/test_postgis_seed_verification.py --tb=short
+
+      - name: Verify PostGIS seeding, idempotency, and historical demo integration
+        working-directory: backend
+        run: |
+          python scripts/seed_historical_demo_data.py
+          python scripts/seed_historical_demo_data.py
+          pytest -v tests/test_postgis_seed_verification.py
 
       - name: Test live FastAPI startup & readiness probe
         working-directory: backend
