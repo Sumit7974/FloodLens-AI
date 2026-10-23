@@ -156,6 +156,7 @@ async def create_satellite_job(
             "baseline_scene_id": job_spec.baseline_scene_id,
             "method": normalized_method,
             "event_id": job_spec.event_id,
+            **(job_spec.parameters or {}),
         },
     )
     db.add(new_job)

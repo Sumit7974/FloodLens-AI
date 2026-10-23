@@ -1,0 +1,101 @@
+{
+  "event": {
+    "name": "August 2017 Nepal Terai Monsoon Flooding",
+    "study_area": "Koshi River Basin & Eastern Terai Plains (Morang/Jhapa districts, Nepal)",
+    "aoi_utm45n": {
+      "left": 584980.0,
+      "bottom": 2905000.0,
+      "right": 604980.0,
+      "top": 2925000.0
+    },
+    "aoi_wgs84": {
+      "west": 87.8512,
+      "south": 26.2625,
+      "east": 88.0519,
+      "north": 26.4421
+    },
+    "area_km2": 400.0,
+    "crs": "EPSG:32645",
+    "spatial_resolution_meters": 10.0
+  },
+  "license": "Copernicus Open Access Policy / Creative Commons CC BY 4.0",
+  "provider": "European Space Agency (ESA) Copernicus via Microsoft Planetary Computer",
+  "processing_level": "Level-2A Bottom-Of-Atmosphere (BOA) Surface Reflectance",
+  "scenes": {
+    "pre_flood": {
+      "product_id": "S2A_MSIL2A_20170604T043701_R033_T45RWK_20210209T202032",
+      "captured_at": "2017-06-04T04:37:01.026000Z",
+      "directory": "data\\historical_koshi_optical\\pre_flood",
+      "files": {
+        "B03": {
+          "filename": "pre_flood_B03.tif",
+          "sha256": "92547b953af153a97ea6374ac35a33103926e226a3c548baf7376199bf9005f4",
+          "size_bytes": 5183839,
+          "band_name": "Green (560 nm)",
+          "resolution_m": 10.0
+        },
+        "B08": {
+          "filename": "pre_flood_B08.tif",
+          "sha256": "433e8b5a7f0da4edb633e357395f222220190c2fa34fc91ac5f00b70674387c9",
+          "size_bytes": 5578211,
+          "band_name": "Near Infrared (842 nm)",
+          "resolution_m": 10.0
+        },
+        "SCL": {
+          "filename": "pre_flood_SCL.tif",
+          "sha256": "6b259d7a5c6b345ddce069380ee1a9e87dbae390b88e81f62af0a6148dca2ccb",
+          "size_bytes": 141577,
+          "band_name": "Scene Classification Layer",
+          "resolution_m": 10.0,
+          "classes_present": [
+            4,
+            5,
+            6,
+            7,
+            8,
+            9
+          ]
+        }
+      }
+    },
+    "post_flood": {
+      "product_id": "S2A_MSIL2A_20170823T043701_R033_T45RWK_20210201T071627",
+      "captured_at": "2017-08-23T04:37:01.026000Z",
+      "directory": "data\\historical_koshi_optical\\post_flood",
+      "files": {
+        "B03": {
+          "filename": "post_flood_B03.tif",
+          "sha256": "972eb27b660755c62c928a5175bddcee7760c386fb4c752164895fec5284c954",
+          "size_bytes": 6069110,
+          "band_name": "Green (560 nm)",
+          "resolution_m": 10.0
+        },
+        "B08": {
+          "filename": "post_flood_B08.tif",
+          "sha256": "a4f653e940de0ba7f6c996cbe795b1085e430b3840c684b36ff16c6fe0583733",
+          "size_bytes": 6285404,
+          "band_name": "Near Infrared (842 nm)",
+          "resolution_m": 10.0
+        },
+        "SCL": {
+          "filename": "post_flood_SCL.tif",
+          "sha256": "5e2ea24f33fd1eb53fb0f1913bb61387fdd7ab0649d664bb1ad8c68514d5d711",
+          "size_bytes": 218276,
+          "band_name": "Scene Classification Layer",
+          "resolution_m": 10.0,
+          "classes_present": [
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10
+          ]
+        }
+      }
+    }
+  }
+}

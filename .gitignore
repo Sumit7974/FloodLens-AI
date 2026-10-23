@@ -52,6 +52,8 @@ htmlcov/
 data/rasters/
 data/tiles/
 data/cache/
+data/**/*.tif
+data/**/*.tiff
 
 # OS
 .DS_Store

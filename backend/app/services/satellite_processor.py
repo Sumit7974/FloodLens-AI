@@ -360,6 +360,7 @@ def validate_satellite_job_parameters(
         )
 
     # If baseline is supplied, validate its asset strictly
+    resolved_base: Optional[Path] = None
     if baseline_scene:
         b_safe, resolved_base = is_safe_path(baseline_scene.asset_ref)
         if not b_safe or resolved_base is None:
@@ -383,6 +384,41 @@ def validate_satellite_job_parameters(
                 message=f"Baseline scene asset reference '{baseline_scene.asset_ref}' cannot be accessed or does not exist.",
                 details={"asset_ref": baseline_scene.asset_ref},
             )
+
+    # 9. Optical NDWI band directory validation
+    if method == "NDWI" and resolved_target.is_dir():
+        target_g = list(resolved_target.glob("*B03*.tif")) + list(resolved_target.glob("*green*.tif"))
+        target_n = list(resolved_target.glob("*B08*.tif")) + list(resolved_target.glob("*nir*.tif"))
+        if not target_g or not target_n:
+            raise FloodLensAPIException(
+                status_code=400,
+                code="MISSING_INPUT_BANDS",
+                message=f"Target scene directory '{target_scene.asset_ref}' is missing required Sentinel-2 bands (B03 Green, B08 NIR).",
+            )
+
+        allow_single = False
+        if hasattr(job_spec, "parameters") and isinstance(job_spec.parameters, dict):
+            allow_single = bool(job_spec.parameters.get("allow_single_scene"))
+
+        if not baseline_scene and not allow_single:
+            raise FloodLensAPIException(
+                status_code=400,
+                code="MISSING_BASELINE_SCENE",
+                message=(
+                    "Optical new-flood detection (NDWI) from satellite bands requires both target (post-flood) "
+                    "and baseline (pre-flood) optical acquisitions to distinguish new inundation from persistent water."
+                ),
+            )
+
+        if baseline_scene and resolved_base and resolved_base.is_dir():
+            base_g = list(resolved_base.glob("*B03*.tif")) + list(resolved_base.glob("*green*.tif"))
+            base_n = list(resolved_base.glob("*B08*.tif")) + list(resolved_base.glob("*nir*.tif"))
+            if not base_g or not base_n:
+                raise FloodLensAPIException(
+                    status_code=400,
+                    code="MISSING_INPUT_BANDS",
+                    message=f"Baseline scene directory '{baseline_scene.asset_ref}' is missing required Sentinel-2 bands (B03 Green, B08 NIR).",
+                )
 
     return target_scene, baseline_scene, flood_event, resolved_target
 
@@ -530,9 +566,10 @@ def _process_optical_bands(
     threshold: float,
     job_id: str,
 ) -> Tuple[MultiPolygon, float, str, Optional[str], Optional[str]]:
-    """Compute fresh NDWI from Green (B03) and NIR (B08) GeoTIFF bands.
+    """Compute calibrated NDWI from Green (B03) and NIR (B08) bands with SCL quality masking.
 
-    Validates CRS, dimension alignment, NoData handling, and radiometric bounds.
+    Validates CRS, geospatial transforms, NoData handling, cloud/shadow masking,
+    and isolates newly inundated floodwater from persistent water.
     """
     try:
         import rasterio
@@ -544,79 +581,106 @@ def _process_optical_bands(
     if not scene_dir_or_file.is_dir():
         return _process_raster_mask(scene_dir_or_file, "NDWI")
 
-    green_files = list(scene_dir_or_file.glob("*B03*.tif")) + list(scene_dir_or_file.glob("*green*.tif"))
-    nir_files = list(scene_dir_or_file.glob("*B08*.tif")) + list(scene_dir_or_file.glob("*nir*.tif"))
-    if not green_files or not nir_files:
+    from ml.gis_processing.calculate_ndwi import process_optical_flood_pair
+
+    # Locate target bands
+    target_g = list(scene_dir_or_file.glob("*B03*.tif")) + list(scene_dir_or_file.glob("*green*.tif"))
+    target_n = list(scene_dir_or_file.glob("*B08*.tif")) + list(scene_dir_or_file.glob("*nir*.tif"))
+    target_s = list(scene_dir_or_file.glob("*SCL*.tif")) + list(scene_dir_or_file.glob("*scl*.tif"))
+
+    if not target_g or not target_n:
         raise FileNotFoundError(
             f"Required Sentinel-2 bands (B03 Green, B08 NIR) not found in directory: {scene_dir_or_file}"
         )
-    green_path = green_files[0]
-    nir_path = nir_files[0]
 
-    with rasterio.open(green_path) as g_src:
+    # Dual-temporal new-flood detection when baseline is provided
+    if baseline_path and baseline_path.is_dir():
+        base_g = list(baseline_path.glob("*B03*.tif")) + list(baseline_path.glob("*green*.tif"))
+        base_n = list(baseline_path.glob("*B08*.tif")) + list(baseline_path.glob("*nir*.tif"))
+        base_s = list(baseline_path.glob("*SCL*.tif")) + list(baseline_path.glob("*scl*.tif"))
+
+        if not base_g or not base_n:
+            raise FileNotFoundError(
+                f"Required Sentinel-2 baseline bands (B03 Green, B08 NIR) not found in directory: {baseline_path}"
+            )
+
+        result_dict = process_optical_flood_pair(
+            pre_green_path=base_g[0],
+            pre_nir_path=base_n[0],
+            post_green_path=target_g[0],
+            post_nir_path=target_n[0],
+            pre_scl_path=base_s[0] if base_s else None,
+            post_scl_path=target_s[0] if target_s else None,
+            out_dir=OUTPUT_DIR,
+            threshold=threshold,
+            job_id=job_id,
+        )
+
+        merged = result_dict["multipolygon"]
+        area_km2 = result_dict["area_km2"]
+        poly_ref = result_dict["artifacts"]["flood_extent_geojson"]
+        raster_ref = result_dict["artifacts"]["flood_mask_tif"]
+        provenance = "SYNTHETIC_TEST_FIXTURE" if _is_synthetic_fixture(scene_dir_or_file) else "PROCESSED_OPTICAL"
+        return merged, area_km2, provenance, poly_ref, raster_ref
+
+    # Otherwise, single-scene water extent analysis
+    with rasterio.open(target_g[0]) as g_src:
         green = g_src.read(1).astype(np.float32)
         profile = g_src.profile.copy()
         transform = g_src.transform
         crs = g_src.crs
         nodata_g = g_src.nodata
-        shape_g = g_src.shape
+        target_shape = g_src.shape
 
-    with rasterio.open(nir_path) as n_src:
+    with rasterio.open(target_n[0]) as n_src:
         nir = n_src.read(1).astype(np.float32)
         crs_n = n_src.crs
         shape_n = n_src.shape
         nodata_n = n_src.nodata
 
-    # Scientific validation: CRS & Dimension alignment check
     if crs != crs_n:
         raise ValueError(f"CRS mismatch between Green ({crs}) and NIR ({crs_n}) bands.")
-    if shape_g != shape_n:
-        raise ValueError(f"Dimension mismatch between Green {shape_g} and NIR {shape_n} bands.")
+    if target_shape != shape_n:
+        raise ValueError(f"Dimension mismatch between Green {target_shape} and NIR {shape_n} bands.")
 
-    # NoData handling
     if nodata_g is not None:
         green[green == nodata_g] = np.nan
     if nodata_n is not None:
         nir[nir == nodata_n] = np.nan
+    green[green < 0] = np.nan
+    nir[nir < 0] = np.nan
 
     denom = green + nir
     with np.errstate(divide="ignore", invalid="ignore"):
-        ndwi_post = np.where(denom == 0, np.nan, (green - nir) / denom)
-    ndwi_post = np.clip(ndwi_post, -1.0, 1.0)
+        ndwi = np.where(denom <= 0, np.nan, (green - nir) / denom)
+    ndwi = np.clip(ndwi, -1.0, 1.0)
 
-    # Baseline comparison if baseline is supplied
-    if baseline_path and baseline_path.is_dir():
-        b_green_files = list(baseline_path.glob("*B03*.tif")) + list(baseline_path.glob("*green*.tif"))
-        b_nir_files = list(baseline_path.glob("*B08*.tif")) + list(baseline_path.glob("*nir*.tif"))
-        if b_green_files and b_nir_files:
-            with rasterio.open(b_green_files[0]) as bg_src:
-                bg = bg_src.read(1).astype(np.float32)
-                bg_crs = bg_src.crs
-                bg_shape = bg_src.shape
-            with rasterio.open(b_nir_files[0]) as bn_src:
-                bn = bn_src.read(1).astype(np.float32)
+    # SCL quality masking for single scene
+    valid_mask = ~np.isnan(ndwi) & (green > 0)
+    if target_s:
+        with rasterio.open(target_s[0]) as s_src:
+            scl = s_src.read(1)
+            if scl.shape != target_shape:
+                scl = np.repeat(np.repeat(scl, target_shape[0] // scl.shape[0], axis=0), target_shape[1] // scl.shape[1], axis=1)
+            unsuitable = {0, 1, 3, 8, 9, 10, 11}
+            valid_mask = valid_mask & ~np.isin(scl, list(unsuitable))
 
-            if bg_crs == crs and bg_shape == shape_g:
-                b_denom = bg + bn
-                with np.errstate(divide="ignore", invalid="ignore"):
-                    ndwi_pre = np.where(b_denom == 0, np.nan, (bg - bn) / b_denom)
-                is_flood = (ndwi_post > threshold) & (ndwi_post > ndwi_pre)
-            else:
-                is_flood = ndwi_post > threshold
-        else:
-            is_flood = ndwi_post > threshold
-    else:
-        is_flood = ndwi_post > threshold
+    is_water = (ndwi > threshold) & valid_mask
+    mask = np.where(~valid_mask, 255, np.where(is_water, 1, 0)).astype(np.uint8)
 
-    mask = np.where(np.isnan(ndwi_post), 255, np.where(is_flood, 1, 0)).astype(np.uint8)
-
-    # Save output GeoTIFF mask artifact
+    # Save artifacts
     out_mask_path = OUTPUT_DIR / f"{job_id}_flood_mask.tif"
     profile.update(driver="GTiff", dtype="uint8", count=1, nodata=255, compress="deflate")
     with rasterio.open(out_mask_path, "w", **profile) as dst:
         dst.write(mask, 1)
 
-    # Vectorize flooded pixels
+    out_ndwi_path = OUTPUT_DIR / f"{job_id}_post_ndwi.tif"
+    prof_f = profile.copy()
+    prof_f.update(driver="GTiff", dtype="float32", count=1, nodata=np.nan, compress="deflate")
+    with rasterio.open(out_ndwi_path, "w", **prof_f) as dst:
+        dst.write(ndwi.astype(np.float32), 1)
+
+    # Vectorize
     wgs84_polys = []
     flood_idx = (mask == 1).astype(np.uint8)
     for geom_dict, val in shapes(flood_idx, mask=(flood_idx == 1), transform=transform):
@@ -641,7 +705,6 @@ def _process_optical_bands(
     merged = normalize_to_multipolygon(MultiPolygon(wgs84_polys))
     area_km2 = compute_metric_area_km2(merged)
 
-    # Save GeoJSON vector artifact
     out_geojson_path = OUTPUT_DIR / f"{job_id}_flood_extent.geojson"
     fc = {
         "type": "FeatureCollection",
@@ -653,6 +716,8 @@ def _process_optical_bands(
                     "job_id": job_id,
                     "method": "NDWI",
                     "area_km2": area_km2,
+                    "is_baseline_subtracted": False,
+                    "analysis_type": "SINGLE_SCENE_WATER_EXTENT",
                     "processed_at": datetime.now(timezone.utc).isoformat(),
                 },
             }
@@ -661,7 +726,7 @@ def _process_optical_bands(
     with open(out_geojson_path, "w", encoding="utf-8") as f:
         json.dump(fc, f)
 
-    provenance = "SYNTHETIC_TEST_FIXTURE" if _is_synthetic_fixture(scene_dir_or_file) else "PROCESSED_OPTICAL"
+    provenance = "SYNTHETIC_TEST_FIXTURE" if _is_synthetic_fixture(scene_dir_or_file) else "PROCESSED_OPTICAL_SINGLE_SCENE"
     return merged, area_km2, provenance, str(out_geojson_path), str(out_mask_path)
 
 
