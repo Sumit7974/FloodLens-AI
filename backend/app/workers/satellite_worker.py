@@ -312,26 +312,69 @@ def execute_job(
     db: Session,
     worker_id: Optional[str] = None,
 ) -> bool:
-    """Execute GIS processing pipeline for a claimed satellite job with heartbeating."""
+    """Execute GIS processing pipeline for a claimed satellite job with heartbeating and ownership safety.
+
+    Guarantees:
+    - Worker heartbeats periodically during execution; if lease/ownership was lost, aborts immediately.
+    - Final completion uses an atomic conditional UPDATE verifying (status == 'RUNNING' and worker_id == active_worker).
+      If the lease expired and another worker reclaimed the job, the completion is aborted and changes rolled back.
+    - Failure state handling verifies ownership before updating retry counts or marking FAILED.
+    """
     from app.services.satellite_processor import execute_satellite_pipeline, sanitize_error
 
     active_worker = worker_id or job.worker_id or generate_worker_id()
     logger.info("Executing satellite processing job '%s' (method=%s, worker=%s)", job.id, job.method, active_worker)
 
+    def _heartbeat_callback() -> None:
+        ok = heartbeat_job(db, job.id, active_worker)
+        if not ok:
+            raise RuntimeError(
+                f"Worker '{active_worker}' lost ownership or lease of job '{job.id}'. Aborting execution."
+            )
+
     try:
         output_extent_id, provenance = execute_satellite_pipeline(
             job,
             db,
-            heartbeat_cb=lambda: heartbeat_job(db, job.id, active_worker),
+            heartbeat_cb=_heartbeat_callback,
         )
+
+        # Atomic final completion: verify worker STILL owns the RUNNING job before committing
+        now = datetime.now(timezone.utc)
+        stmt = (
+            update(SatelliteJob)
+            .where(
+                SatelliteJob.id == job.id,
+                SatelliteJob.status == "RUNNING",
+                SatelliteJob.worker_id == active_worker,
+            )
+            .values(
+                status="COMPLETED",
+                progress_percent=100.0,
+                completed_at=now,
+                output_extent_id=output_extent_id,
+                provenance=provenance,
+                error_message=None,
+                lease_expires_at=None,
+            )
+        )
+        res = db.execute(stmt)
+        if res.rowcount == 0:
+            db.rollback()
+            logger.warning(
+                "Worker '%s' lost ownership of job '%s' before completion; completion aborted without mutating job.",
+                active_worker, job.id,
+            )
+            return False
+
+        db.commit()
         job.status = "COMPLETED"
         job.progress_percent = 100.0
-        job.completed_at = datetime.now(timezone.utc)
+        job.completed_at = now
         job.output_extent_id = output_extent_id
         job.provenance = provenance
         job.error_message = None
         job.lease_expires_at = None
-        db.commit()
         logger.info(
             "Job '%s' completed successfully; output extent '%s' persisted (provenance=%s).",
             job.id, output_extent_id, provenance,
@@ -344,25 +387,70 @@ def execute_job(
         logger.exception("Execution error in satellite job '%s': %s", job.id, sanitized_msg)
 
         now = datetime.now(timezone.utc)
-        job.retry_count += 1
+        # Verify ownership atomically: only transition if active_worker still owns this RUNNING job
+        job_in_db = (
+            db.query(SatelliteJob)
+            .filter(
+                SatelliteJob.id == job.id,
+                SatelliteJob.status == "RUNNING",
+                SatelliteJob.worker_id == active_worker,
+            )
+            .first()
+        )
+        if not job_in_db:
+            logger.warning(
+                "Worker '%s' cannot update failure status for job '%s': ownership was lost or reclaimed by another worker.",
+                active_worker, job.id,
+            )
+            return False
+
+        new_retry = job_in_db.retry_count + 1
+        if new_retry < job_in_db.max_retries:
+            target_status = "QUEUED"
+            err_msg = (
+                f"Execution attempt {new_retry}/{job_in_db.max_retries} failed: {sanitized_msg}. "
+                "Re-queued for retry."
+            )
+            completed_time = None
+        else:
+            target_status = "FAILED"
+            err_msg = sanitized_msg
+            completed_time = now
+
+        stmt = (
+            update(SatelliteJob)
+            .where(
+                SatelliteJob.id == job.id,
+                SatelliteJob.status == "RUNNING",
+                SatelliteJob.worker_id == active_worker,
+            )
+            .values(
+                status=target_status,
+                retry_count=new_retry,
+                worker_id=None,
+                lease_expires_at=None,
+                heartbeat_at=None,
+                error_message=err_msg,
+                completed_at=completed_time,
+            )
+        )
+        res = db.execute(stmt)
+        if res.rowcount == 0:
+            db.rollback()
+            logger.warning(
+                "Worker '%s' lost ownership of job '%s' during failure transition; aborting.",
+                active_worker, job.id,
+            )
+            return False
+
+        db.commit()
+        job.status = target_status
+        job.retry_count = new_retry
+        job.error_message = err_msg
+        job.completed_at = completed_time
         job.worker_id = None
         job.lease_expires_at = None
         job.heartbeat_at = None
-
-        if job.retry_count < job.max_retries:
-            job.status = "QUEUED"
-            job.error_message = (
-                f"Execution attempt {job.retry_count}/{job.max_retries} failed: {sanitized_msg}. "
-                "Re-queued for retry."
-            )
-            logger.warning("Re-queued job '%s' for retry (%d/%d)", job.id, job.retry_count, job.max_retries)
-        else:
-            job.status = "FAILED"
-            job.completed_at = now
-            job.error_message = sanitized_msg
-            logger.error("Job '%s' marked FAILED after %d retries.", job.id, job.max_retries)
-
-        db.commit()
         return False
 
 

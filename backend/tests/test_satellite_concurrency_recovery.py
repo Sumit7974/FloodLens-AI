@@ -750,3 +750,175 @@ def test_synthetic_fixture_provenance_preserved_in_downstream_api_responses(
     gj = geojson_res.json()
     assert gj["type"] == "Feature"
     assert gj["properties"]["provenance"] == "SYNTHETIC_TEST_FIXTURE"
+
+
+# ==============================================================================
+# 13. Worker Ownership Safety: Expired Worker Cannot Complete Reclaimed Job
+# ==============================================================================
+def test_expired_worker_cannot_complete_reclaimed_job(
+    db_session: Session,
+    concurrency_event: FloodEvent,
+    concurrency_scene: SatelliteScene,
+):
+    """When a worker's lease expires and another worker reclaims the job, the original
+    worker's final completion attempt MUST abort cleanly without overwriting the job's
+    status, worker_id, or committing orphaned results."""
+    now = datetime.now(timezone.utc)
+    job = SatelliteJob(
+        id=f"sat_job_reclaimed_{uuid.uuid4().hex[:6]}",
+        event_id=concurrency_event.id,
+        scene_id=concurrency_scene.id,
+        method="NDWI",
+        status="RUNNING",
+        worker_id="slow-worker-1",
+        started_at=now - timedelta(seconds=120),
+        heartbeat_at=now - timedelta(seconds=90),
+        lease_expires_at=now - timedelta(seconds=30),  # Lease expired
+        retry_count=0,
+        max_retries=2,
+        requested_by="safety_test@floodlens.org",
+    )
+    db_session.add(job)
+    db_session.commit()
+
+    # Worker 2 reclaims the job via recovery scan and claims it
+    recover_interrupted_jobs(db_session, now=now)
+    claimed_worker_2 = claim_job(db_session, job_id=job.id, worker_id="fast-worker-2")
+    assert claimed_worker_2 is not None
+    assert claimed_worker_2.worker_id == "fast-worker-2"
+    assert claimed_worker_2.status == "RUNNING"
+
+    # Slow worker 1 finishes its computation and attempts to commit completion
+    success = execute_job(job, db_session, worker_id="slow-worker-1")
+    assert success is False
+
+    # The job must remain RUNNING under fast-worker-2, NOT overwritten by slow-worker-1
+    db_session.expire_all()
+    refreshed = db_session.query(SatelliteJob).filter(SatelliteJob.id == job.id).first()
+    assert refreshed.status == "RUNNING"
+    assert refreshed.worker_id == "fast-worker-2"
+    assert refreshed.output_extent_id is None
+
+
+# ==============================================================================
+# 14. Worker Ownership Safety: Expired Worker Cannot Fail Reclaimed Job
+# ==============================================================================
+def test_expired_worker_cannot_fail_reclaimed_job(
+    db_session: Session,
+    concurrency_event: FloodEvent,
+):
+    """If a slow/crashed worker encounters an error after another worker has reclaimed
+    the job, the slow worker MUST NOT increment retry_count or mark the job FAILED."""
+    now = datetime.now(timezone.utc)
+    job = SatelliteJob(
+        id=f"sat_job_no_fail_hijack_{uuid.uuid4().hex[:6]}",
+        event_id=concurrency_event.id,
+        scene_id="scene_invalid_will_error",
+        method="NDWI",
+        status="RUNNING",
+        worker_id="slow-failing-worker",
+        started_at=now - timedelta(seconds=120),
+        heartbeat_at=now - timedelta(seconds=90),
+        lease_expires_at=now - timedelta(seconds=30),
+        retry_count=0,
+        max_retries=2,
+        requested_by="safety_test@floodlens.org",
+    )
+    db_session.add(job)
+    db_session.commit()
+
+    # Reclaimed by worker 2
+    recover_interrupted_jobs(db_session, now=now)
+    claim_job(db_session, job_id=job.id, worker_id="new-worker-2")
+
+    # Slow worker fails and tries to transition to QUEUED/FAILED
+    success = execute_job(job, db_session, worker_id="slow-failing-worker")
+    assert success is False
+
+    # Verify slow worker did NOT alter new-worker-2's ownership or retry_count
+    db_session.expire_all()
+    refreshed = db_session.query(SatelliteJob).filter(SatelliteJob.id == job.id).first()
+    assert refreshed.status == "RUNNING"
+    assert refreshed.worker_id == "new-worker-2"
+    assert refreshed.retry_count == 1  # Incremented once during recovery, not by slow worker
+
+
+# ==============================================================================
+# 15. Heartbeat Safety: Reclaimed Job Rejects Heartbeat and Aborts
+# ==============================================================================
+def test_heartbeat_fails_and_aborts_when_job_reclaimed(
+    db_session: Session,
+    concurrency_event: FloodEvent,
+    concurrency_scene: SatelliteScene,
+):
+    """heartbeat_job() returns False if the job is no longer owned by the calling worker."""
+    now = datetime.now(timezone.utc)
+    job = SatelliteJob(
+        id=f"sat_job_hb_reclaimed_{uuid.uuid4().hex[:6]}",
+        event_id=concurrency_event.id,
+        scene_id=concurrency_scene.id,
+        method="NDWI",
+        status="RUNNING",
+        worker_id="old-worker",
+        started_at=now - timedelta(seconds=100),
+        lease_expires_at=now - timedelta(seconds=10),
+        retry_count=0,
+        max_retries=2,
+        requested_by="tester@floodlens.org",
+    )
+    db_session.add(job)
+    db_session.commit()
+
+    # Job is recovered
+    recover_interrupted_jobs(db_session, now=now)
+
+    # Old worker attempts to heartbeat
+    ok = heartbeat_job(db_session, job.id, worker_id="old-worker")
+    assert ok is False
+
+
+# ==============================================================================
+# 16. Long Computation Heartbeat Extends Lease Beyond 60s
+# ==============================================================================
+def test_long_gis_computation_heartbeat_extends_lease(
+    db_session: Session,
+    concurrency_event: FloodEvent,
+    concurrency_scene: SatelliteScene,
+):
+    """Periodic heartbeats keep a long computation (exceeding initial lease) safe from recovery."""
+    now = datetime.now(timezone.utc)
+    worker_id = "long-computation-worker"
+
+    # Start with a short 30-second lease
+    job = SatelliteJob(
+        id=f"sat_job_long_{uuid.uuid4().hex[:6]}",
+        event_id=concurrency_event.id,
+        scene_id=concurrency_scene.id,
+        method="NDWI",
+        status="RUNNING",
+        worker_id=worker_id,
+        started_at=now,
+        heartbeat_at=now,
+        lease_expires_at=now + timedelta(seconds=30),
+        retry_count=0,
+        max_retries=2,
+        requested_by="tester@floodlens.org",
+    )
+    db_session.add(job)
+    db_session.commit()
+
+    # Simulate computation advancing 25 seconds: heartbeat sent
+    t1 = now + timedelta(seconds=25)
+    ok1 = heartbeat_job(db_session, job.id, worker_id=worker_id, extend_seconds=60)
+    assert ok1 is True
+
+    # At t=40s (past initial 30s lease expiration), recovery scan runs
+    t2 = now + timedelta(seconds=40)
+    recovered = recover_interrupted_jobs(db_session, now=t2)
+    assert recovered == 0  # Still protected!
+
+    db_session.expire_all()
+    refreshed = db_session.query(SatelliteJob).filter(SatelliteJob.id == job.id).first()
+    assert refreshed.status == "RUNNING"
+    assert refreshed.worker_id == worker_id
+

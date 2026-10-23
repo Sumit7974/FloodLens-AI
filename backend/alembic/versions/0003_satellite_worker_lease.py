@@ -1,6 +1,6 @@
 """Add worker leasing, heartbeat columns and flood extent provenance
 
-Revision ID: 0003_satellite_worker_concurrency
+Revision ID: 0003_satellite_worker_lease
 Revises: 0002_satellite_jobs
 Create Date: 2026-10-23 14:00:00.000000
 
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = "0003_satellite_worker_concurrency"
+revision: str = "0003_satellite_worker_lease"
 down_revision: Union[str, None] = "0002_satellite_jobs"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None

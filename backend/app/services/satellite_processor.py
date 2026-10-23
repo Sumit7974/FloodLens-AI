@@ -932,6 +932,9 @@ def execute_satellite_pipeline(
 
     geom_element = to_wkt_element(mapping(geom), expected_type="MULTIPOLYGON", srid=4326)
 
+    if heartbeat_cb:
+        heartbeat_cb()
+
     # Idempotent upsert matching exact deterministic result identity
     existing_extent = db.query(FloodExtent).filter(FloodExtent.id == extent_id).first()
 
