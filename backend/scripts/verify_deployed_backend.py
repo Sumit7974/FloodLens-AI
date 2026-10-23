@@ -127,19 +127,25 @@ def verify_deployment(base_url: str) -> bool:
 
     # 5. POST /api/v1/auth/login (Authority Token)
     print("\n[5] Testing Authority Authentication (/api/v1/auth/login)...")
-    login_payload = {
-        "email": "authority_lead@floodlens.org",
-        "password": "FloodLens2026!",
-    }
-    code, data, _ = _http_request(f"{base}/api/v1/auth/login", method="POST", data=login_payload)
+    auth_email = os.getenv("DEMO_AUTHORITY_EMAIL", "authority_lead@floodlens.org")
+    auth_password = os.getenv("DEMO_AUTHORITY_PASSWORD")
     auth_token = None
-    if code == 200 and isinstance(data, dict) and "access_token" in data:
-        auth_token = data["access_token"]
-        print(f"    PASS: Authenticated successfully! Token issued: {auth_token[:15]}...")
-        results["POST /api/v1/auth/login"] = "PASS"
-    else:
-        print(f"    FAIL: HTTP {code} -> {data}")
+    if not auth_password:
+        print("    FAIL: DEMO_AUTHORITY_PASSWORD environment variable not set. Please set DEMO_AUTHORITY_PASSWORD.")
         results["POST /api/v1/auth/login"] = "FAIL"
+    else:
+        login_payload = {
+            "email": auth_email,
+            "password": auth_password,
+        }
+        code, data, _ = _http_request(f"{base}/api/v1/auth/login", method="POST", data=login_payload)
+        if code == 200 and isinstance(data, dict) and "access_token" in data:
+            auth_token = data["access_token"]
+            print(f"    PASS: Authenticated successfully! Token issued: {auth_token[:15]}...")
+            results["POST /api/v1/auth/login"] = "PASS"
+        else:
+            print(f"    FAIL: HTTP {code} -> {data}")
+            results["POST /api/v1/auth/login"] = "FAIL"
 
     auth_headers = {"Authorization": f"Bearer {auth_token}"} if auth_token else {}
 
@@ -221,9 +227,9 @@ def verify_deployment(base_url: str) -> bool:
     }
     code, data, _ = _http_request(f"{base}/api/v1/routes/assess", method="POST", headers=auth_headers, data=route_payload)
     if code == 200 and isinstance(data, dict):
-        status_val = data.get("status")
-        assessment = data.get("assessment")
-        print(f"    PASS: HTTP 200 OK -> status='{status_val}', assessment='{assessment}'")
+        status_val = data.get("route_status") or data.get("assessment_status") or data.get("status")
+        assessment = data.get("assessment") or data.get("hazards_detected")
+        print(f"    PASS: HTTP 200 OK -> route_status='{status_val}', hazards_count={len(assessment) if isinstance(assessment, list) else assessment}")
         results["POST /api/v1/routes/assess"] = "PASS"
     else:
         print(f"    FAIL: HTTP {code} -> {data}")

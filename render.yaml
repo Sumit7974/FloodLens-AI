@@ -8,7 +8,7 @@ databases:
     user: floodlens_user
     plan: free
     region: oregon
-    postgresMajorVersion: 16
+    postgresMajorVersion: "16"
 
 services:
   - type: web
@@ -46,3 +46,7 @@ services:
         value: /app
       - key: PYTHONPATH
         value: /app/backend:/app
+      - key: DEMO_AUTHORITY_PASSWORD
+        sync: false
+      - key: DEMO_CITIZEN_PASSWORD
+        sync: false
