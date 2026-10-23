@@ -10,15 +10,22 @@ interface Props {
   session: AuthSession | null;
   backendOnline: boolean;
   websocketOnline: boolean;
+  connectionStatus?: 'connected' | 'connecting' | 'unreachable';
   onSessionChange: (session: AuthSession | null) => void;
 }
 
 /** Explicitly distinguish historical fixture mode from authenticated FastAPI access. */
-export function BackendAccessPanel({ session, backendOnline, websocketOnline, onSessionChange }: Props) {
+export function BackendAccessPanel({ session, backendOnline, websocketOnline, connectionStatus, onSessionChange }: Props) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+
+  const statusLabel = backendOnline
+    ? 'CONNECTED'
+    : connectionStatus === 'connecting'
+      ? 'CONNECTING (WAITING FOR RENDER COLD START)...'
+      : 'UNREACHABLE (RETRYING)';
 
   async function signIn(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -54,7 +61,7 @@ export function BackendAccessPanel({ session, backendOnline, websocketOnline, on
     <aside className="border-b border-sky-800/40 bg-slate-950/95 px-5 py-2.5 text-xs text-slate-300" aria-label="Backend connection and authority authentication">
       <div className="flex flex-wrap items-center gap-3">
         <span className="font-mono text-[11px]">
-          FASTAPI: {backendOnline ? 'CONNECTED' : 'UNREACHABLE'} ·
+          FASTAPI: {statusLabel} ·
           AUTHORITY: {session ? session.role.toUpperCase() : 'SIGN-IN REQUIRED'} ·
           EVENTS: {websocketOnline ? 'CONNECTED' : 'DISCONNECTED'}
         </span>

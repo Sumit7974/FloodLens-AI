@@ -41,7 +41,7 @@ services:
       - key: ACCESS_TOKEN_EXPIRE_MINUTES
         value: "60"
       - key: CORS_ORIGINS
-        value: "http://localhost:3000,http://localhost:5173,http://localhost:8081,https://floodlens.org"
+        value: "http://localhost:3000,http://localhost:5173,http://localhost:8081,https://floodlens.org,https://floodlens-dashboard.vercel.app"
       - key: FLOODLENS_REPO_ROOT
         value: /app
       - key: PYTHONPATH

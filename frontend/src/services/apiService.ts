@@ -26,36 +26,54 @@ export interface BackendHealthResponse {
 import { getAccessToken } from './backendApi';
 
 export class ApiService {
+  private static status: 'connected' | 'connecting' | 'unreachable' = 'connecting';
   private static isConnected: boolean = false;
   private static lastCheck: number = 0;
 
+  public static getConnectionStatus(): 'connected' | 'connecting' | 'unreachable' {
+    return this.status;
+  }
+
   /**
-   * Check backend health and readiness
+   * Check backend health and readiness with Render cold-start resilience
    */
-  public static async checkHealth(): Promise<boolean> {
+  public static async checkHealth(retries = 1): Promise<boolean> {
     const now = Date.now();
     if (now - this.lastCheck < 10000 && this.isConnected) {
       return this.isConnected;
     }
 
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2500);
+    this.status = 'connecting';
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const controller = new AbortController();
+        // 20-second timeout allows for Render free-tier cold starts without premature abort
+        const timeoutId = setTimeout(() => controller.abort(), 20000);
 
-      const res = await fetch(`${API_BASE_URL}/health`, {
-        signal: controller.signal,
-        headers: { 'Accept': 'application/json' },
-      });
-      clearTimeout(timeoutId);
+        const res = await fetch(`${API_BASE_URL}/health`, {
+          signal: controller.signal,
+          headers: { 'Accept': 'application/json' },
+        });
+        clearTimeout(timeoutId);
 
-      this.isConnected = res.ok;
-      this.lastCheck = now;
-      return this.isConnected;
-    } catch {
-      this.isConnected = false;
-      this.lastCheck = now;
-      return false;
+        if (res.ok) {
+          this.isConnected = true;
+          this.status = 'connected';
+          this.lastCheck = Date.now();
+          return true;
+        }
+      } catch {
+        if (attempt < retries) {
+          // Wait briefly before single cold-start retry
+          await new Promise(r => setTimeout(r, 2000));
+        }
+      }
     }
+
+    this.isConnected = false;
+    this.status = 'unreachable';
+    this.lastCheck = Date.now();
+    return false;
   }
 
   /**
@@ -64,7 +82,7 @@ export class ApiService {
   public static async fetchAlerts(fallbackAlerts: any[]): Promise<{ alerts: any[]; fromBackend: boolean }> {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
 
       const headers: Record<string, string> = { 'Accept': 'application/json' };
       const token = getAccessToken();
