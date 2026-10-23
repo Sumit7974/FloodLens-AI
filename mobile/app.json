@@ -23,7 +23,15 @@
           "locationWhenInUsePermission": "Allow FloodLens to get your approximate location only when you choose to share it in a test help request."
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "extraProguardRules": "-keep class * extends androidx.room.RoomDatabase { <init>(); }\n-keep class * extends androidx.work.InputMerger { <init>(); }"
+          }
+        }
+      ]
     ],
     "extra": {
       "environment": "historical-demo-only",
