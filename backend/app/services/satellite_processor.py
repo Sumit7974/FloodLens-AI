@@ -11,6 +11,7 @@ Orchestrates:
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import math
@@ -19,7 +20,7 @@ import tempfile
 import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pyproj
@@ -41,13 +42,12 @@ from app.websocket.connection_manager import connection_manager
 
 logger = logging.getLogger("floodlens.satellite_processor")
 
-# Approved storage roots to guard against arbitrary path traversal attacks
+# Approved storage roots to guard against arbitrary path traversal and file access attacks
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 _APPROVED_ROOTS = [
-    _REPO_ROOT,
-    _REPO_ROOT / "ml" / "gis_processing",
     _REPO_ROOT / "ml" / "gis_processing" / "downloads",
     _REPO_ROOT / "backend" / "tests" / "fixtures",
+    _REPO_ROOT / "backend" / "app" / "storage",
     _REPO_ROOT / "data",
     Path(tempfile.gettempdir()),
 ]
@@ -74,7 +74,8 @@ def get_worker_db_session() -> Session:
 
 
 def is_safe_path(candidate_path: Union[str, Path]) -> Tuple[bool, Optional[Path]]:
-    """Verify that a path does not escape approved directories via directory traversal."""
+    """Verify that a path does not escape approved directories via directory traversal
+    and points to a valid geospatial asset type rather than arbitrary repository code/files."""
     try:
         p = Path(candidate_path)
         raw_str = str(candidate_path)
@@ -86,20 +87,31 @@ def is_safe_path(candidate_path: Union[str, Path]) -> Tuple[bool, Optional[Path]
         else:
             resolved = p.resolve()
 
+        in_approved_root = False
         for approved in _APPROVED_ROOTS:
             try:
                 resolved.relative_to(approved.resolve())
-                return True, resolved
+                in_approved_root = True
+                break
             except ValueError:
                 continue
 
-        try:
-            resolved.relative_to(Path(tempfile.gettempdir()).resolve())
-            return True, resolved
-        except ValueError:
-            pass
+        if not in_approved_root:
+            try:
+                resolved.relative_to(Path(tempfile.gettempdir()).resolve())
+                in_approved_root = True
+            except ValueError:
+                pass
 
-        return False, None
+        if not in_approved_root:
+            return False, None
+
+        # Guard against selecting non-geospatial repository files (e.g., source code, configs)
+        valid_extensions = {".geojson", ".json", ".tif", ".tiff", ".png"}
+        if resolved.is_file() and resolved.suffix.lower() not in valid_extensions:
+            return False, None
+
+        return True, resolved
     except Exception:
         return False, None
 
@@ -763,7 +775,72 @@ def _process_sar_radar_pair(
     return merged, area_km2, provenance, str(out_geojson_path), str(out_mask_path)
 
 
-def execute_satellite_pipeline(job: SatelliteJob, db: Session) -> Tuple[str, str]:
+def compute_artifact_checksum(path: Path) -> str:
+    """Compute deterministic SHA-256 digest of input artifact or directory contents."""
+    if not path.exists():
+        return "missing"
+    hasher = hashlib.sha256()
+    if path.is_file():
+        with open(path, "rb") as f:
+            while chunk := f.read(65536):
+                hasher.update(chunk)
+    elif path.is_dir():
+        for p in sorted(path.rglob("*.tif")):
+            hasher.update(p.name.encode("utf-8"))
+            hasher.update(str(p.stat().st_size).encode("utf-8"))
+    return hasher.hexdigest()[:16]
+
+
+def compute_extent_identity(
+    event_id: str,
+    scene_id: str,
+    baseline_scene_id: Optional[str],
+    method: str,
+    threshold: Optional[float],
+    artifact_checksum: str,
+    pipeline_version: str = "v1",
+) -> str:
+    """Generate a collision-resistant deterministic flood extent identity.
+
+    Incorporate:
+    - Event ID
+    - Target scene ID
+    - Baseline scene ID
+    - Method and algorithm version
+    - Threshold and quality settings
+    - Input artifact checksum
+
+    Guarantees:
+    - Retries with identical parameters remain strictly idempotent.
+    - Different thresholds do not overwrite distinct valid outputs.
+    - Different acquisition scenes or baselines remain separate.
+    - Avoids truncated string collisions and fits within VARCHAR(100).
+    """
+    clean_event = event_id.replace(" ", "_")[:16]
+    clean_scene = scene_id.replace(" ", "_")[:16]
+    norm_thresh = round(float(threshold if threshold is not None else 0.0), 4)
+
+    identity_dict = {
+        "event_id": event_id,
+        "scene_id": scene_id,
+        "baseline_scene_id": baseline_scene_id or "",
+        "method": method.upper(),
+        "threshold": norm_thresh,
+        "artifact_hash": artifact_checksum,
+        "version": pipeline_version,
+    }
+    canonical_repr = json.dumps(identity_dict, sort_keys=True)
+    hash_hex = hashlib.sha256(canonical_repr.encode("utf-8")).hexdigest()[:16]
+
+    extent_id = f"ext_{clean_event}_{clean_scene}_{method.upper()}_{hash_hex}"
+    return extent_id[:95]
+
+
+def execute_satellite_pipeline(
+    job: SatelliteJob,
+    db: Session,
+    heartbeat_cb: Optional[Callable[[], None]] = None,
+) -> Tuple[str, str]:
     """Execute the compatible GIS pipeline for a claimed satellite job and persist results in PostGIS.
 
     Returns:
@@ -786,6 +863,9 @@ def execute_satellite_pipeline(job: SatelliteJob, db: Session) -> Tuple[str, str
         b_safe, resolved_base = is_safe_path(baseline_scene.asset_ref)
         if not b_safe or not resolved_base or not resolved_base.exists():
             raise FileNotFoundError(f"Baseline asset reference '{baseline_scene.asset_ref}' is missing or forbidden.")
+
+    if heartbeat_cb:
+        heartbeat_cb()
 
     job.progress_percent = 30.0
     db.commit()
@@ -821,6 +901,9 @@ def execute_satellite_pipeline(job: SatelliteJob, db: Session) -> Tuple[str, str
     else:
         raise ValueError(f"Unsupported processing method: {job.method}")
 
+    if heartbeat_cb:
+        heartbeat_cb()
+
     job.progress_percent = 70.0
     db.commit()
 
@@ -829,17 +912,19 @@ def execute_satellite_pipeline(job: SatelliteJob, db: Session) -> Tuple[str, str
     if not event_id:
         raise ValueError(f"Job '{job.id}' has no associated event_id. Ambiguous event association is rejected.")
 
-    # Multi-event and multi-scene extent preservation (Issue 8)
-    # Unique extent ID incorporating event_id, method, and source scene ID(s)
-    clean_scene_id = job.scene_id.replace(" ", "_")[:24]
-    extent_id = f"ext_{event_id[:20]}_{job.method}_{clean_scene_id}"
-    if job.baseline_scene_id:
-        clean_base_id = job.baseline_scene_id.replace(" ", "_")[:12]
-        extent_id += f"_{clean_base_id}"
+    # Multi-event and multi-scene extent preservation with collision-resistant identity
+    target_checksum = compute_artifact_checksum(resolved_target)
+    base_checksum = compute_artifact_checksum(resolved_base) if resolved_base else "none"
+    combined_checksum = f"{target_checksum}_{base_checksum}"
 
-    # Ensure length <= 95 characters
-    if len(extent_id) > 95:
-        extent_id = extent_id[:95]
+    extent_id = compute_extent_identity(
+        event_id=event_id,
+        scene_id=job.scene_id,
+        baseline_scene_id=job.baseline_scene_id,
+        method=job.method,
+        threshold=job.threshold,
+        artifact_checksum=combined_checksum,
+    )
 
     source_scenes = [job.scene_id]
     if job.baseline_scene_id:
@@ -847,7 +932,7 @@ def execute_satellite_pipeline(job: SatelliteJob, db: Session) -> Tuple[str, str
 
     geom_element = to_wkt_element(mapping(geom), expected_type="MULTIPOLYGON", srid=4326)
 
-    # Idempotent upsert matching exact result identity
+    # Idempotent upsert matching exact deterministic result identity
     existing_extent = db.query(FloodExtent).filter(FloodExtent.id == extent_id).first()
 
     if existing_extent:
@@ -858,6 +943,7 @@ def execute_satellite_pipeline(job: SatelliteJob, db: Session) -> Tuple[str, str
         existing_extent.raster_ref = raster_ref
         existing_extent.source_scene_ids = source_scenes
         existing_extent.confidence = None  # Issue 5: No fabricated confidence
+        existing_extent.provenance = provenance
         existing_extent.geometry = geom_element
         extent_record = existing_extent
     else:
@@ -872,6 +958,7 @@ def execute_satellite_pipeline(job: SatelliteJob, db: Session) -> Tuple[str, str
             area_km2=area_km2,
             source_scene_ids=source_scenes,
             confidence=None,  # Issue 5: No fabricated confidence
+            provenance=provenance,
             geometry=geom_element,
         )
         db.add(new_extent)
@@ -898,35 +985,41 @@ def execute_satellite_pipeline(job: SatelliteJob, db: Session) -> Tuple[str, str
     return extent_record.id, provenance
 
 
-def dispatch_satellite_job(job_id: str) -> None:
+def dispatch_satellite_job(job_id: str, worker_id: Optional[str] = None) -> None:
     """Entry point for FastAPI BackgroundTasks to claim and execute a queued job."""
-    from app.workers.satellite_worker import claim_job, execute_job
+    from app.workers.satellite_worker import claim_job, execute_job, generate_worker_id
 
     db = get_worker_db_session()
     close_after = (db is not _TEST_DB_SESSION)
+    active_worker = worker_id or generate_worker_id(prefix="api-dispatch")
     try:
-        claimed = claim_job(db, job_id=job_id)
+        claimed = claim_job(db, job_id=job_id, worker_id=active_worker)
         if not claimed:
-            logger.info("Job '%s' already claimed or not queued.", job_id)
+            logger.info("Job '%s' already claimed by another worker or not queued.", job_id)
             return
-        execute_job(claimed, db)
+        execute_job(claimed, db, worker_id=active_worker)
     finally:
         if close_after:
             db.close()
 
 
-def process_satellite_job(job_id: str, db_session: Optional[Session] = None) -> None:
+def process_satellite_job(
+    job_id: str,
+    db_session: Optional[Session] = None,
+    worker_id: Optional[str] = None,
+) -> None:
     """Backward-compatible function to execute a satellite processing job."""
     if db_session is not None:
-        from app.workers.satellite_worker import claim_job, execute_job
-        claimed = claim_job(db_session, job_id=job_id)
+        from app.workers.satellite_worker import claim_job, execute_job, generate_worker_id
+        active_worker = worker_id or generate_worker_id(prefix="compat")
+        claimed = claim_job(db_session, job_id=job_id, worker_id=active_worker)
         if claimed:
-            execute_job(claimed, db_session)
+            execute_job(claimed, db_session, worker_id=active_worker)
     else:
-        dispatch_satellite_job(job_id)
+        dispatch_satellite_job(job_id, worker_id=worker_id)
 
 
-def recover_pending_jobs(db: Session) -> int:
+def recover_pending_jobs(db: Session, now: Optional[datetime] = None) -> int:
     """Backward-compatible alias for worker restart recovery."""
     from app.workers.satellite_worker import recover_interrupted_jobs
-    return recover_interrupted_jobs(db)
+    return recover_interrupted_jobs(db, now=now)

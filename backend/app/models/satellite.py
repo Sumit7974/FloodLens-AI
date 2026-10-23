@@ -35,6 +35,7 @@ class FloodExtent(Base, TimestampMixin):
     area_km2 = Column(Float, nullable=False)
     source_scene_ids = Column(JSON, default=list, nullable=False)
     confidence = Column(Float, nullable=True)
+    provenance = Column(String(100), nullable=True)
     geometry = Column(GeometryType("MULTIPOLYGON", 4326), nullable=True)
 
     # Relationships
@@ -57,8 +58,11 @@ class SatelliteJob(Base, TimestampMixin):
     status = Column(String(50), nullable=False, default="QUEUED", index=True)  # QUEUED, RUNNING, COMPLETED, FAILED
     progress_percent = Column(Float, nullable=False, default=0.0)
     requested_by = Column(String(100), nullable=False)
+    worker_id = Column(String(100), nullable=True)
     started_at = Column(DateTime(timezone=True), nullable=True)
     completed_at = Column(DateTime(timezone=True), nullable=True)
+    lease_expires_at = Column(DateTime(timezone=True), nullable=True, index=True)
+    heartbeat_at = Column(DateTime(timezone=True), nullable=True)
     output_extent_id = Column(String(100), ForeignKey("flood_extents.id"), nullable=True)
     error_message = Column(String(1000), nullable=True)
     retry_count = Column(Integer, default=0, nullable=False)

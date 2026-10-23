@@ -509,20 +509,19 @@ def test_missing_input_artifacts_strictly_fail_without_synthetic_substitution(
         sensor="Sentinel-2",
         modality="optical",
         captured_at=test_flood_event.start_at,
-        asset_ref="ml/gis_processing/downloads/flood_polygons_web.geojson",
+        asset_ref="ml/gis_processing/downloads/nonexistent_raw_satellite_file.geojson",
     )
     db_session.add(ghost_scene)
     db_session.commit()
 
     # Even if downloads/ does not exist on disk, the system MUST NOT silently substitute fixtures
-    if not Path("ml/gis_processing/downloads/flood_polygons_web.geojson").exists():
-        res = client.post(
-            "/api/v1/satellite/jobs",
-            json={"event_id": test_flood_event.id, "scene_id": ghost_scene.id, "method": "NDWI"},
-            headers={"Authorization": f"Bearer {authority_token}"},
-        )
-        assert res.status_code == status.HTTP_400_BAD_REQUEST
-        assert res.json()["error"]["code"] == "MISSING_INPUT_ARTIFACTS"
+    res = client.post(
+        "/api/v1/satellite/jobs",
+        json={"event_id": test_flood_event.id, "scene_id": ghost_scene.id, "method": "NDWI"},
+        headers={"Authorization": f"Bearer {authority_token}"},
+    )
+    assert res.status_code == status.HTTP_400_BAD_REQUEST
+    assert res.json()["error"]["code"] == "MISSING_INPUT_ARTIFACTS"
 
 
 # ==============================================================================
@@ -607,10 +606,8 @@ def test_multi_event_and_multi_scene_extent_preservation(
     # Verify BOTH extents exist for event 1 (scene 1 was NOT overwritten by scene 2)
     extents_evt1 = db_session.query(FloodExtent).filter(FloodExtent.event_id == test_flood_event.id).all()
     assert len(extents_evt1) == 2
-    assert {e.id for e in extents_evt1} == {
-        f"ext_{test_flood_event.id[:20]}_NDWI_{test_optical_scene.id[:24]}",
-        f"ext_{test_flood_event.id[:20]}_NDWI_{scene2.id[:24]}",
-    }
+    scenes_in_evt1 = {e.source_scene_ids[0] for e in extents_evt1}
+    assert scenes_in_evt1 == {test_optical_scene.id, scene2.id}
 
     # 3. Process an independent second event
     scene_evt2 = SatelliteScene(
@@ -779,6 +776,7 @@ def test_worker_atomic_claiming_and_interrupted_job_recovery(
     # 3. Exhausted retry budget marks job FAILED
     stuck_job.status = "RUNNING"
     stuck_job.retry_count = 1  # will become 2 == max_retries
+    stuck_job.lease_expires_at = datetime.now(timezone.utc) - timedelta(seconds=10)  # expired lease
     db_session.commit()
 
     recovered_exhausted = recover_interrupted_jobs(db_session)

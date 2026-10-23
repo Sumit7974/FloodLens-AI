@@ -116,12 +116,14 @@ async def create_satellite_job(
     normalized_method = (job_spec.method or "").strip().upper()
 
     # 2. Duplicate detection: if an identical job is already QUEUED or RUNNING, reuse it
+    req_threshold = job_spec.threshold or 0.0
     existing_active = (
         db.query(SatelliteJob)
         .filter(
             SatelliteJob.scene_id == job_spec.scene_id,
             SatelliteJob.baseline_scene_id == job_spec.baseline_scene_id,
             SatelliteJob.method == normalized_method,
+            SatelliteJob.threshold == req_threshold,
             SatelliteJob.event_id == job_spec.event_id,
             SatelliteJob.status.in_(["QUEUED", "RUNNING"]),
         )
@@ -144,12 +146,12 @@ async def create_satellite_job(
         scene_id=job_spec.scene_id,
         baseline_scene_id=job_spec.baseline_scene_id,
         method=normalized_method,
-        threshold=job_spec.threshold or 0.0,
+        threshold=req_threshold,
         status="QUEUED",
         progress_percent=0.0,
         requested_by=current_user.email or current_user.id,
         parameters={
-            "threshold": job_spec.threshold,
+            "threshold": req_threshold,
             "scene_id": job_spec.scene_id,
             "baseline_scene_id": job_spec.baseline_scene_id,
             "method": normalized_method,
@@ -186,7 +188,7 @@ async def get_satellite_job_status(
     """Retrieve persisted status, progress, timestamps, and output references for a processing job.
     
     Preserves 404 for unknown job IDs. Requires authentication for existing jobs.
-    Redacts sensitive metadata (requester email, error details) for non-authority users.
+    Redacts sensitive metadata (requester email, error details, worker identity) for non-authority users.
     """
     job = db.query(SatelliteJob).filter(SatelliteJob.id == job_id).first()
     if not job:
@@ -213,9 +215,12 @@ async def get_satellite_job_status(
         scene_id=job.scene_id,
         baseline_scene_id=job.baseline_scene_id,
         requested_by=job.requested_by if is_authority_or_admin else None,
+        worker_id=job.worker_id if is_authority_or_admin else None,
         created_at=job.created_at,
         started_at=job.started_at,
         completed_at=job.completed_at,
+        lease_expires_at=job.lease_expires_at if is_authority_or_admin else None,
+        heartbeat_at=job.heartbeat_at if is_authority_or_admin else None,
         output_extent_id=job.output_extent_id,
         error_message=job.error_message if is_authority_or_admin else None,
         provenance=job.provenance,

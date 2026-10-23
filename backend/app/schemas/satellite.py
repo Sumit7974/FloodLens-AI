@@ -62,9 +62,12 @@ class SatelliteJobDetailResponse(BaseModel):
     scene_id: Optional[str] = None
     baseline_scene_id: Optional[str] = None
     requested_by: Optional[str] = None
+    worker_id: Optional[str] = None
     created_at: datetime
     started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
+    lease_expires_at: Optional[datetime] = None
+    heartbeat_at: Optional[datetime] = None
     output_extent_id: Optional[str] = None
     error_message: Optional[str] = None
     provenance: Optional[str] = None

@@ -46,6 +46,10 @@ class FloodExtentCreate(BaseModel):
     area_km2: float = Field(..., gt=0.0, description="Derived inundated surface area in square kilometers")
     source_scene_ids: List[str] = Field(default_factory=list, description="IDs of input satellite scenes")
     confidence: Optional[float] = Field(default=None, ge=0.0, le=1.0, description="Detection confidence score (0.0 to 1.0)")
+    provenance: Optional[str] = Field(
+        default=None,
+        description="Data provenance (PROCESSED_OPTICAL, PROCESSED_SAR, IMPORTED_PRECOMPUTED, SYNTHETIC_TEST_FIXTURE)",
+    )
     polygon_ref: Optional[str] = Field(default=None, description="GeoJSON or Shapefile artifact storage path")
     raster_ref: Optional[str] = Field(default=None, description="GeoTIFF cloud-optimized raster storage path")
     geometry: Optional[Union[Dict[str, Any], str]] = Field(
@@ -65,6 +69,7 @@ class FloodExtentResponse(BaseModel):
     area_km2: float
     source_scene_ids: List[str]
     confidence: Optional[float] = None
+    provenance: Optional[str] = None
     geometry: Optional[Dict[str, Any]] = None
 
     model_config = ConfigDict(from_attributes=True)
