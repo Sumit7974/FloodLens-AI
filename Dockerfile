@@ -52,5 +52,5 @@ WORKDIR /app/backend
 # Expose default HTTP port
 EXPOSE 8000
 
-# Production startup command without --reload, binding to 0.0.0.0 and dynamic $PORT
-CMD ["sh", "-c", "exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+# Production startup command: runs deliberate migrations and demo seeds before binding uvicorn to 0.0.0.0 and dynamic $PORT
+CMD ["sh", "-c", "alembic upgrade head && python scripts/seed_historical_demo_data.py && exec uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]

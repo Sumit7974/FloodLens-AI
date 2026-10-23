@@ -68,6 +68,18 @@ class Settings(BaseSettings):
         description="Allowlist of authenticated user IDs authorized for demo simulation alerts",
     )
 
+    @field_validator("database_url", mode="before")
+    @classmethod
+    def normalize_database_url(cls, v: str) -> str:
+        """Normalize cloud hosted postgres connection URLs (Render, Neon, Supabase, Heroku)."""
+        if isinstance(v, str):
+            v = v.strip()
+            if v.startswith("postgres://"):
+                v = "postgresql+psycopg2://" + v[len("postgres://"):]
+            elif v.startswith("postgresql://") and not v.startswith("postgresql+"):
+                v = "postgresql+psycopg2://" + v[len("postgresql://"):]
+        return v
+
     @field_validator("cors_origins", "demo_participant_ids", mode="before")
     @classmethod
     def assemble_string_or_list(cls, v: Union[str, List[str]]) -> List[str]:
