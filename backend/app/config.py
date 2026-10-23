@@ -1,6 +1,6 @@
 """Application configuration using Pydantic Settings."""
 from functools import lru_cache
-from typing import List, Union
+from typing import List, Optional, Union
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -49,9 +49,11 @@ class Settings(BaseSettings):
     operational_mode: str = "historical_demo"
 
     # Geospatial & Storage
+    floodlens_repo_root: Optional[str] = None
     data_dir: str = "./data"
     raster_storage_path: str = "./data/rasters"
     reports_storage_path: str = "./data/reports"
+    satellite_output_dir: Optional[str] = None
 
     # Logging
     log_level: str = "INFO"

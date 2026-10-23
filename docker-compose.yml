@@ -19,30 +19,79 @@ services:
       timeout: 5s
       retries: 5
 
+  # One-shot deliberate migration service; ensures migrations complete before replicas/workers start
+  migration:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: floodlens-migration
+    restart: "no"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - DATABASE_URL=postgresql+psycopg2://${POSTGRES_USER:-floodlens}:${POSTGRES_PASSWORD:-floodlens_secure_password}@db:5432/${POSTGRES_DB:-floodlens_db}
+      - FLOODLENS_REPO_ROOT=/app
+      - PYTHONPATH=/app/backend:/app
+    command: alembic upgrade head
+
   backend:
     build:
-      context: ./backend
+      context: .
       dockerfile: Dockerfile
     container_name: floodlens-backend
     restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
+      migration:
+        condition: service_completed_successfully
     environment:
       - APP_NAME=FloodLens AI Backend
-      - ENVIRONMENT=development
-      - DEBUG=true
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - DEBUG=${DEBUG:-false}
       - DATABASE_URL=postgresql+psycopg2://${POSTGRES_USER:-floodlens}:${POSTGRES_PASSWORD:-floodlens_secure_password}@db:5432/${POSTGRES_DB:-floodlens_db}
       - JWT_SECRET=${JWT_SECRET:-dev-insecure-jwt-secret-replace-in-production-123456}
       - JWT_ALGORITHM=HS256
       - ACCESS_TOKEN_EXPIRE_MINUTES=60
-      - CORS_ORIGINS=http://localhost:3000,http://localhost:5173,http://localhost:8081
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://localhost:5173,http://localhost:8081}
+      - OPERATIONAL_MODE=${OPERATIONAL_MODE:-historical_demo}
+      - FLOODLENS_REPO_ROOT=/app
+      - PYTHONPATH=/app/backend:/app
+      - PORT=${PORT:-8000}
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     volumes:
-      - ./backend:/app
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      - ./data:/app/data
+      - floodlens_satellite_outputs:/app/backend/app/storage/satellite_outputs
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+  satellite-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: floodlens-satellite-worker
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      migration:
+        condition: service_completed_successfully
+    environment:
+      - APP_NAME=FloodLens AI Satellite Worker
+      - ENVIRONMENT=${ENVIRONMENT:-development}
+      - DATABASE_URL=postgresql+psycopg2://${POSTGRES_USER:-floodlens}:${POSTGRES_PASSWORD:-floodlens_secure_password}@db:5432/${POSTGRES_DB:-floodlens_db}
+      - FLOODLENS_REPO_ROOT=/app
+      - PYTHONPATH=/app/backend:/app
+      - OPERATIONAL_MODE=${OPERATIONAL_MODE:-historical_demo}
+    volumes:
+      - ./data:/app/data
+      - floodlens_satellite_outputs:/app/backend/app/storage/satellite_outputs
+    command: python -m app.workers.satellite_worker --interval 2.0
 
 volumes:
   floodlens_pgdata:
+    driver: local
+  floodlens_satellite_outputs:
     driver: local

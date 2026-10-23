@@ -16,6 +16,7 @@ import json
 import logging
 import math
 import os
+import sys
 import tempfile
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -42,19 +43,66 @@ from app.websocket.connection_manager import connection_manager
 
 logger = logging.getLogger("floodlens.satellite_processor")
 
+
+def _resolve_repo_root() -> Path:
+    """Robustly resolve repository root across local development, Docker, and CI environments."""
+    env_root = os.environ.get("FLOODLENS_REPO_ROOT")
+    if env_root:
+        p = Path(env_root).resolve()
+        if p.exists():
+            return p
+
+    here = Path(__file__).resolve()
+    # Case 1: Standard layout <repo_root>/backend/app/services/satellite_processor.py -> parents[3] is repo_root
+    if len(here.parents) >= 4:
+        cand3 = here.parents[3]
+        if (cand3 / "backend").exists() or (cand3 / "ml").exists() or (cand3 / "data").exists():
+            return cand3
+
+    # Case 2: Container layout where app is directly under /app or /app/backend
+    if len(here.parents) >= 3:
+        cand2 = here.parents[2]
+        if (cand2 / "backend").exists() or (cand2 / "ml").exists() or (cand2 / "data").exists():
+            return cand2
+
+    # Case 3: Working directory resolution
+    cwd = Path.cwd().resolve()
+    if (cwd / "backend").exists() or (cwd / "ml").exists() or (cwd / "data").exists():
+        return cwd
+    if (cwd.parent / "backend").exists() or (cwd.parent / "ml").exists() or (cwd.parent / "data").exists():
+        return cwd.parent.resolve()
+
+    return here.parents[3] if len(here.parents) >= 4 else here.parent
+
+
 # Approved storage roots to guard against arbitrary path traversal and file access attacks
-_REPO_ROOT = Path(__file__).resolve().parents[3]
+_REPO_ROOT = _resolve_repo_root()
+
+# Ensure repository root is on sys.path so ml module can be imported anywhere
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+
+# Ensure output directory exists for fresh processing outputs
+OUTPUT_DIR = Path(
+    os.environ.get("SATELLITE_OUTPUT_DIR")
+    or (_REPO_ROOT / "backend" / "app" / "storage" / "satellite_outputs")
+).resolve()
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
 _APPROVED_ROOTS = [
     _REPO_ROOT / "ml" / "gis_processing" / "downloads",
     _REPO_ROOT / "backend" / "tests" / "fixtures",
     _REPO_ROOT / "backend" / "app" / "storage",
     _REPO_ROOT / "data",
-    Path(tempfile.gettempdir()),
+    OUTPUT_DIR,
+    Path(tempfile.gettempdir()).resolve(),
 ]
 
-# Ensure output directory exists for fresh processing outputs
-OUTPUT_DIR = _REPO_ROOT / "backend" / "app" / "storage" / "satellite_outputs"
-OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+_data_dir_env = os.environ.get("DATA_DIR")
+if _data_dir_env:
+    _p_data = Path(_data_dir_env).resolve()
+    if _p_data.exists() and _p_data not in _APPROVED_ROOTS:
+        _APPROVED_ROOTS.append(_p_data)
 
 # Global test session hook for transaction-isolated test environments
 _TEST_DB_SESSION: Optional[Session] = None
