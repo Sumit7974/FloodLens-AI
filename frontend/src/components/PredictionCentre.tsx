@@ -54,6 +54,7 @@ interface KnownLocation {
 }
 
 const DEFAULT_KNOWN_LOCATIONS: KnownLocation[] = [
+  { id: 'settlement_janakpurdham', name: 'Janakpurdham (Terai Region)', reach: 'Kamala River Reach' },
   { id: 'loc_barahachhetra_w2', name: 'Barahakshetra Ward 2', reach: 'Main Embankment Reach' },
   { id: 'loc_prakashpur_w3', name: 'Prakashpur Ward 3', reach: 'Floodplain / Embankment Reach' },
   { id: 'loc_gobargadha_w1', name: 'Gobargadha Ward 1', reach: 'Riverine Island Reach' },
