@@ -94,17 +94,17 @@ jobs:
         run: |
           pytest -v -s tests/test_ml_postgis_integration.py
 
+      - name: Run full pytest suite against PostGIS
+        working-directory: backend
+        run: |
+          pytest -v --ignore=tests/test_postgis_seed_verification.py --tb=short
+
       - name: Verify PostGIS seeding, idempotency, and historical demo integration
         working-directory: backend
         run: |
           python scripts/seed_historical_demo_data.py
           python scripts/seed_historical_demo_data.py
           pytest -v tests/test_postgis_seed_verification.py
-
-      - name: Run full pytest suite against PostGIS
-        working-directory: backend
-        run: |
-          pytest -v --tb=short
 
       - name: Test live FastAPI startup & readiness probe
         working-directory: backend
