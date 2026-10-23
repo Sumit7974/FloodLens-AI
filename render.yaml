@@ -50,3 +50,5 @@ services:
         sync: false
       - key: DEMO_CITIZEN_PASSWORD
         sync: false
+      - key: DEMO_PARTICIPANT_IDS
+        value: "usr_citizen_demo,user_demo_participant_01,user_test_participant_01,demo_participant_field_01"

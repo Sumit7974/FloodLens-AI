@@ -61,6 +61,7 @@ class Settings(BaseSettings):
     # Demo Participant Allowlist (authenticated user IDs only; email authorization is forbidden)
     demo_participant_ids: Union[List[str], str] = Field(
         default_factory=lambda: [
+            "usr_citizen_demo",
             "user_demo_participant_01",
             "user_test_participant_01",
             "demo_participant_field_01",
