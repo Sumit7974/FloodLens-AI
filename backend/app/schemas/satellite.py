@@ -40,6 +40,7 @@ class SatelliteJobCreate(BaseModel):
     baseline_scene_id: Optional[str] = Field(default=None, description="Pre-flood baseline scene for change detection")
     method: str = Field(default="NDWI", description="Index or method: NDWI, MNDWI, SAR_CHANGE")
     threshold: Optional[float] = Field(default=0.0, description="Water index decision threshold")
+    parameters: Optional[Dict[str, Any]] = Field(default=None, description="Optional preprocessing and quality parameters")
 
 
 class SatelliteJobResponse(BaseModel):
