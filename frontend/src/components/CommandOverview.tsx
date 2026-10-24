@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import type { Alert, BenchmarkScene, HelpRequest, MetricSummary } from '../types';
-import { GeospatialTerrainMap } from './map/GeospatialTerrainMap';
+import { GeospatialTerrainMap, extractGeoJsonBounds } from './map/GeospatialTerrainMap';
 import { CesiumEarthMap } from './map/CesiumEarthMap';
 import { Globe, Map as MapIcon } from 'lucide-react';
 import { MetricCards } from './MetricCards';
@@ -149,18 +149,27 @@ export const CommandOverview: React.FC<CommandOverviewProps> = ({
   const selectedBackendEvent = backendEvents.find(event => event.id === selectedEventId);
 
   const defaultCenter = useMemo((): [number, number] => {
+    // 1. If observed extent is loaded and has geometry, center directly on its midpoint
+    if (observedExtent?.geometry) {
+      const bounds = extractGeoJsonBounds(observedExtent);
+      if (bounds) {
+        return [(bounds[0][0] + bounds[1][0]) / 2, (bounds[0][1] + bounds[1][1]) / 2];
+      }
+    }
+    // 2. Exact event geographic centroids
     if (selectedEventId === 'evt_2024_terai_monsoon') {
-      return [85.92, 26.73];
+      return [85.9275, 26.73];
     }
     if (selectedEventId === 'event_nepal_koshi_2017') {
-      return [87.05, 26.65];
+      return [87.9555, 26.3584];
     }
+    // 3. First predicted risk marker with coordinates
     const firstPredicted = riskMarkers.find(m => m.hasForecast && m.coordinates);
     if (firstPredicted) {
       return firstPredicted.coordinates;
     }
-    return benchmarkScene.center || [85.92, 26.73];
-  }, [selectedEventId, riskMarkers, benchmarkScene.center]);
+    return benchmarkScene.center || [85.9275, 26.73];
+  }, [selectedEventId, observedExtent, riskMarkers, benchmarkScene.center]);
 
   const riskStats = useMemo(() => {
     let criticalOrHigh = 0;
@@ -234,6 +243,14 @@ export const CommandOverview: React.FC<CommandOverviewProps> = ({
             </p>
           )}
           {extentError && <p role="status" className="text-amber-300">Flood extent unavailable: {extentError}</p>}
+          {!observedExtent && !DEMO_MODE && !extentError && (
+            <div className="rounded border border-amber-900/60 bg-amber-950/30 p-2 text-xs text-amber-300 flex items-center gap-2">
+              <span className="font-bold uppercase tracking-wider text-[11px]">Notice:</span>
+              <span>
+                No observed flood extent polygon is recorded in PostGIS for event: {selectedBackendEvent?.name || selectedEventId || 'Selected Event'}. Inundation boundaries are omitted.
+              </span>
+            </div>
+          )}
           <div className="grid gap-2 sm:grid-cols-4">
             <div className="rounded border border-slate-800 p-2"><div className="text-slate-500 text-[11px] uppercase">Mapped flood area</div><strong>{observedExtent ? `${observedExtent.properties.area_km2} km²` : 'Unavailable'}</strong></div>
             <div className="rounded border border-slate-800 p-2"><div className="text-slate-500 text-[11px] uppercase">Intersecting settlements</div><strong>{settlements?.status === 'completed' ? settlements.total_settlements_affected : 'Unavailable'}</strong></div>

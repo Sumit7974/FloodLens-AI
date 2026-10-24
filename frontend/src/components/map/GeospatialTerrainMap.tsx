@@ -6,6 +6,7 @@ import {
   Compass,
   Layers,
   LifeBuoy,
+  LocateFixed,
   Maximize2,
   Minimize2,
   RotateCcw,
@@ -100,7 +101,7 @@ function getValidLngLat(coords: unknown): [number, number] | null {
 }
 
 // Extract bounding box [[minLng, minLat], [maxLng, maxLat]] from arbitrary GeoJSON
-function extractGeoJsonBounds(feature: any): [[number, number], [number, number]] | null {
+export function extractGeoJsonBounds(feature: any): [[number, number], [number, number]] | null {
   if (!feature?.geometry?.coordinates) return null;
   const pts: [number, number][] = [];
   const walk = (node: any) => {
@@ -224,6 +225,7 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
   const [is3D, setIs3D] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [tileNetworkError, setTileNetworkError] = useState<string | null>(null);
   const [basemap, setBasemap] = useState<'dark' | 'satellite'>(
     mode === 'satellite' ? 'satellite' : 'dark'
   );
@@ -264,57 +266,85 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
+    // Support explicitly configured CARTO key; default to licensed keyless Esri Dark Canvas
+    const cartoKey = (((import.meta as any).env?.VITE_CARTO_API_KEY as string) || '').trim();
+    const useCarto = Boolean(cartoKey);
+
+    const sources: Record<string, maplibregl.SourceSpecification> = {
+      'esri-dark': {
+        type: 'raster',
+        tiles: [
+          'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+        ],
+        tileSize: 256,
+        attribution: '&copy; <a href="https://www.esri.com/">Esri</a> &copy; OpenStreetMap contributors',
+        maxzoom: 16,
+      },
+      'esri-dark-reference': {
+        type: 'raster',
+        tiles: [
+          'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
+        ],
+        tileSize: 256,
+        attribution: '&copy; <a href="https://www.esri.com/">Esri</a>',
+        maxzoom: 16,
+      },
+      'esri-satellite': {
+        type: 'raster',
+        tiles: [
+          'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        ],
+        tileSize: 256,
+        attribution: '&copy; <a href="https://www.esri.com/">Esri</a>, Maxar, Earthstar Geographics',
+        maxzoom: 19,
+      },
+      'terrain-dem': {
+        type: 'raster-dem',
+        tiles: [
+          'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png',
+        ],
+        encoding: 'terrarium',
+        tileSize: 256,
+        maxzoom: 15,
+      },
+    };
+
+    if (useCarto) {
+      sources['carto-dark'] = {
+        type: 'raster',
+        tiles: [
+          `https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png?api_key=${encodeURIComponent(cartoKey)}`,
+          `https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png?api_key=${encodeURIComponent(cartoKey)}`,
+          `https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png?api_key=${encodeURIComponent(cartoKey)}`,
+        ],
+        tileSize: 256,
+        attribution: '&copy; <a href="https://carto.com/">CARTO</a> &copy; OpenStreetMap',
+        maxzoom: 19,
+      };
+    }
+
     const darkStyle: maplibregl.StyleSpecification = {
       version: 8,
-      sources: {
-        'esri-dark': {
-          type: 'raster',
-          tiles: [
-            'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
-          ],
-          tileSize: 256,
-          attribution: '&copy; Esri &copy; OpenStreetMap contributors',
-          maxzoom: 16,
-        },
-        'carto-dark': {
-          type: 'raster',
-          tiles: [
-            'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-            'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-            'https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-          ],
-          tileSize: 256,
-          attribution: '&copy; CartoDB &copy; OpenStreetMap',
-          maxzoom: 19,
-        },
-        'esri-satellite': {
-          type: 'raster',
-          tiles: [
-            'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-          ],
-          tileSize: 256,
-          attribution: '&copy; Esri &copy; Maxar, Earthstar Geographics',
-          maxzoom: 19,
-        },
-        'terrain-dem': {
-          type: 'raster-dem',
-          tiles: [
-            'https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png',
-          ],
-          encoding: 'terrarium',
-          tileSize: 256,
-          maxzoom: 15,
-        },
-      },
+      sources,
       layers: [
         {
           id: 'base-dark-layer',
           type: 'raster',
-          source: 'carto-dark',
+          source: useCarto ? 'carto-dark' : 'esri-dark',
           minzoom: 0,
           maxzoom: 20,
           layout: {
             visibility: mode === 'satellite' ? 'none' : 'visible',
+          },
+        },
+        {
+          id: 'base-dark-reference-layer',
+          type: 'raster',
+          source: 'esri-dark-reference',
+          minzoom: 0,
+          maxzoom: 20,
+          layout: {
+            visibility: mode === 'satellite' || useCarto ? 'none' : 'visible',
           },
         },
         {
@@ -376,8 +406,14 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
       setupMapLayers(map);
       setMapLoaded(true);
 
-      map.on('error', () => {
-        // Absorbs tile 404/fetch errors silently
+      map.on('error', (e) => {
+        if (e && e.error) {
+          const errMsg = e.error.message || String(e.error);
+          console.warn('[GeospatialTerrainMap] MapLibre tile/network event:', errMsg);
+          if (/tile|404|fetch|network/i.test(errMsg)) {
+            setTileNetworkError(errMsg);
+          }
+        }
       });
     });
 
@@ -416,7 +452,7 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
         source: 'observed-inundation-src',
         paint: {
           'fill-color': '#00e5ff',
-          'fill-opacity': 0.48,
+          'fill-opacity': 0.52,
         },
       });
 
@@ -427,9 +463,9 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
         source: 'observed-inundation-src',
         paint: {
           'line-color': '#00e5ff',
-          'line-width': 5.5,
-          'line-opacity': 0.4,
-          'line-blur': 2.5,
+          'line-width': 6.0,
+          'line-opacity': 0.45,
+          'line-blur': 3.0,
         },
       });
 
@@ -441,7 +477,7 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
         paint: {
           'line-color': '#38bdf8',
           'line-width': 2.8,
-          'line-opacity': 0.95,
+          'line-opacity': 1.0,
         },
       });
 
@@ -587,6 +623,9 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
     if (map.getLayer('base-dark-layer')) {
       map.setLayoutProperty('base-dark-layer', 'visibility', showSatellite ? 'none' : 'visible');
     }
+    if (map.getLayer('base-dark-reference-layer')) {
+      map.setLayoutProperty('base-dark-reference-layer', 'visibility', showSatellite ? 'none' : 'visible');
+    }
   }, [basemap, mode, mapLoaded]);
 
   // Update candidate route line dynamically
@@ -683,16 +722,21 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
     if (!observedExtent?.geometry) return;
 
     // Identify extent by id or event_id to prevent redundant re-fits
-    const extentKey = String(observedExtent.id || observedExtent.properties?.event_id || JSON.stringify(observedExtent.geometry.coordinates).slice(0, 50));
+    const extentKey = String(
+      observedExtent.id ||
+      observedExtent.properties?.event_id ||
+      (observedExtent as any).properties?.name ||
+      JSON.stringify(observedExtent.geometry.coordinates).slice(0, 50)
+    );
     if (lastFittedExtentRef.current === extentKey) return;
     lastFittedExtentRef.current = extentKey;
 
     const bounds = extractGeoJsonBounds(observedExtent);
     if (bounds) {
       map.fitBounds(bounds, {
-        padding: 60,
-        maxZoom: 13,
-        duration: 1000,
+        padding: { top: 80, bottom: 80, left: 80, right: 80 },
+        maxZoom: 14,
+        duration: 800,
       });
     }
   }, [observedExtent, mapLoaded]);
@@ -1082,15 +1126,46 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
     }
   };
 
+  // Center explicitly on active flood extent
+  const handleFitFloodExtent = () => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    if (observedExtent?.geometry) {
+      const bounds = extractGeoJsonBounds(observedExtent);
+      if (bounds) {
+        map.fitBounds(bounds, {
+          padding: { top: 80, bottom: 80, left: 80, right: 80 },
+          maxZoom: 14,
+          duration: 800,
+        });
+        return;
+      }
+    }
+
+    // Fallback if no extent is recorded: fly to center
+    map.flyTo({
+      center,
+      zoom: 11,
+      pitch: is3D ? 55 : 0,
+      bearing: is3D ? -15 : 0,
+      duration: 800,
+    });
+  };
+
   // Reset View
   const handleResetView = () => {
     const map = mapRef.current;
     if (!map) return;
 
-    if (observedExtent) {
+    if (observedExtent?.geometry) {
       const bounds = extractGeoJsonBounds(observedExtent);
       if (bounds) {
-        map.fitBounds(bounds, { padding: 60, maxZoom: 13, duration: 900 });
+        map.fitBounds(bounds, {
+          padding: { top: 80, bottom: 80, left: 80, right: 80 },
+          maxZoom: 14,
+          duration: 800,
+        });
         return;
       }
     }
@@ -1202,6 +1277,24 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
         <div className="h-4 w-px bg-zinc-800 mx-0.5" />
 
         {/* 3D vs 2D Basemap Modes */}
+        {/* Fit Flood Extent Action Button */}
+        <button
+          onClick={handleFitFloodExtent}
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
+            observedExtent?.geometry
+              ? 'bg-cyan-950/70 text-cyan-300 border border-cyan-500/40 hover:bg-cyan-900/60 shadow-xs'
+              : 'text-zinc-500 hover:text-zinc-400 bg-zinc-900/40 border border-zinc-800'
+          }`}
+          title={
+            observedExtent?.geometry
+              ? 'Fit camera view directly to active flood extent polygon'
+              : 'No observed flood extent polygon recorded for this event'
+          }
+        >
+          <LocateFixed className={`w-3.5 h-3.5 ${observedExtent?.geometry ? 'text-cyan-400' : 'text-zinc-500'}`} />
+          <span>{observedExtent?.geometry ? 'Fit Flood Extent' : 'No Extent'}</span>
+        </button>
+
         <button
           onClick={toggle3DMode}
           className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
@@ -1222,7 +1315,11 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
               ? 'bg-sky-950/50 text-sky-400 border border-sky-500/30'
               : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60'
           }`}
-          title="Toggle CartoDB Dark vs Esri World Imagery Satellite"
+          title={
+            basemap === 'satellite' || mode === 'satellite'
+              ? 'Currently viewing Esri World Imagery Satellite'
+              : 'Currently viewing Esri World Dark Gray Basemap'
+          }
         >
           <Satellite className="w-3.5 h-3.5" />
           <span>{basemap === 'satellite' ? 'SAT' : 'DARK'}</span>
@@ -1240,7 +1337,7 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
         <button
           onClick={handleResetView}
           className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60 transition-colors cursor-pointer"
-          title="Fit Camera to Flood Extent or Reset View"
+          title="Reset View to Overview Extent"
         >
           <RotateCcw className="w-3.5 h-3.5" />
         </button>
@@ -1283,11 +1380,26 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
 
           {/* Inundation Water */}
           <div className="flex items-center gap-1.5" title="Observed Flood Extent from Satellite Radar (SAR) or Optical">
-            <span className="w-3 h-2 rounded-xs bg-cyan-400/60 border border-cyan-300 inline-block shadow-[0_0_6px_rgba(34,211,238,0.5)]" />
-            <span className="font-bold text-cyan-200">
-              {observedExtent ? `EXTENT: ${observedExtent.properties?.area_km2 || '42.6'} KM²` : 'FLOOD EXTENT'}
+            <span className={`w-3 h-2 rounded-xs inline-block ${
+              observedExtent?.geometry
+                ? 'bg-cyan-400/60 border border-cyan-300 shadow-[0_0_6px_rgba(34,211,238,0.5)]'
+                : 'bg-zinc-700 border border-zinc-600'
+            }`} />
+            <span className={`font-bold ${observedExtent?.geometry ? 'text-cyan-200' : 'text-zinc-400'}`}>
+              {observedExtent?.properties?.area_km2
+                ? `EXTENT: ${observedExtent.properties.area_km2} KM²`
+                : observedExtent?.geometry
+                ? 'EXTENT RECORDED'
+                : 'NO EXTENT RECORDED'}
             </span>
           </div>
+
+          {tileNetworkError && (
+            <div className="flex items-center gap-1 text-amber-400" title={tileNetworkError}>
+              <AlertTriangle className="w-3 h-3 text-amber-400" />
+              <span>TILE NETWORK WARNING</span>
+            </div>
+          )}
 
           {/* Active Event Badge */}
           {selectedEventTitle && (

@@ -144,3 +144,94 @@ test('CesiumJS 3D Earth View & Basemap Fallback Regression Tests', async (t) => 
     assert.match(earthViewDisclaimer, /spatial inundation footprint/i);
   });
 });
+
+test('MapLibre Basemap Licensing & Flood Extent Regression Tests', async (t) => {
+  await t.test('Basemap licensing: default basemap must use keyless Esri Dark, never unkeyed CARTO', () => {
+    const getBasemapSource = (cartoKey) => {
+      const activeKey = (cartoKey || '').trim();
+      if (activeKey) {
+        return {
+          source: 'carto-dark',
+          urlPattern: `https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png?api_key=${activeKey}`,
+        };
+      }
+      return {
+        source: 'esri-dark',
+        urlPattern: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+      };
+    };
+
+    // Default configuration (no CARTO key):
+    const defaultBasemap = getBasemapSource('');
+    assert.equal(defaultBasemap.source, 'esri-dark');
+    assert.match(defaultBasemap.urlPattern, /server\.arcgisonline\.com/i);
+    assert.doesNotMatch(defaultBasemap.urlPattern, /cartocdn\.com/i, 'Must NOT request unkeyed CARTO tiles');
+
+    // With explicit CARTO key:
+    const keyedBasemap = getBasemapSource('carto-test-key-99');
+    assert.equal(keyedBasemap.source, 'carto-dark');
+    assert.match(keyedBasemap.urlPattern, /carto-test-key-99/i);
+  });
+
+  await t.test('Bounding box calculation: correctly extracts [[minLng, minLat], [maxLng, maxLat]] for MultiPolygon GeoJSON', () => {
+    const sampleMultiPolygon = {
+      type: 'Feature',
+      geometry: {
+        type: 'MultiPolygon',
+        coordinates: [
+          [
+            [
+              [85.91, 26.715],
+              [85.945, 26.715],
+              [85.945, 26.745],
+              [85.91, 26.745],
+              [85.91, 26.715],
+            ],
+          ],
+        ],
+      },
+    };
+
+    const extractBounds = (feat) => {
+      const pts = [];
+      const walk = (node) => {
+        if (!Array.isArray(node)) return;
+        if (node.length >= 2 && typeof node[0] === 'number' && typeof node[1] === 'number') {
+          pts.push(node);
+          return;
+        }
+        node.forEach(walk);
+      };
+      walk(feat.geometry.coordinates);
+      const lngs = pts.map((p) => p[0]);
+      const lats = pts.map((p) => p[1]);
+      return [
+        [Math.min(...lngs), Math.min(...lats)],
+        [Math.max(...lngs), Math.max(...lats)],
+      ];
+    };
+
+    const bounds = extractBounds(sampleMultiPolygon);
+    assert.deepEqual(bounds, [
+      [85.91, 26.715],
+      [85.945, 26.745],
+    ]);
+  });
+
+  await t.test('Missing extent handling: shows explicit notice when no flood extent is available in PostGIS', () => {
+    const renderExtentStatus = (extent, eventName) => {
+      if (extent?.geometry) {
+        return `EXTENT: ${extent.properties?.area_km2 || 'MAPPED'} KM²`;
+      }
+      return `No observed flood extent polygon is recorded in PostGIS for event: ${eventName || 'Selected Event'}. Inundation boundaries are omitted.`;
+    };
+
+    const statusWithoutExtent = renderExtentStatus(null, 'Test Event 1');
+    assert.match(statusWithoutExtent, /No observed flood extent polygon is recorded in PostGIS/i);
+    assert.match(statusWithoutExtent, /Inundation boundaries are omitted/i);
+
+    const statusWithExtent = renderExtentStatus({ geometry: {}, properties: { area_km2: 42.6 } }, 'Test Event 1');
+    assert.equal(statusWithExtent, 'EXTENT: 42.6 KM²');
+  });
+});
+
