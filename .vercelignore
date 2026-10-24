@@ -1,0 +1,9 @@
+.venv
+node_modules
+android
+backend
+data
+scratch
+.git
+.pytest_cache
+*.log
