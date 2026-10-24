@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import type { Alert, BenchmarkScene, HelpRequest, MetricSummary } from '../types';
 import { GeospatialTerrainMap } from './map/GeospatialTerrainMap';
+import { CesiumEarthMap } from './map/CesiumEarthMap';
+import { Globe, Map as MapIcon } from 'lucide-react';
 import { MetricCards } from './MetricCards';
 import { SosQueue } from './SosQueue';
 import { WarningBulletins } from './WarningBulletins';
@@ -58,6 +60,7 @@ export const CommandOverview: React.FC<CommandOverviewProps> = ({
   const [activeHorizon, setActiveHorizon] = useState<'Now' | '1h' | '3h' | '6h'>('Now');
   const [isRiskLoading, setIsRiskLoading] = useState(false);
   const [riskError, setRiskError] = useState<string | null>(null);
+  const [viewEngine, setViewEngine] = useState<'maplibre' | 'cesium'>('maplibre');
 
   useEffect(() => {
     let isMounted = true;
@@ -322,39 +325,88 @@ export const CommandOverview: React.FC<CommandOverviewProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-start">
         {/* Left Column: Reusable 3D Geospatial Terrain Map (7 cols on lg, 7 cols on xl) */}
         <div className="lg:col-span-7 xl:col-span-7 flex flex-col space-y-2">
-          <div className="flex items-center justify-between px-1">
-            <span className="font-micro text-xs uppercase tracking-[1.4px] text-[#38bdf8] font-bold">
-              3D GEOSPATIAL TERRAIN COMMAND // {DEMO_MODE ? 'KOSHI BENCHMARK' : 'HISTORICAL EVENT & FORECASTS'}
-            </span>
-            <span className="font-mono text-xs text-slate-300 font-medium">
-              DEM TERRAIN 1.5X &bull; {DEMO_MODE ? 'ILLUSTRATIVE SETTLEMENTS' : 'EVENT-LINKED POSTGIS OBSERVATIONS'}
-            </span>
+          <div className="flex flex-wrap items-center justify-between px-1 gap-2">
+            <div className="flex items-center gap-2">
+              <span className="font-micro text-xs uppercase tracking-[1.4px] text-[#38bdf8] font-bold">
+                {viewEngine === 'cesium' ? '3D EARTH GLOBE VIEW // CESIUMJS' : '3D GEOSPATIAL TERRAIN COMMAND // MAPLIBRE'}
+              </span>
+              <span className="font-mono text-[11px] text-slate-400 font-medium hidden sm:inline">
+                &bull; {DEMO_MODE ? 'ILLUSTRATIVE SETTLEMENTS' : 'EVENT-LINKED POSTGIS OBSERVATIONS'}
+              </span>
+            </div>
+
+            {/* View Engine Toggle Buttons */}
+            <div className="flex items-center gap-1 bg-zinc-950 p-0.5 rounded-lg border border-zinc-800">
+              <button
+                type="button"
+                onClick={() => setViewEngine('maplibre')}
+                className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-mono font-bold transition-all cursor-pointer ${
+                  viewEngine === 'maplibre'
+                    ? 'bg-sky-500 text-white shadow-xs'
+                    : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+                title="Standard High-Performance MapLibre 3D Terrain"
+              >
+                <MapIcon className="w-3.5 h-3.5" />
+                <span>MapLibre 3D</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setViewEngine('cesium')}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-mono font-bold transition-all cursor-pointer ${
+                  viewEngine === 'cesium'
+                    ? 'bg-cyan-500 text-slate-950 shadow-xs'
+                    : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+                title="Optional Google Earth-Style 3D Globe with Photorealistic 3D Tiles & Esri Satellite"
+              >
+                <Globe className="w-3.5 h-3.5" />
+                <span>3D Earth View</span>
+              </button>
+            </div>
           </div>
 
-          <GeospatialTerrainMap
-            center={defaultCenter}
-            zoom={benchmarkScene.zoom || 10.8}
-            pitch={benchmarkScene.pitch || 55}
-            bearing={benchmarkScene.bearing || -15}
-            activeHorizon={activeHorizon}
-            onActiveHorizonChange={setActiveHorizon}
-            observedExtent={observedExtent}
-            riskMarkers={riskMarkers}
-            facilities={facilities}
-            selectedEventTitle={selectedBackendEvent ? selectedBackendEvent.name : benchmarkScene.name}
-            selectedEventDate={selectedBackendEvent ? selectedBackendEvent.start_at.slice(0, 10) : benchmarkScene.date_range}
-            showInundation={true}
-            showRiskMarkers={true}
-            showForecast={true}
-            showGauges={DEMO_MODE}
-            showIncidents={true}
-            showInfrastructure={DEMO_MODE}
-            showShelters={true}
-            incidents={requests}
-            selectedIncidentId={selectedIncidentId}
-            onSelectIncident={(id) => setSelectedIncidentId(id)}
-            height="580px"
-          />
+          {viewEngine === 'cesium' ? (
+            <CesiumEarthMap
+              center={defaultCenter}
+              observedExtent={observedExtent}
+              riskMarkers={riskMarkers}
+              facilities={facilities}
+              incidents={requests}
+              activeHorizon={activeHorizon}
+              onActiveHorizonChange={setActiveHorizon}
+              selectedEventTitle={selectedBackendEvent ? selectedBackendEvent.name : benchmarkScene.name}
+              selectedEventDate={selectedBackendEvent ? selectedBackendEvent.start_at.slice(0, 10) : benchmarkScene.date_range}
+              onCloseEarthView={() => setViewEngine('maplibre')}
+              height="580px"
+            />
+          ) : (
+            <GeospatialTerrainMap
+              center={defaultCenter}
+              zoom={benchmarkScene.zoom || 10.8}
+              pitch={benchmarkScene.pitch || 55}
+              bearing={benchmarkScene.bearing || -15}
+              activeHorizon={activeHorizon}
+              onActiveHorizonChange={setActiveHorizon}
+              observedExtent={observedExtent}
+              riskMarkers={riskMarkers}
+              facilities={facilities}
+              selectedEventTitle={selectedBackendEvent ? selectedBackendEvent.name : benchmarkScene.name}
+              selectedEventDate={selectedBackendEvent ? selectedBackendEvent.start_at.slice(0, 10) : benchmarkScene.date_range}
+              showInundation={true}
+              showRiskMarkers={true}
+              showForecast={true}
+              showGauges={DEMO_MODE}
+              showIncidents={true}
+              showInfrastructure={DEMO_MODE}
+              showShelters={true}
+              incidents={requests}
+              selectedIncidentId={selectedIncidentId}
+              onSelectIncident={(id) => setSelectedIncidentId(id)}
+              height="580px"
+            />
+          )}
         </div>
 
         {/* Right Column: Live Incident Intelligence & Warning Bulletins */}

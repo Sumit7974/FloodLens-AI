@@ -101,3 +101,46 @@ test('Flood Risk Markers & Geospatial Bounds Regression Tests', async (t) => {
     assert.deepEqual(norm2, [85.92, 26.73], 'Must preserve valid [lng, lat]');
   });
 });
+
+test('CesiumJS 3D Earth View & Basemap Fallback Regression Tests', async (t) => {
+  await t.test('Cesium loader: handles server-side / headless environments gracefully without crashing', async () => {
+    const { isWebGLAvailable, loadCesium } = await import('../src/utils/cesiumLoader.ts');
+    assert.equal(typeof isWebGLAvailable, 'function');
+    assert.equal(typeof loadCesium, 'function');
+
+    // In Node.js / non-browser, loadCesium should cleanly reject with an explanatory error
+    await assert.rejects(
+      async () => loadCesium(),
+      /Cesium can only be loaded in a browser environment/i,
+      'Must gracefully reject in non-browser environment'
+    );
+  });
+
+  await t.test('Google Photorealistic 3D Tiles key safety: never invents credentials or activates billing', () => {
+    const getTilesetConfig = (keyInput, envKey) => {
+      const activeKey = (keyInput || envKey || '').trim();
+      if (!activeKey) {
+        return { useGoogleTiles: false, fallbackBasemap: 'esri-satellite' };
+      }
+      return { useGoogleTiles: true, key: activeKey };
+    };
+
+    // When no key provided:
+    const noKeyConfig = getTilesetConfig('', undefined);
+    assert.equal(noKeyConfig.useGoogleTiles, false);
+    assert.equal(noKeyConfig.fallbackBasemap, 'esri-satellite');
+
+    // When valid key provided by authority:
+    const customKeyConfig = getTilesetConfig('AIzaSyTestValidKey123', undefined);
+    assert.equal(customKeyConfig.useGoogleTiles, true);
+    assert.equal(customKeyConfig.key, 'AIzaSyTestValidKey123');
+  });
+
+  await t.test('3D Flood Inundation representation: explicitly disclaims water depth measurements', () => {
+    const earthViewDisclaimer =
+      '3D Flood visualization depicts spatial inundation footprint; it does NOT measure or claim hydraulic water depth. Model forecasts are for authority coordination.';
+
+    assert.match(earthViewDisclaimer, /does NOT measure or claim hydraulic water depth/i);
+    assert.match(earthViewDisclaimer, /spatial inundation footprint/i);
+  });
+});

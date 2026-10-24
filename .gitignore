@@ -67,3 +67,9 @@ dist/
 backend/app/storage/satellite_outputs/*
 !backend/app/storage/satellite_outputs/.gitkeep
 
+# Vercel & Scratch
+.vercel/
+frontend/.vercel/
+scratch/
+
+
