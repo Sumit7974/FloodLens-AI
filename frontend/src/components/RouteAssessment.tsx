@@ -118,14 +118,17 @@ export const RouteAssessment: React.FC<RouteAssessmentProps> = ({ currentScene }
     listHistoricalEvents()
       .then((evs) => {
         setEvents(evs);
-        if (evs.length > 0 && !selectedEventId) {
-          setSelectedEventId(evs[0].id);
+        if (evs.length > 0) {
+          setSelectedEventId((prev) => {
+            const match = evs.find((e) => e.id === prev);
+            return match ? match.id : evs[0].id;
+          });
         }
       })
       .catch((err) => {
         console.warn('Could not fetch historical events:', err);
       });
-  }, [selectedEventId]);
+  }, []);
 
   const handleSelectPreset = (presetId: string) => {
     setSelectedPresetId(presetId);

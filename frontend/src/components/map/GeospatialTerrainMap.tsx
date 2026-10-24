@@ -304,6 +304,50 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
   // Animation particles reference initialized deterministically
   const particlesRef = useRef(INITIAL_FLOW_PARTICLES);
 
+  // Track previous incident IDs to detect incoming SOS beacons in real-time
+  const prevIncidentIdsRef = useRef<Set<string>>(new Set());
+  const isFirstIncidentSyncRef = useRef<boolean>(true);
+
+  // When a new 'pending' incident arrives, automatically fly to newest coordinate with pulsating beacon
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapLoaded || !incidents || incidents.length === 0) return;
+
+    const currentIds = new Set(incidents.map((i) => i.id));
+
+    if (!isFirstIncidentSyncRef.current) {
+      const newPendingIncidents = incidents.filter(
+        (i) =>
+          !prevIncidentIdsRef.current.has(i.id) &&
+          (i.status === 'LOCAL_LOGGED' ||
+            i.handoff_status === 'LOCAL_LOGGED' ||
+            (i as any).status === 'pending' ||
+            !dispatchedIncidents[i.id])
+      );
+
+      if (newPendingIncidents.length > 0) {
+        const latest = newPendingIncidents[newPendingIncidents.length - 1];
+        const [lat, lng] = latest.coordinates;
+
+        map.flyTo({
+          center: [lng, lat],
+          zoom: Math.max(map.getZoom(), 12.8),
+          pitch: 55,
+          duration: 1600,
+          essential: true,
+        });
+
+        if (onSelectIncident) {
+          onSelectIncident(latest.id);
+        }
+      }
+    } else {
+      isFirstIncidentSyncRef.current = false;
+    }
+
+    prevIncidentIdsRef.current = currentIds;
+  }, [incidents, mapLoaded, onSelectIncident, dispatchedIncidents]);
+
   // Convert SOS incidents to GeoJSON FeatureCollection for hardware-accelerated clustering
   const incidentsGeoJson = useMemo<any>(() => {
     return {
@@ -1138,18 +1182,19 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
         const el = document.createElement('div');
         el.className = `cursor-pointer transition-all duration-300 ${isSelected ? 'scale-125 z-50' : 'hover:scale-115'}`;
 
-        // Custom Cyber-Tactical SVG Pin with Animated Pulse Ring
+        // Custom Cyber-Tactical SVG Pin with Concentric Pulsating Radar Beacon Rings
         el.innerHTML = `
           <div class="relative flex items-center justify-center group">
-            <span class="animate-ping absolute inline-flex h-9 w-9 rounded-full ${pulseColor} opacity-50"></span>
-            <div class="relative w-8 h-8 rounded-full border-2 border-white/90 flex items-center justify-center text-[10px] font-mono font-bold text-white shadow-2xl backdrop-blur-sm"
-                 style="background: radial-gradient(circle, ${badgeColor} 40%, #030712 100%); box-shadow: 0 0 14px ${badgeColor}99">
+            <span class="animate-ping absolute inline-flex h-12 w-12 rounded-full ${pulseColor} opacity-70"></span>
+            <span class="animate-ping absolute inline-flex h-8 w-8 rounded-full ${pulseColor} opacity-90" style="animation-duration: 1.5s; animation-delay: 0.3s"></span>
+            <div class="relative w-8 h-8 rounded-full border-2 ${isSelected ? 'border-amber-300 ring-4 ring-amber-400/50 scale-110' : 'border-white/90'} flex items-center justify-center text-[10px] font-mono font-bold text-white shadow-2xl backdrop-blur-sm transition-transform"
+                 style="background: radial-gradient(circle, ${badgeColor} 40%, #030712 100%); box-shadow: 0 0 ${isSelected ? '22px #f59e0b' : '14px ' + badgeColor + '99'}">
               <svg class="w-4 h-4 text-white drop-shadow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
               </svg>
             </div>
-            <div class="absolute -top-7 left-1/2 -translate-x-1/2 bg-black/90 border border-cyan-500/40 px-2 py-0.5 rounded text-[9px] font-mono font-bold text-cyan-300 whitespace-nowrap shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-              ${req.requester_name.split(' ')[0]} (${req.people_count} souls)
+            <div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-black/95 border ${isSelected ? 'border-amber-400 text-amber-300' : 'border-cyan-500/40 text-cyan-300'} px-2 py-0.5 rounded text-[9px] font-mono font-bold whitespace-nowrap shadow-lg ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity pointer-events-none z-30">
+              ${req.requester_name} (${req.people_count || 1} souls) &bull; ${req.urgency}
             </div>
           </div>
         `;

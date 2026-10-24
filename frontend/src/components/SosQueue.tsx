@@ -109,7 +109,17 @@ export const SosQueue: React.FC<SosQueueProps> = ({
 
         {/* SOS Request List */}
         <div className="p-3.5 space-y-2.5 flex-1">
-          {topRequests.map((req) => {
+          {topRequests.length === 0 ? (
+            <div className="p-5 rounded-md bg-[#0a1b33]/60 border border-[#1e3a5f]/60 text-center flex flex-col items-center justify-center gap-2">
+              <span className="text-xs font-mono text-slate-400 uppercase tracking-wider">
+                NO PENDING CITIZEN SOS BEACONS
+              </span>
+              <p className="font-mono text-[11px] text-slate-500 max-w-xs">
+                Civilian queue is currently clear. Real-time beacons from mobile field clients will populate here automatically.
+              </p>
+            </div>
+          ) : (
+            topRequests.map((req) => {
             return (
               <div
                 key={req.id}
@@ -145,7 +155,7 @@ export const SosQueue: React.FC<SosQueueProps> = ({
                 </div>
               </div>
             );
-          })}
+          }))}
         </div>
       </div>
 

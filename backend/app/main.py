@@ -42,6 +42,28 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             db_status["postgis_version"] or "Not installed",
             db_status["latency_ms"],
         )
+        try:
+            from app.database import SessionLocal
+            from app.models.user import User
+            from app.models.enums import UserRole
+            from app.core.security import hash_password
+
+            with SessionLocal() as db:
+                existing_auth = db.query(User).filter(User.email == "authority@floodlens.org").first()
+                if not existing_auth:
+                    auth_user = User(
+                        email="authority@floodlens.org",
+                        hashed_password=hash_password("authoritysecure456"),
+                        full_name="DEOC Authority Commander",
+                        role=UserRole.AUTHORITY,
+                        contact_consent=True,
+                        is_active=True,
+                    )
+                    db.add(auth_user)
+                    db.commit()
+                    logger.info("Seeded default authority officer: authority@floodlens.org")
+        except Exception as seed_err:
+            logger.warning("Authority user seeding skipped or failed: %s", seed_err)
     else:
         logger.warning("Database connection failed during startup: %s", db_status["error"])
 

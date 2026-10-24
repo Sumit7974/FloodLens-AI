@@ -31,7 +31,7 @@ interface HistoricalReportsProps {
 
 export const HistoricalReports: React.FC<HistoricalReportsProps> = ({ currentScene }) => {
   const [events, setEvents] = useState<FloodEventRecord[]>([]);
-  const [selectedEventId, setSelectedEventId] = useState<string>(currentScene.id);
+  const [selectedEventId, setSelectedEventId] = useState<string>('');
   const [report, setReport] = useState<FloodReportResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [downloadingFormat, setDownloadingFormat] = useState<'json' | 'csv' | null>(null);
@@ -42,7 +42,7 @@ export const HistoricalReports: React.FC<HistoricalReportsProps> = ({ currentSce
   // Load historical events list
   useEffect(() => {
     if (DEMO_MODE) {
-      setEvents([
+      const demoEvents: FloodEventRecord[] = [
         {
           id: 'koshi-basin-primary',
           name: '2026 Monsoon Surge — Koshi Basin Reach',
@@ -65,21 +65,36 @@ export const HistoricalReports: React.FC<HistoricalReportsProps> = ({ currentSce
           description: 'Historical monsoon benchmark with recorded settlement inundation.',
           created_at: '2024-08-17T00:00:00Z',
         },
-      ]);
+      ];
+      setEvents(demoEvents);
+      setSelectedEventId((prev) => (prev && demoEvents.some((e) => e.id === prev) ? prev : demoEvents[0].id));
       return;
     }
 
     listHistoricalEvents()
       .then((evs) => {
         setEvents(evs);
-        if (evs.length > 0 && !selectedEventId) {
-          setSelectedEventId(evs[0].id);
+        if (evs.length > 0) {
+          setSelectedEventId((prev) => {
+            const match = evs.find((e) => e.id === prev);
+            return match ? match.id : evs[0].id;
+          });
         }
       })
       .catch((err) => {
         console.warn('Could not load flood events for reports view:', err);
       });
-  }, [selectedEventId]);
+  }, []);
+
+  // Synchronize selectedEventId if currentScene matches a registered event
+  useEffect(() => {
+    if (events.length > 0 && currentScene?.id) {
+      const match = events.find((e) => e.id === currentScene.id);
+      if (match) {
+        setSelectedEventId(match.id);
+      }
+    }
+  }, [currentScene.id, events]);
 
   // Fetch synthesized impact report for selected event
   const fetchReport = useCallback(async () => {
@@ -131,12 +146,17 @@ export const HistoricalReports: React.FC<HistoricalReportsProps> = ({ currentSce
       const res = await getFloodReport(selectedEventId);
       setReport(res);
       setLastRefreshedAt(new Date().toLocaleTimeString());
-    } catch (err) {
+    } catch (err: any) {
+      // If the selectedEventId is not found (404) and we have other valid events, gracefully switch to the first valid event
+      if (err?.status === 404 && events.length > 0 && selectedEventId !== events[0].id) {
+        setSelectedEventId(events[0].id);
+        return;
+      }
       setError(err instanceof Error ? err.message : 'Failed to query FastAPI flood report summary.');
     } finally {
       setLoading(false);
     }
-  }, [selectedEventId]);
+  }, [selectedEventId, events]);
 
   useEffect(() => {
     void fetchReport();

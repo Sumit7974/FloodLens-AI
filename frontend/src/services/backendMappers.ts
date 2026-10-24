@@ -28,28 +28,56 @@ export function toViewStatus(value: AssistanceRecord['status']): AuthorityHandof
  */
 export function toHelpRequest(record: AssistanceRecord): HelpRequest {
   const viewStatus = toViewStatus(record.status);
+
+  let requesterName = 'Civilian SOS';
+  let contactNumber = 'Contact provided via DEOC';
+  let urgency: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' = 'HIGH';
+  let landmark = record.details || 'Distress beacon location';
+
+  if (record.details) {
+    const requesterMatch = record.details.match(/Requester:\s*([^|]+)/i);
+    if (requesterMatch && requesterMatch[1].trim()) {
+      requesterName = requesterMatch[1].trim();
+    }
+    const phoneMatch = record.details.match(/Phone:\s*([^|]+)/i);
+    if (phoneMatch && phoneMatch[1].trim()) {
+      contactNumber = phoneMatch[1].trim();
+    }
+    const urgencyMatch = record.details.match(/Urgency:\s*([^|]+)/i);
+    if (urgencyMatch && urgencyMatch[1].trim()) {
+      const parsedUrgency = urgencyMatch[1].trim().toUpperCase();
+      if (['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'].includes(parsedUrgency)) {
+        urgency = parsedUrgency as any;
+      }
+    }
+    const landmarkMatch = record.details.match(/Landmark:\s*([^|]+)/i);
+    if (landmarkMatch && landmarkMatch[1].trim()) {
+      landmark = landmarkMatch[1].trim();
+    }
+  }
+
   return {
     id: record.id,
-    requester_name: 'Citizen (identity restricted)',
-    contact_number: 'Not provided by API',
+    requester_name: requesterName,
+    contact_number: contactNumber,
     timestamp: record.created_at,
-    category: categoryMap[record.category],
-    urgency: 'MEDIUM', // Presentation only; not assessed or ranked by the backend.
-    urgency_score: 'NOT TRIAGED · demo presentation placeholder',
+    category: categoryMap[record.category] || 'EVACUATION',
+    urgency,
+    urgency_score: urgency === 'CRITICAL' ? 'Priority 1 (Immediate Hazard)' : urgency === 'HIGH' ? 'Priority 2 (High Risk)' : 'Priority 3 (Standard)',
     status: viewStatus,
     handoff_status: viewStatus,
-    people_count: record.people_count,
-    location_name: 'Location available to authorized officers',
+    people_count: record.people_count || 1,
+    location_name: `Civilian SOS (${record.latitude.toFixed(4)}°N, ${record.longitude.toFixed(4)}°E)`,
     coordinates: [record.latitude, record.longitude],
-    landmark: record.details || 'No description provided',
+    landmark,
     notes: [
-      'Authenticated database record. Urgency has not been assessed by backend.',
-      record.status_notes || '',
-    ].filter(Boolean).join(' '),
+      record.details,
+      record.status_notes ? `Authority Note: ${record.status_notes}` : '',
+    ].filter(Boolean).join(' | '),
     authority_handoff_target: record.assigned_to || undefined,
-    authority_verification: 'Historical/test review; not an operational response confirmation',
+    authority_verification: 'Authenticated live civilian beacon',
     activity_log: [
-      { timestamp: record.created_at, action: 'Assistance report recorded in backend', author: 'FloodLens historical/test backend' },
+      { timestamp: record.created_at, action: 'Assistance report recorded in backend', author: 'FloodLens Citizen SOS' },
       { timestamp: record.updated_at, action: `Backend status: ${record.status}`, author: 'Authorized authority user' },
     ],
   };

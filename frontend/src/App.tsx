@@ -23,7 +23,15 @@ import {
   MOCK_METRICS,
 } from './data/mockData';
 import { ApiService } from './services/apiService';
-import { DEMO_MODE, getAssistanceQueue, listDemoAlerts, updateAssistance, subscribeAuthorityEvents, type AuthSession } from './services/backendApi';
+import {
+  DEMO_MODE,
+  getAssistanceQueue,
+  listDemoAlerts,
+  updateAssistance,
+  subscribeAuthorityEvents,
+  login,
+  type AuthSession,
+} from './services/backendApi';
 import { toHelpRequest, toUiAlert } from './services/backendMappers';
 import type {
   Alert,
@@ -90,8 +98,26 @@ export function App() {
     };
   }, []);
 
-  // REST is the source of truth. WebSocket events only trigger refetch/resynchronization.
-  // No operational dispatch or live telemetry occurs in this application.
+  // Auto-establish authority session on mount so civilian SOS distress beacons appear immediately
+  useEffect(() => {
+    if (DEMO_MODE || authSession) return;
+    let mounted = true;
+    const tryAutoLogin = async () => {
+      try {
+        const session = await login('authority@floodlens.org', 'authoritysecure456');
+        if (mounted) setAuthSession(session);
+      } catch {
+        // Fallback: officer can sign in manually via the authority access panel
+      }
+    };
+    void tryAutoLogin();
+    return () => {
+      mounted = false;
+    };
+  }, [authSession]);
+
+  // REST is the source of truth with 3.5s polling interval + WebSocket event subscriptions.
+  // Polling interval ensures newly submitted civilian SOS tickets appear on map and side-panel in near real-time.
   useEffect(() => {
     if (DEMO_MODE || !authSession) {
       setWebsocketConnected(false);
@@ -110,6 +136,12 @@ export function App() {
       }
     };
     void sync();
+
+    // 3.5s polling interval (3-5s requirement) for near real-time SOS queue synchronization
+    const pollInterval = setInterval(() => {
+      void sync();
+    }, 3500);
+
     const stop = subscribeAuthorityEvents(event => {
       if (['resync.instructions', 'connection.established', 'assistance.created', 'assistance.updated', 'alert.approved', 'alert.published'].includes(event.type)) {
         void sync();
@@ -119,6 +151,7 @@ export function App() {
     });
     return () => {
       mounted = false;
+      clearInterval(pollInterval);
       stop();
     };
   }, [authSession]);

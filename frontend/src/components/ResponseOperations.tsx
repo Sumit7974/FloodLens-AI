@@ -64,7 +64,7 @@ export const ResponseOperations: React.FC<ResponseOperationsProps> = ({
     };
   }, [currentScene.id]);
 
-  const selectedRequest = requests.find((r) => r.id === selectedId) || requests[0];
+  const selectedRequest = requests.find((r) => r.id === selectedId) || requests[0] || null;
 
   // Filtered requests list
   const filteredRequests = requests.filter((r) => {
@@ -94,6 +94,7 @@ export const ResponseOperations: React.FC<ResponseOperationsProps> = ({
   };
 
   const handleUpdateLifecycle = async (status: AuthorityHandoffStatus, note: string) => {
+    if (!selectedRequest) return;
     const saved = await onUpdateRequestStatus(selectedRequest.id, status, note);
     notify(saved ? `Demo/test status recorded for #${selectedRequest.id}; no dispatch.` : `NOT SAVED: #${selectedRequest.id}. Review backend authentication.`);
   };
@@ -105,6 +106,7 @@ export const ResponseOperations: React.FC<ResponseOperationsProps> = ({
 
   // Generate standardized incident packet for DEOC
   const generateDeocPacket = () => {
+    if (!selectedRequest) return null;
     return {
       incident_id: selectedRequest.id,
       timestamp_logged: selectedRequest.timestamp,
@@ -249,7 +251,7 @@ export const ResponseOperations: React.FC<ResponseOperationsProps> = ({
           </div>
 
           <GeospatialTerrainMap
-            center={[selectedRequest.coordinates[1], selectedRequest.coordinates[0]]}
+            center={selectedRequest ? [selectedRequest.coordinates[1], selectedRequest.coordinates[0]] : [87.05, 26.65]}
             zoom={11.5}
             pitch={55}
             bearing={-15}
