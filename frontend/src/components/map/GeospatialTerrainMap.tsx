@@ -454,12 +454,12 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
           type: 'FLOOD_EXTENT',
           title: p.event_id || selectedEventTitle || 'Recorded Flood Inundation Extent',
           area: p.area_km2 ? `${p.area_km2} km²` : 'Measured Inundation Extent',
-          observedAt: p.observed_at || 'Observed Sentinel-1/2 pass',
-          method: p.method || 'Satellite Observation (SAR/Optical)',
+          observedAt: p.observed_at || selectedEventDate || 'Recorded observation timestamp',
+          method: p.method || 'Satellite / Sensor Observation',
           provenance: p.provenance || (DEMO_MODE ? 'Demo Fixture' : 'PostGIS Extent Polygon'),
           sourceScenes: p.source_scene_ids
-            ? String(p.source_scene_ids)
-            : 'Copernicus SAR Constellation',
+            ? (Array.isArray(p.source_scene_ids) ? p.source_scene_ids.join(', ') : String(p.source_scene_ids))
+            : 'Not provided in database record',
           coords: [e.lngLat.lng, e.lngLat.lat],
         });
       });

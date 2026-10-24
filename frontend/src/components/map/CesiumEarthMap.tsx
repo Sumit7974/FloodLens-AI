@@ -31,7 +31,7 @@ interface CesiumEarthMapProps {
   height?: string;
 }
 
-export const CesiumEarthMap: React.FC<CesiumEarthMapProps> = ({
+const CesiumEarthMapInner: React.FC<CesiumEarthMapProps> = ({
   center = [85.92, 26.73],
   observedExtent,
   riskMarkers = [],
@@ -138,19 +138,26 @@ export const CesiumEarthMap: React.FC<CesiumEarthMapProps> = ({
         // Compatible Non-Google Basemap fallback (High-Resolution Satellite Imagery)
         if (!googleLoaded) {
           try {
-            const esriImagery = new Cesium.ArcGisMapServerImageryProvider({
-              url: 'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer',
-              enablePickFeatures: false,
-            });
-            viewer.imageryLayers.addImageryProvider(esriImagery);
-          } catch {
-            // Soft fallback to OpenStreetMap
-            try {
-              viewer.imageryLayers.addImageryProvider(
-                new Cesium.OpenStreetMapImageryProvider({
-                  url: 'https://a.tile.openstreetmap.org/',
-                })
+            let esriProvider: any = null;
+            if (typeof Cesium.ArcGisMapServerImageryProvider?.fromUrl === 'function') {
+              esriProvider = await Cesium.ArcGisMapServerImageryProvider.fromUrl(
+                'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer',
+                { enablePickFeatures: false }
               );
+            } else {
+              esriProvider = new Cesium.UrlTemplateImageryProvider({
+                url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                maximumLevel: 19,
+              });
+            }
+            viewer.imageryLayers.addImageryProvider(esriProvider);
+          } catch {
+            try {
+              const urlProvider = new Cesium.UrlTemplateImageryProvider({
+                url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+                maximumLevel: 19,
+              });
+              viewer.imageryLayers.addImageryProvider(urlProvider);
             } catch {
               // Globe default
             }
@@ -245,6 +252,7 @@ export const CesiumEarthMap: React.FC<CesiumEarthMapProps> = ({
         viewer.dataSources.add(ds);
 
         // Enhance polygon materials with bright neon boundaries
+        const p = observedExtent?.properties || {};
         const entities = ds.entities.values;
         for (let i = 0; i < entities.length; i++) {
           const entity = entities[i];
@@ -257,10 +265,10 @@ export const CesiumEarthMap: React.FC<CesiumEarthMapProps> = ({
             entity.properties = {
               type: 'FLOOD_EXTENT',
               title: selectedEventTitle,
-              date: selectedEventDate,
-              area_km2: observedExtent?.properties?.area_km2 ?? 42.6,
-              method: observedExtent?.properties?.method ?? 'SAR_CHANGE',
-              sensor: observedExtent?.properties?.source_scene_ids?.join(', ') || 'Sentinel-1 SAR C-Band',
+              date: p.observed_at || selectedEventDate,
+              area_km2: p.area_km2 ?? 42.6,
+              method: p.method || 'Satellite Observation',
+              sensor: Array.isArray(p.source_scene_ids) ? p.source_scene_ids.join(', ') : (p.source_scene_ids || 'Not provided in record'),
               disclaimer: 'Observed inundation footprint; does not reflect instantaneous water depth.',
             };
           }
@@ -831,12 +839,24 @@ export const CesiumEarthMap: React.FC<CesiumEarthMapProps> = ({
                   <strong className="text-cyan-300 font-mono text-sm">{selectedEntity.area_km2} km²</strong>
                 </div>
                 <div className="p-2 rounded bg-zinc-900 border border-zinc-800">
-                  <div className="text-[10px] text-zinc-500 uppercase">Observation Sensor</div>
-                  <strong className="text-zinc-200 font-mono text-[11px]">{selectedEntity.method}</strong>
+                  <div className="text-[10px] text-zinc-500 uppercase">Observation Method</div>
+                  <strong className="text-zinc-200 font-mono text-[11px]">{selectedEntity.method || 'Satellite Observation'}</strong>
+                </div>
+              </div>
+              <div className="p-2 rounded bg-zinc-900 border border-zinc-800 space-y-1">
+                <div className="flex justify-between">
+                  <span className="text-zinc-500 text-[10px]">Observation Time:</span>
+                  <span className="text-zinc-300 font-mono text-[11px]">{selectedEntity.date || 'Historical Event Record'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-500 text-[10px]">Source Scenes:</span>
+                  <span className="text-zinc-300 font-mono text-[10px] truncate max-w-[200px]" title={selectedEntity.sensor}>
+                    {selectedEntity.sensor}
+                  </span>
                 </div>
               </div>
               <p className="text-[11px] text-sky-200 bg-sky-950/30 p-2 rounded border border-sky-800/40">
-                Observed from Sentinel-1 SAR C-band radar via FastAPI/PostGIS. Derived area reflects spatial inundation boundary; independent validation is not implied.
+                Observed inundation footprint loaded from PostGIS via FastAPI ({selectedEntity.method || 'Observation'}). Derived area reflects spatial inundation boundary; independent validation is not implied.
               </p>
             </div>
           )}
@@ -919,10 +939,9 @@ export const CesiumEarthMap: React.FC<CesiumEarthMapProps> = ({
             </div>
 
             <form onSubmit={handleApplyGoogleKey} className="mt-4 space-y-3.5 text-xs">
-              <p className="text-zinc-300 leading-relaxed">
-                Google Photorealistic 3D Tiles require a configured Google Maps Platform API key with
-                the <strong>Map Tiles API</strong> enabled and billing authorized on your Google Cloud project.
-              </p>
+              <div className="p-2.5 rounded bg-amber-950/50 border border-amber-600/60 text-amber-200 text-[11px] leading-relaxed">
+                <strong>CRITICAL BILLING NOTICE:</strong> Google Photorealistic 3D Tiles require a configured Google Maps Platform API key with the <strong>Map Tiles API</strong> enabled and active billing on your Google Cloud project. Applying a valid key <strong>will initiate requests that may trigger billable charges</strong> under Google Cloud's pricing tier. Do not enter a key unless you are authorized to incur costs.
+              </div>
 
               <div>
                 <label className="block text-zinc-300 font-mono mb-1 text-[11px] font-bold">
@@ -960,7 +979,7 @@ export const CesiumEarthMap: React.FC<CesiumEarthMapProps> = ({
                   type="submit"
                   className="px-4 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-mono text-xs font-bold shadow-md cursor-pointer"
                 >
-                  Apply 3D Tiles
+                    Apply 3D Tiles
                 </button>
               </div>
             </form>
@@ -968,5 +987,64 @@ export const CesiumEarthMap: React.FC<CesiumEarthMapProps> = ({
         </div>
       )}
     </div>
+  );
+};
+
+interface ErrorBoundaryProps {
+  onFallback?: () => void;
+  children: React.ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error?: Error;
+}
+
+export class CesiumErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('CesiumErrorBoundary caught an error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="w-full h-[580px] rounded-xl border border-zinc-800 bg-[#030712] p-6 flex flex-col items-center justify-center text-center space-y-3 font-mono">
+          <AlertTriangle className="w-10 h-10 text-amber-400" />
+          <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+            3D Earth View Fallback Activated
+          </h3>
+          <p className="text-xs text-zinc-400 max-w-md">
+            Cesium 3D Globe encountered a WebGL or resource initialization issue on this device.
+            The primary MapLibre 3D Terrain map remains fully operational.
+          </p>
+          {this.props.onFallback && (
+            <button
+              onClick={this.props.onFallback}
+              className="px-4 py-2 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
+            >
+              Switch to MapLibre 3D Terrain
+            </button>
+          )}
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+export const CesiumEarthMap: React.FC<CesiumEarthMapProps> = (props) => {
+  return (
+    <CesiumErrorBoundary onFallback={props.onCloseEarthView}>
+      <CesiumEarthMapInner {...props} />
+    </CesiumErrorBoundary>
   );
 };
