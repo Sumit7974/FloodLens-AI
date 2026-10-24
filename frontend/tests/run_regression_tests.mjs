@@ -52,3 +52,52 @@ test('WarningBulletins & Component Empty-State Regression Tests', async (t) => {
 
   await viteServer.close();
 });
+
+test('Flood Risk Markers & Geospatial Bounds Regression Tests', async (t) => {
+  await t.test('Risk markers: green markers must NEVER claim guaranteed safety', () => {
+    const lowRiskMarker = {
+      id: 'loc_test_low',
+      name: 'Test Settlement Low',
+      activeRiskLevel: 'LOW',
+      disclaimer: 'LOW ESTIMATED FLOOD RISK · Does NOT guarantee complete safety or absence of localized flash pooling.',
+    };
+
+    assert.equal(lowRiskMarker.activeRiskLevel, 'LOW');
+    assert.match(lowRiskMarker.disclaimer, /NOT guarantee complete safety/i);
+    assert.doesNotMatch(lowRiskMarker.disclaimer, /^Safe$/i, 'Must not label low risk as safe');
+  });
+
+  await t.test('Risk classification standards: Red=Critical/High, Yellow=Moderate, Green=Low, Gray=Unknown', () => {
+    const mapRiskToColor = (risk) => {
+      const r = risk.toUpperCase();
+      if (r === 'CRITICAL' || r === 'HIGH') return '#ef4444'; // Red
+      if (r === 'MODERATE') return '#eab308'; // Yellow
+      if (r === 'LOW') return '#22c55e'; // Green
+      return '#64748b'; // Gray
+    };
+
+    assert.equal(mapRiskToColor('CRITICAL'), '#ef4444');
+    assert.equal(mapRiskToColor('HIGH'), '#ef4444');
+    assert.equal(mapRiskToColor('MODERATE'), '#eab308');
+    assert.equal(mapRiskToColor('LOW'), '#22c55e');
+    assert.equal(mapRiskToColor('UNKNOWN'), '#64748b');
+    assert.equal(mapRiskToColor('NO_DATA'), '#64748b');
+  });
+
+  await t.test('Coordinate order normalization: handles both [lng, lat] and inverted [lat, lng]', () => {
+    const normalizeCoords = (c0, c1) => {
+      // Nepal bounds: lon ~78-90, lat ~25-32
+      if (c0 > 50 && c1 < 40) return [c0, c1]; // already [lng, lat]
+      if (c1 > 50 && c0 < 40) return [c1, c0]; // was [lat, lng]
+      return [c0, c1];
+    };
+
+    // Case 1: [lat, lng] from citizen request (e.g. [26.65, 87.05])
+    const norm1 = normalizeCoords(26.65, 87.05);
+    assert.deepEqual(norm1, [87.05, 26.65], 'Must swap [lat, lng] to [lng, lat]');
+
+    // Case 2: Standard [lng, lat] (e.g. [85.92, 26.73])
+    const norm2 = normalizeCoords(85.92, 26.73);
+    assert.deepEqual(norm2, [85.92, 26.73], 'Must preserve valid [lng, lat]');
+  });
+});

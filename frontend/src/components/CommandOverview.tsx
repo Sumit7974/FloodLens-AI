@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import type { Alert, BenchmarkScene, HelpRequest, MetricSummary } from '../types';
 import { GeospatialTerrainMap } from './map/GeospatialTerrainMap';
 import { MetricCards } from './MetricCards';
@@ -6,7 +6,22 @@ import { SosQueue } from './SosQueue';
 import { WarningBulletins } from './WarningBulletins';
 import { DataStatusBadge } from './common/DataStatusBadge';
 import { floodLensClient } from '../services/floodLensClient';
-import { DEMO_MODE, listHistoricalEvents, getObservedExtent, getSettlementExposure, getAssetExposure, type FloodEventRecord, type ObservedExtentFeature, type SettlementExposureResponse, type AssetExposureResponse } from '../services/backendApi';
+import {
+  DEMO_MODE,
+  listHistoricalEvents,
+  getObservedExtent,
+  getSettlementExposure,
+  getAssetExposure,
+  getRiskLocationMarkers,
+  getShelters,
+  getHospitals,
+  type FloodEventRecord,
+  type ObservedExtentFeature,
+  type SettlementExposureResponse,
+  type AssetExposureResponse,
+  type RiskLocationMarker,
+  type FacilityItem,
+} from '../services/backendApi';
 
 interface CommandOverviewProps {
   metrics: MetricSummary;
@@ -36,6 +51,13 @@ export const CommandOverview: React.FC<CommandOverviewProps> = ({
   const [assets, setAssets] = useState<AssetExposureResponse | null>(null);
   const [backendEventError, setBackendEventError] = useState('');
   const [extentError, setExtentError] = useState('');
+
+  // Location-linked backend risk forecasts & emergency facilities
+  const [riskMarkers, setRiskMarkers] = useState<RiskLocationMarker[]>([]);
+  const [facilities, setFacilities] = useState<FacilityItem[]>([]);
+  const [activeHorizon, setActiveHorizon] = useState<'Now' | '1h' | '3h' | '6h'>('Now');
+  const [isRiskLoading, setIsRiskLoading] = useState(false);
+  const [riskError, setRiskError] = useState<string | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -89,7 +111,79 @@ export const CommandOverview: React.FC<CommandOverviewProps> = ({
     return () => { active = false; };
   }, [selectedEventId]);
 
+  useEffect(() => {
+    let active = true;
+    setIsRiskLoading(true);
+    setRiskError(null);
+
+    Promise.allSettled([
+      getRiskLocationMarkers(),
+      getShelters().catch(() => ({ count: 0, shelters: [], data_notes: '' })),
+      getHospitals().catch(() => ({ count: 0, hospitals: [], data_notes: '' })),
+    ]).then(([riskRes, shelterRes, hospitalRes]) => {
+      if (!active) return;
+      setIsRiskLoading(false);
+
+      if (riskRes.status === 'fulfilled') {
+        setRiskMarkers(riskRes.value);
+      } else {
+        setRiskError(riskRes.reason instanceof Error ? riskRes.reason.message : 'Unable to load location forecasts');
+      }
+
+      const items: FacilityItem[] = [];
+      if (shelterRes.status === 'fulfilled' && shelterRes.value?.shelters) {
+        items.push(...shelterRes.value.shelters);
+      }
+      if (hospitalRes.status === 'fulfilled' && hospitalRes.value?.hospitals) {
+        items.push(...hospitalRes.value.hospitals);
+      }
+      setFacilities(items);
+    });
+
+    return () => { active = false; };
+  }, [selectedEventId]);
+
   const selectedBackendEvent = backendEvents.find(event => event.id === selectedEventId);
+
+  const defaultCenter = useMemo((): [number, number] => {
+    if (selectedEventId === 'evt_2024_terai_monsoon') {
+      return [85.92, 26.73];
+    }
+    if (selectedEventId === 'event_nepal_koshi_2017') {
+      return [87.05, 26.65];
+    }
+    const firstPredicted = riskMarkers.find(m => m.hasForecast && m.coordinates);
+    if (firstPredicted) {
+      return firstPredicted.coordinates;
+    }
+    return benchmarkScene.center || [85.92, 26.73];
+  }, [selectedEventId, riskMarkers, benchmarkScene.center]);
+
+  const riskStats = useMemo(() => {
+    let criticalOrHigh = 0;
+    let moderate = 0;
+    let low = 0;
+    let unknown = 0;
+
+    for (const m of riskMarkers) {
+      const risk = activeHorizon === 'Now' 
+        ? m.maxRiskLevel 
+        : (m.horizons[`+${activeHorizon}`]?.risk_level || m.horizons[activeHorizon]?.risk_level || 'UNKNOWN');
+      
+      const normalized = risk.toUpperCase();
+      if (normalized === 'CRITICAL' || normalized === 'HIGH') {
+        criticalOrHigh++;
+      } else if (normalized === 'MODERATE') {
+        moderate++;
+      } else if (normalized === 'LOW') {
+        low++;
+      } else {
+        unknown++;
+      }
+    }
+
+    return { criticalOrHigh, moderate, low, unknown, total: riskMarkers.length };
+  }, [riskMarkers, activeHorizon]);
 
   return (
     <div className="space-y-3.5">
@@ -157,14 +251,80 @@ export const CommandOverview: React.FC<CommandOverviewProps> = ({
       {/* Demo metrics are illustrative and must not masquerade as FastAPI measurements. */}
       {DEMO_MODE && <MetricCards metrics={metrics} />}
 
-      {!DEMO_MODE && <p className="text-xs text-amber-300">Live hydrological gauges, verified flood-depth prediction and operational evacuation routes are not available. Map overlays without verified backend records stay hidden.</p>}
+      {/* Tactical Flood Risk Intelligence Summary Bar */}
+      <div className="rounded-lg border border-slate-800 bg-[#070d16] p-3 text-xs">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="font-micro uppercase tracking-wider font-bold text-sky-400">
+              TACTICAL RISK SUMMARY
+            </span>
+            <span className="text-slate-600">|</span>
+            <span className="text-slate-300">
+              Horizon: <strong className="text-sky-300">{activeHorizon === 'Now' ? 'Current Run (Max)' : `+${activeHorizon}`}</strong>
+            </span>
+            {isRiskLoading && <span className="text-amber-400 animate-pulse text-[11px]">Loading forecasts...</span>}
+            {riskError && <span className="text-rose-400 text-[11px]">Notice: {riskError}</span>}
+          </div>
+
+          {/* Horizon Selection Buttons */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-slate-500 text-[11px] font-mono mr-1">PREDICTION HORIZON:</span>
+            {(['Now', '1h', '3h', '6h'] as const).map(h => (
+              <button
+                key={h}
+                type="button"
+                onClick={() => setActiveHorizon(h)}
+                className={`px-2 py-0.5 rounded text-[11px] font-mono font-bold transition-colors ${
+                  activeHorizon === h
+                    ? 'bg-sky-500 text-white shadow-sm'
+                    : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700'
+                }`}
+              >
+                {h === 'Now' ? 'Now' : `+${h}`}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Risk Level Tally Badges */}
+        <div className="mt-2.5 flex flex-wrap items-center gap-2">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-rose-950/40 border border-rose-500/50 text-rose-300 font-mono">
+            <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+            <span className="font-bold">{riskStats.criticalOrHigh}</span>
+            <span className="text-[11px] uppercase">High / Critical</span>
+          </div>
+
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-amber-950/40 border border-amber-500/50 text-amber-300 font-mono">
+            <span className="w-2 h-2 rounded-full bg-amber-400" />
+            <span className="font-bold">{riskStats.moderate}</span>
+            <span className="text-[11px] uppercase">Moderate</span>
+          </div>
+
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-emerald-950/40 border border-emerald-500/50 text-emerald-300 font-mono">
+            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+            <span className="font-bold">{riskStats.low}</span>
+            <span className="text-[11px] uppercase">Low Risk</span>
+          </div>
+
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-900 border border-slate-700 text-slate-400 font-mono">
+            <span className="w-2 h-2 rounded-full bg-slate-500" />
+            <span className="font-bold">{riskStats.unknown}</span>
+            <span className="text-[11px] uppercase">No Forecast / Unassessed</span>
+          </div>
+
+          <div className="ml-auto text-[11px] text-amber-300/80 italic">
+            * Green markers denote low modeled risk, NOT guaranteed safety.
+          </div>
+        </div>
+      </div>
+
       {/* Main Grid: 2-Column EOC Tactical Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-start">
         {/* Left Column: Reusable 3D Geospatial Terrain Map (7 cols on lg, 7 cols on xl) */}
         <div className="lg:col-span-7 xl:col-span-7 flex flex-col space-y-2">
           <div className="flex items-center justify-between px-1">
             <span className="font-micro text-xs uppercase tracking-[1.4px] text-[#38bdf8] font-bold">
-              3D GEOSPATIAL TERRAIN COMMAND // {DEMO_MODE ? 'KOSHI BENCHMARK' : 'HISTORICAL EVENT'}
+              3D GEOSPATIAL TERRAIN COMMAND // {DEMO_MODE ? 'KOSHI BENCHMARK' : 'HISTORICAL EVENT & FORECASTS'}
             </span>
             <span className="font-mono text-xs text-slate-300 font-medium">
               DEM TERRAIN 1.5X &bull; {DEMO_MODE ? 'ILLUSTRATIVE SETTLEMENTS' : 'EVENT-LINKED POSTGIS OBSERVATIONS'}
@@ -172,22 +332,28 @@ export const CommandOverview: React.FC<CommandOverviewProps> = ({
           </div>
 
           <GeospatialTerrainMap
-            center={benchmarkScene.center || [87.05, 26.65]}
+            center={defaultCenter}
             zoom={benchmarkScene.zoom || 10.8}
             pitch={benchmarkScene.pitch || 55}
             bearing={benchmarkScene.bearing || -15}
-            activeHorizon="3h"
+            activeHorizon={activeHorizon}
+            onActiveHorizonChange={setActiveHorizon}
             observedExtent={observedExtent}
-            showInundation={DEMO_MODE || Boolean(observedExtent)}
-            showForecast={DEMO_MODE}
+            riskMarkers={riskMarkers}
+            facilities={facilities}
+            selectedEventTitle={selectedBackendEvent ? selectedBackendEvent.name : benchmarkScene.name}
+            selectedEventDate={selectedBackendEvent ? selectedBackendEvent.start_at.slice(0, 10) : benchmarkScene.date_range}
+            showInundation={true}
+            showRiskMarkers={true}
+            showForecast={true}
             showGauges={DEMO_MODE}
             showIncidents={true}
             showInfrastructure={DEMO_MODE}
-            showShelters={DEMO_MODE}
+            showShelters={true}
             incidents={requests}
             selectedIncidentId={selectedIncidentId}
             onSelectIncident={(id) => setSelectedIncidentId(id)}
-            height="560px"
+            height="580px"
           />
         </div>
 

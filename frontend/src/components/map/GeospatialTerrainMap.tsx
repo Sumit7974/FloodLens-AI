@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import {
-  Activity,
+  AlertTriangle,
   Compass,
   Layers,
   LifeBuoy,
@@ -11,6 +11,7 @@ import {
   RotateCcw,
   Satellite,
   Shield,
+  Waves,
 } from 'lucide-react';
 import {
   HORIZON_FORECASTS,
@@ -18,7 +19,12 @@ import {
   KOSHI_TELEMETRY_GAUGES,
 } from '../../data/geospatialData';
 import type { HelpRequest } from '../../types';
-import { DEMO_MODE, type ObservedExtentFeature, type FacilityItem } from '../../services/backendApi';
+import {
+  DEMO_MODE,
+  type ObservedExtentFeature,
+  type FacilityItem,
+  type RiskLocationMarker,
+} from '../../services/backendApi';
 
 export interface GeospatialTerrainMapProps {
   center?: [number, number]; // [lng, lat]
@@ -26,8 +32,13 @@ export interface GeospatialTerrainMapProps {
   pitch?: number;
   bearing?: number;
   activeHorizon?: 'Now' | '1h' | '3h' | '6h';
+  onActiveHorizonChange?: (horizon: 'Now' | '1h' | '3h' | '6h') => void;
   observedExtent?: ObservedExtentFeature | null;
+  riskMarkers?: RiskLocationMarker[];
+  selectedRiskMarkerId?: string | null;
+  onSelectRiskMarker?: (marker: RiskLocationMarker) => void;
   showInundation?: boolean;
+  showRiskMarkers?: boolean;
   showForecast?: boolean;
   showGauges?: boolean;
   showIncidents?: boolean;
@@ -43,6 +54,8 @@ export interface GeospatialTerrainMapProps {
   className?: string;
   height?: string;
   mode?: 'overview' | 'prediction' | 'satellite' | 'coordination' | 'dispatcher' | 'analytics';
+  selectedEventTitle?: string;
+  selectedEventDate?: string;
   wipePosition?: number; // 0 to 100 for satellite comparison
   verificationLayers?: {
     tp: boolean;
@@ -66,6 +79,49 @@ const toGeoJsonCoords = (coords: [number, number][]): number[][] => {
   return points;
 };
 
+// Safe coordinate extractor protecting against flipped lat/lng orders
+function getValidLngLat(coords: unknown): [number, number] | null {
+  if (!Array.isArray(coords) || coords.length < 2) return null;
+  const a = Number(coords[0]);
+  const b = Number(coords[1]);
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
+
+  // Nepal longitude is approx 80 - 89, latitude is approx 26 - 31.
+  if (a >= 75 && a <= 95 && b >= 20 && b <= 35) {
+    return [a, b]; // already [lng, lat]
+  }
+  if (b >= 75 && b <= 95 && a >= 20 && a <= 35) {
+    return [b, a]; // was [lat, lng] -> return [lng, lat]
+  }
+  if (Math.abs(a) <= 180 && Math.abs(b) <= 90) {
+    return [a, b];
+  }
+  return null;
+}
+
+// Extract bounding box [[minLng, minLat], [maxLng, maxLat]] from arbitrary GeoJSON
+function extractGeoJsonBounds(feature: any): [[number, number], [number, number]] | null {
+  if (!feature?.geometry?.coordinates) return null;
+  const pts: [number, number][] = [];
+  const walk = (node: any) => {
+    if (!Array.isArray(node)) return;
+    if (node.length >= 2 && typeof node[0] === 'number' && typeof node[1] === 'number') {
+      const p = getValidLngLat(node);
+      if (p) pts.push(p);
+      return;
+    }
+    node.forEach(walk);
+  };
+  walk(feature.geometry.coordinates);
+  if (!pts.length) return null;
+  const lngs = pts.map((p) => p[0]);
+  const lats = pts.map((p) => p[1]);
+  return [
+    [Math.min(...lngs), Math.min(...lats)],
+    [Math.max(...lngs), Math.max(...lats)],
+  ];
+}
+
 // Road cuts GeoJSON segments along East-West Highway and Canals
 const INFRASTRUCTURE_ROAD_CUTS = {
   type: 'FeatureCollection' as const,
@@ -84,7 +140,7 @@ const INFRASTRUCTURE_ROAD_CUTS = {
           [87.012, 26.618],
           [87.045, 26.615],
           [87.078, 26.612],
-          [87.110, 26.608],
+          [87.11, 26.608],
         ],
       },
     },
@@ -100,9 +156,9 @@ const INFRASTRUCTURE_ROAD_CUTS = {
         type: 'LineString' as const,
         coordinates: [
           [87.152, 26.832],
-          [87.140, 26.810],
+          [87.14, 26.81],
           [87.125, 26.785],
-          [87.108, 26.750],
+          [87.108, 26.75],
         ],
       },
     },
@@ -117,24 +173,14 @@ const INFRASTRUCTURE_ROAD_CUTS = {
       geometry: {
         type: 'LineString' as const,
         coordinates: [
-          [86.975, 26.580],
+          [86.975, 26.58],
           [86.968, 26.565],
-          [86.960, 26.545],
+          [86.96, 26.545],
         ],
       },
     },
   ],
 };
-
-// Settlement centroids for Koshi Basin
-const KOSHI_SETTLEMENTS = [
-  { name: 'Chatara Hydro Hub', coords: [87.155, 26.839], pop: '14,200', ward: 'Barahakshetra W1' },
-  { name: 'Prakashpur Lowlands', coords: [87.051, 26.683], pop: '18,500', ward: 'Barahakshetra W4' },
-  { name: 'Inaruwa Municipality', coords: [87.155, 26.602], pop: '42,000', ward: 'District HQ' },
-  { name: 'Gobargadha Sandbar Island', coords: [86.995, 26.612], pop: '3,800', ward: 'Hanumannagar W1' },
-  { name: 'Belka Confluence', coords: [87.050, 26.785], pop: '11,200', ward: 'Belka W8' },
-  { name: 'Bhokraha Narsingh', coords: [87.112, 26.592], pop: '22,400', ward: 'Bhokraha W5' },
-];
 
 export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
   center = [87.05, 26.65],
@@ -142,8 +188,13 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
   pitch = 55,
   bearing = -15,
   activeHorizon = '3h',
+  onActiveHorizonChange,
   observedExtent = null,
+  riskMarkers = [],
+  selectedRiskMarkerId: _selectedRiskMarkerId = null,
+  onSelectRiskMarker,
   showInundation = true,
+  showRiskMarkers = true,
   showForecast = true,
   showGauges = true,
   showIncidents = true,
@@ -159,25 +210,60 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
   className = '',
   height = '520px',
   mode = 'overview',
+  selectedEventTitle = '',
+  selectedEventDate = '',
   wipePosition = 50,
   verificationLayers = { tp: true, fp: true, fn: true },
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const markersRef = useRef<maplibregl.Marker[]>([]);
+  const lastFlownCenterRef = useRef<string>('');
+  const lastFittedExtentRef = useRef<string>('');
+
   const [is3D, setIs3D] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [basemap, setBasemap] = useState<'dark' | 'satellite'>(
     mode === 'satellite' ? 'satellite' : 'dark'
   );
+
+  // Dynamic Layer Visibility Toggles
+  const [layerInundation, setLayerInundation] = useState(showInundation);
+  const [layerRiskMarkers, setLayerRiskMarkers] = useState(showRiskMarkers);
+  const [layerIncidents, setLayerIncidents] = useState(showIncidents);
+  const [layerFacilities, setLayerFacilities] = useState(showShelters);
+  const [layerForecast] = useState(showForecast);
+  const [currentHorizon, setCurrentHorizon] = useState<'Now' | '1h' | '3h' | '6h'>(activeHorizon);
+
   const [activePopupData, setActivePopupData] = useState<any | null>(null);
 
-  // Initialize MapLibre GL with 100% free, keyless tile endpoints
+  // Sync prop changes into layer toggles
+  useEffect(() => {
+    setLayerInundation(showInundation);
+  }, [showInundation]);
+  useEffect(() => {
+    setLayerRiskMarkers(showRiskMarkers);
+  }, [showRiskMarkers]);
+  useEffect(() => {
+    setLayerIncidents(showIncidents);
+  }, [showIncidents]);
+  useEffect(() => {
+    setLayerFacilities(showShelters);
+  }, [showShelters]);
+  useEffect(() => {
+    setCurrentHorizon(activeHorizon);
+  }, [activeHorizon]);
+
+  const handleHorizonToggle = (h: 'Now' | '1h' | '3h' | '6h') => {
+    setCurrentHorizon(h);
+    if (onActiveHorizonChange) onActiveHorizonChange(h);
+  };
+
+  // Initialize MapLibre GL
   useEffect(() => {
     if (!mapContainerRef.current) return;
 
-    // Free keyless vector/raster tiles style with aerospace dark matter and Esri satellite options
     const darkStyle: maplibregl.StyleSpecification = {
       version: 8,
       sources: {
@@ -224,7 +310,7 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
         {
           id: 'base-dark-layer',
           type: 'raster',
-          source: 'esri-dark',
+          source: 'carto-dark',
           minzoom: 0,
           maxzoom: 20,
           layout: {
@@ -258,7 +344,6 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
       maxPitch: 85,
     });
 
-    // Add navigation controls
     map.addControl(
       new maplibregl.NavigationControl({
         visualizePitch: true,
@@ -269,14 +354,14 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
     );
 
     map.on('load', () => {
-      // Enable 3D terrain by default
+      // Enable 3D digital elevation model terrain
       try {
         map.setTerrain({ source: 'terrain-dem', exaggeration: 1.5 });
       } catch (err) {
-        console.warn('MapLibre terrain initialization warning:', err);
+        console.warn('MapLibre terrain warning:', err);
       }
 
-      // Add Sky atmosphere
+      // Add sky atmosphere
       try {
         map.setSky({
           'sky-color': '#030814',
@@ -288,13 +373,11 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
         // Soft fallback
       }
 
-      // Setup dynamic GeoJSON sources for Flood Extents
       setupMapLayers(map);
       setMapLoaded(true);
 
-      // Gracefully handle tile network errors in detached/offline demo mode
       map.on('error', () => {
-        // Absorbs tile 404/fetch errors silently when running detached from external tile servers
+        // Absorbs tile 404/fetch errors silently
       });
     });
 
@@ -308,85 +391,109 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
     };
   }, []);
 
-  // Synchronize basemap selection with map layers
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !mapLoaded) return;
-
-    const showSatellite = basemap === 'satellite' || mode === 'satellite';
-    if (map.getLayer('esri-satellite-layer')) {
-      map.setLayoutProperty('esri-satellite-layer', 'visibility', showSatellite ? 'visible' : 'none');
-    }
-    if (map.getLayer('base-dark-layer')) {
-      map.setLayoutProperty('base-dark-layer', 'visibility', showSatellite ? 'none' : 'visible');
-    }
-  }, [basemap, mode, mapLoaded]);
-
-  // Update center/pitch/bearing when props change
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !mapLoaded) return;
-
-    map.flyTo({
-      center,
-      zoom,
-      pitch: is3D ? pitch : 0,
-      bearing: is3D ? bearing : 0,
-      duration: 1200,
-    });
-  }, [center, zoom, pitch, bearing, is3D, mapLoaded]);
-
   // Setup Map Layers (Inundation Polygons, Horizon Polygons, Road Cuts)
   const setupMapLayers = useCallback((map: maplibregl.Map) => {
-    // 1. Observed Satellite Inundation Layer (Sentinel-1/2 deep cyan)
-    const observedCoords = toGeoJsonCoords(HORIZON_FORECASTS['1h'].polygonCoords);
+    // 1. Observed Flood Inundation Layer (Semi-transparent cyan water + bright blue stroke)
+    const demoObservedCoords = toGeoJsonCoords(HORIZON_FORECASTS['1h'].polygonCoords);
     if (!map.getSource('observed-inundation-src')) {
       map.addSource('observed-inundation-src', {
         type: 'geojson',
-        data: DEMO_MODE ? {
-          type: 'Feature', properties: { name: 'Illustrative fixture only', areaKm2: 28.4 },
-          geometry: { type: 'Polygon', coordinates: [observedCoords] },
-        } : { type: 'FeatureCollection', features: [] },
+        data: observedExtent
+          ? (observedExtent as any)
+          : DEMO_MODE
+          ? {
+              type: 'Feature',
+              properties: { name: 'Illustrative benchmark fixture', area_km2: 28.4 },
+              geometry: { type: 'Polygon', coordinates: [demoObservedCoords] },
+            }
+          : { type: 'FeatureCollection', features: [] },
       });
 
+      // Semi-transparent vibrant cyan fill
       map.addLayer({
         id: 'observed-inundation-fill',
         type: 'fill',
         source: 'observed-inundation-src',
         paint: {
           'fill-color': '#00e5ff',
-          'fill-opacity': 0.42,
+          'fill-opacity': 0.48,
         },
       });
 
+      // Soft glow contour
+      map.addLayer({
+        id: 'observed-inundation-glow',
+        type: 'line',
+        source: 'observed-inundation-src',
+        paint: {
+          'line-color': '#00e5ff',
+          'line-width': 5.5,
+          'line-opacity': 0.4,
+          'line-blur': 2.5,
+        },
+      });
+
+      // Bright crisp cyan boundary
       map.addLayer({
         id: 'observed-inundation-stroke',
         type: 'line',
         source: 'observed-inundation-src',
         paint: {
           'line-color': '#38bdf8',
-          'line-width': 2.5,
-          'line-opacity': 0.9,
+          'line-width': 2.8,
+          'line-opacity': 0.95,
         },
+      });
+
+      // Click on flood water polygon to see provenance and event telemetry
+      map.on('click', 'observed-inundation-fill', (e) => {
+        const feat = e.features?.[0];
+        if (!feat) return;
+        const p = feat.properties || {};
+        setActivePopupData({
+          type: 'FLOOD_EXTENT',
+          title: p.event_id || selectedEventTitle || 'Recorded Flood Inundation Extent',
+          area: p.area_km2 ? `${p.area_km2} km²` : 'Measured Inundation Extent',
+          observedAt: p.observed_at || 'Observed Sentinel-1/2 pass',
+          method: p.method || 'Satellite Observation (SAR/Optical)',
+          provenance: p.provenance || (DEMO_MODE ? 'Demo Fixture' : 'PostGIS Extent Polygon'),
+          sourceScenes: p.source_scene_ids
+            ? String(p.source_scene_ids)
+            : 'Copernicus SAR Constellation',
+          coords: [e.lngLat.lng, e.lngLat.lat],
+        });
+      });
+
+      map.on('mouseenter', 'observed-inundation-fill', () => {
+        map.getCanvas().style.cursor = 'pointer';
+      });
+      map.on('mouseleave', 'observed-inundation-fill', () => {
+        map.getCanvas().style.cursor = '';
       });
     }
 
     // 2. Predictive Horizon Extent Layer (Dynamic amber/orange/crimson)
     const activeCoords =
-      activeHorizon === 'Now'
-        ? observedCoords
-        : toGeoJsonCoords(HORIZON_FORECASTS[activeHorizon as '1h' | '3h' | '6h']?.polygonCoords || observedCoords);
+      currentHorizon === 'Now'
+        ? demoObservedCoords
+        : toGeoJsonCoords(
+            HORIZON_FORECASTS[currentHorizon as '1h' | '3h' | '6h']?.polygonCoords ||
+              demoObservedCoords
+          );
 
     const horizonColor =
-      activeHorizon === '6h' ? '#ef4444' : activeHorizon === '3h' ? '#f97316' : '#f59e0b';
+      currentHorizon === '6h' ? '#ef4444' : currentHorizon === '3h' ? '#f97316' : '#f59e0b';
 
     if (!map.getSource('forecast-horizon-src')) {
       map.addSource('forecast-horizon-src', {
         type: 'geojson',
-        data: DEMO_MODE ? {
-          type: 'Feature', properties: { horizon: activeHorizon, source: 'illustrative' },
-          geometry: { type: 'Polygon', coordinates: [activeCoords] },
-        } : { type: 'FeatureCollection', features: [] },
+        data: DEMO_MODE
+          ? {
+              type: 'Feature',
+              properties: { horizon: currentHorizon, source: 'illustrative' },
+              geometry: { type: 'Polygon', coordinates: [activeCoords] },
+            }
+          : { type: 'FeatureCollection', features: [] },
       });
 
       map.addLayer({
@@ -466,7 +573,21 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
         },
       });
     }
-  }, [activeHorizon, candidateRoute]);
+  }, [currentHorizon, candidateRoute, observedExtent, selectedEventTitle]);
+
+  // Synchronize basemap selection with map layers
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapLoaded) return;
+
+    const showSatellite = basemap === 'satellite' || mode === 'satellite';
+    if (map.getLayer('esri-satellite-layer')) {
+      map.setLayoutProperty('esri-satellite-layer', 'visibility', showSatellite ? 'visible' : 'none');
+    }
+    if (map.getLayer('base-dark-layer')) {
+      map.setLayoutProperty('base-dark-layer', 'visibility', showSatellite ? 'none' : 'visible');
+    }
+  }, [basemap, mode, mapLoaded]);
 
   // Update candidate route line dynamically
   useEffect(() => {
@@ -499,7 +620,7 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
     }
   }, [candidateRoute, mapLoaded]);
 
-  // Update horizon layer dynamically as activeHorizon changes
+  // Update horizon layer dynamically as currentHorizon changes
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapLoaded) return;
@@ -507,14 +628,25 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
     const src = map.getSource('forecast-horizon-src') as maplibregl.GeoJSONSource | undefined;
     if (src) {
       const activeCoords =
-        activeHorizon === 'Now'
+        currentHorizon === 'Now'
           ? toGeoJsonCoords(HORIZON_FORECASTS['1h'].polygonCoords)
-          : toGeoJsonCoords(HORIZON_FORECASTS[activeHorizon as '1h' | '3h' | '6h']?.polygonCoords || HORIZON_FORECASTS['3h'].polygonCoords);
+          : toGeoJsonCoords(
+              HORIZON_FORECASTS[currentHorizon as '1h' | '3h' | '6h']?.polygonCoords ||
+                HORIZON_FORECASTS['3h'].polygonCoords
+            );
 
-      src.setData(DEMO_MODE ? { type: 'Feature', properties: { horizon: activeHorizon, source: 'illustrative' }, geometry: { type: 'Polygon', coordinates: [activeCoords] } } : { type: 'FeatureCollection', features: [] });
+      src.setData(
+        DEMO_MODE
+          ? {
+              type: 'Feature',
+              properties: { horizon: currentHorizon, source: 'illustrative' },
+              geometry: { type: 'Polygon', coordinates: [activeCoords] },
+            }
+          : { type: 'FeatureCollection', features: [] }
+      );
 
       const horizonColor =
-        activeHorizon === '6h' ? '#ef4444' : activeHorizon === '3h' ? '#f97316' : '#f59e0b';
+        currentHorizon === '6h' ? '#ef4444' : currentHorizon === '3h' ? '#f97316' : '#f59e0b';
 
       if (map.getLayer('forecast-horizon-fill')) {
         map.setPaintProperty('forecast-horizon-fill', 'fill-color', horizonColor);
@@ -523,69 +655,322 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
         map.setPaintProperty('forecast-horizon-stroke', 'line-color', horizonColor);
       }
     }
-  }, [activeHorizon, mapLoaded]);
+  }, [currentHorizon, mapLoaded]);
 
-  // Real PostGIS event-linked extent replaces illustration in backend mode.
-  useEffect(() => {
-    if (DEMO_MODE || !mapLoaded) return;
-    const map = mapRef.current;
-    const source = map?.getSource('observed-inundation-src') as maplibregl.GeoJSONSource | undefined;
-    if (!source) return;
-    source.setData(observedExtent ? (observedExtent as any) : { type: 'FeatureCollection', features: [] });
-    if (!observedExtent?.geometry || !map) return;
-    const pairs: number[][] = [];
-    const walk = (node: unknown): void => {
-      if (!Array.isArray(node)) return;
-      if (node.length >= 2 && typeof node[0] === 'number' && typeof node[1] === 'number') {
-        const lon = node[0]; const lat = node[1];
-        if (Number.isFinite(lon) && Number.isFinite(lat) && Math.abs(lon) <= 180 && Math.abs(lat) <= 90) pairs.push([lon, lat]);
-        return;
-      }
-      node.forEach(walk);
-    };
-    walk(observedExtent.geometry.coordinates);
-    if (!pairs.length) return;
-    const lons = pairs.map(p => p[0]); const lats = pairs.map(p => p[1]);
-    map.fitBounds([[Math.min(...lons), Math.min(...lats)], [Math.max(...lons), Math.max(...lats)]], { padding: 45, maxZoom: 12, duration: 900 });
-  }, [observedExtent, mapLoaded]);
-
-  // Dynamic layer visibility, wipe opacity, and verification layer styles
+  // Synchronize PostGIS observed extent & automatically fit camera bounds to flood polygons
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapLoaded) return;
 
+    const source = map.getSource('observed-inundation-src') as maplibregl.GeoJSONSource | undefined;
+    if (source) {
+      source.setData(
+        observedExtent
+          ? (observedExtent as any)
+          : DEMO_MODE
+          ? {
+              type: 'Feature',
+              properties: { name: 'Illustrative fixture only', area_km2: 28.4 },
+              geometry: {
+                type: 'Polygon',
+                coordinates: [toGeoJsonCoords(HORIZON_FORECASTS['1h'].polygonCoords)],
+              },
+            }
+          : { type: 'FeatureCollection', features: [] }
+      );
+    }
+
+    if (!observedExtent?.geometry) return;
+
+    // Identify extent by id or event_id to prevent redundant re-fits
+    const extentKey = String(observedExtent.id || observedExtent.properties?.event_id || JSON.stringify(observedExtent.geometry.coordinates).slice(0, 50));
+    if (lastFittedExtentRef.current === extentKey) return;
+    lastFittedExtentRef.current = extentKey;
+
+    const bounds = extractGeoJsonBounds(observedExtent);
+    if (bounds) {
+      map.fitBounds(bounds, {
+        padding: 60,
+        maxZoom: 13,
+        duration: 1000,
+      });
+    }
+  }, [observedExtent, mapLoaded]);
+
+  // Dynamic layer visibility
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapLoaded) return;
+
+    const showFlood = layerInundation && (DEMO_MODE || Boolean(observedExtent));
     if (map.getLayer('observed-inundation-fill')) {
-      map.setLayoutProperty('observed-inundation-fill', 'visibility', showInundation && (DEMO_MODE || Boolean(observedExtent)) ? 'visible' : 'none');
+      map.setLayoutProperty('observed-inundation-fill', 'visibility', showFlood ? 'visible' : 'none');
       if (mode === 'satellite') {
         map.setPaintProperty('observed-inundation-fill', 'fill-opacity', (wipePosition / 100) * 0.55);
       }
     }
+    if (map.getLayer('observed-inundation-glow')) {
+      map.setLayoutProperty('observed-inundation-glow', 'visibility', showFlood ? 'visible' : 'none');
+    }
     if (map.getLayer('observed-inundation-stroke')) {
-      map.setLayoutProperty('observed-inundation-stroke', 'visibility', showInundation && (DEMO_MODE || Boolean(observedExtent)) ? 'visible' : 'none');
+      map.setLayoutProperty('observed-inundation-stroke', 'visibility', showFlood ? 'visible' : 'none');
     }
     if (map.getLayer('forecast-horizon-fill')) {
-      map.setLayoutProperty('forecast-horizon-fill', 'visibility', DEMO_MODE && showForecast ? 'visible' : 'none');
+      map.setLayoutProperty('forecast-horizon-fill', 'visibility', DEMO_MODE && layerForecast ? 'visible' : 'none');
     }
     if (map.getLayer('forecast-horizon-stroke')) {
-      map.setLayoutProperty('forecast-horizon-stroke', 'visibility', DEMO_MODE && showForecast ? 'visible' : 'none');
+      map.setLayoutProperty('forecast-horizon-stroke', 'visibility', DEMO_MODE && layerForecast ? 'visible' : 'none');
     }
     if (map.getLayer('road-cuts-lines')) {
       map.setLayoutProperty('road-cuts-lines', 'visibility', DEMO_MODE && showInfrastructure ? 'visible' : 'none');
     }
-  }, [showInundation, showForecast, showInfrastructure, mode, wipePosition, verificationLayers, observedExtent, mapLoaded]);
+  }, [layerInundation, layerForecast, showInfrastructure, mode, wipePosition, verificationLayers, observedExtent, mapLoaded]);
 
-  // Manage Interactive Markers (Gauges, Incidents, Shelters, Settlements)
+  // Manage Interactive Markers (Risk Markers, Incidents, Gauges, Facilities)
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapLoaded) return;
 
-    // Clear existing HTML markers
+    // Clear previous markers
     markersRef.current.forEach((m) => m.remove());
     markersRef.current = [];
 
-    // 1. Gauges
+    // 1. DATA-GROUNDED RISK MARKERS (Red / Yellow / Green / Gray)
+    if (layerRiskMarkers && riskMarkers && riskMarkers.length > 0) {
+      riskMarkers.forEach((markerData) => {
+        const coords = getValidLngLat(markerData.coordinates);
+        if (!coords) return;
+
+        // Determine active risk level for currently selected horizon
+        let riskLevel = markerData.activeRiskLevel;
+        if (markerData.hasForecast && currentHorizon !== 'Now') {
+          const hKey = `+${currentHorizon}`;
+          const hData = markerData.horizons[hKey] || markerData.horizons[currentHorizon];
+          if (hData?.risk_level) {
+            riskLevel = hData.risk_level.toUpperCase() as any;
+          }
+        }
+
+        // Color coding specification:
+        // RED: HIGH or CRITICAL
+        // YELLOW: MODERATE
+        // GREEN: LOW
+        // GRAY: UNKNOWN / NO FORECAST AVAILABLE
+        const isCritical = riskLevel === 'CRITICAL' || riskLevel === 'HIGH';
+        const isModerate = riskLevel === 'MODERATE';
+        const isLow = riskLevel === 'LOW';
+
+        const colorHex = isCritical
+          ? '#ef4444'
+          : isModerate
+          ? '#eab308'
+          : isLow
+          ? '#22c55e'
+          : '#64748b';
+
+        const bgClass = isCritical
+          ? 'bg-rose-500'
+          : isModerate
+          ? 'bg-amber-500'
+          : isLow
+          ? 'bg-emerald-500'
+          : 'bg-slate-600';
+
+        const borderClass = isCritical
+          ? 'border-rose-200'
+          : isModerate
+          ? 'border-amber-200'
+          : isLow
+          ? 'border-emerald-200'
+          : 'border-slate-300';
+
+        const riskLabel = isCritical
+          ? `${riskLevel} RISK`
+          : isModerate
+          ? 'MODERATE RISK'
+          : isLow
+          ? 'LOW RISK'
+          : 'UNASSESSED';
+
+        const el = document.createElement('div');
+        el.className = 'group cursor-pointer transform -translate-x-1/2 -translate-y-1/2 transition-transform hover:scale-125 z-30';
+
+        el.innerHTML = `
+          <div class="relative flex items-center justify-center">
+            ${isCritical ? '<span class="animate-ping absolute inline-flex h-7 w-7 rounded-full bg-rose-500 opacity-60"></span>' : ''}
+            ${isModerate ? '<span class="animate-pulse absolute inline-flex h-6 w-6 rounded-full bg-amber-400 opacity-40"></span>' : ''}
+            <div class="relative w-6 h-6 rounded-full ${bgClass} border-2 ${borderClass} flex items-center justify-center text-[10px] font-bold text-white shadow-[0_0_12px_rgba(0,0,0,0.8)]">
+              ${isCritical ? '▲' : isModerate ? '●' : isLow ? '■' : '?'}
+            </div>
+            <div class="absolute left-7.5 bg-[#071326]/95 border border-[#1e3a5f] px-2 py-0.5 rounded text-[10px] font-mono font-bold text-white whitespace-nowrap shadow-lg pointer-events-none opacity-90 group-hover:opacity-100 backdrop-blur-md flex items-center gap-1.5">
+              <span>${markerData.name.split(' ')[0]}</span>
+              <span class="px-1 py-0.2 rounded text-[9px] font-bold" style="background-color: ${colorHex}33; color: ${colorHex}; border: 1px solid ${colorHex}66">
+                ${riskLabel}
+              </span>
+            </div>
+          </div>
+        `;
+
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          setActivePopupData({
+            type: 'RISK_ZONE',
+            id: markerData.id,
+            name: markerData.name,
+            adminLevel: markerData.adminLevel,
+            activeHorizon: currentHorizon,
+            riskLevel: riskLevel,
+            maxRiskLevel: markerData.maxRiskLevel,
+            horizons: markerData.horizons,
+            modelVersion: markerData.modelVersion || 'baseline-v1',
+            issuedAt: markerData.issuedAt || '2024-07-08T08:00:00Z',
+            mode: markerData.mode || 'historical_demo',
+            dataQuality: markerData.dataQuality || 'partial',
+            limitations: markerData.limitations || [],
+            disclaimer: markerData.disclaimer,
+            coords: coords,
+            hasForecast: markerData.hasForecast,
+          });
+          if (onSelectRiskMarker) onSelectRiskMarker(markerData);
+        });
+
+        const marker = new maplibregl.Marker({ element: el }).setLngLat(coords).addTo(map);
+        markersRef.current.push(marker);
+      });
+    }
+
+    // 2. CITIZEN ASSISTANCE INCIDENTS (SOS Pings)
+    if (layerIncidents && incidents.length > 0) {
+      incidents.forEach((req) => {
+        const coords = getValidLngLat(req.coordinates);
+        if (!coords) return;
+
+        const isSelected = selectedIncidentId === req.id;
+        const isCritical = req.urgency === 'CRITICAL';
+        const isHigh = req.urgency === 'HIGH';
+        const badgeColor = isCritical ? '#ef4444' : isHigh ? '#f59e0b' : '#38bdf8';
+
+        const el = document.createElement('div');
+        el.className = `cursor-pointer transition-all z-25 ${isSelected ? 'scale-130 z-50' : 'hover:scale-115'}`;
+
+        el.innerHTML = `
+          <div class="relative flex items-center justify-center">
+            ${isCritical ? '<span class="animate-ping absolute inline-flex h-8 w-8 rounded-full bg-rose-500 opacity-60"></span>' : ''}
+            <div class="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-[9px] font-mono font-bold text-white shadow-lg" style="background-color: ${badgeColor}; box-shadow: 0 0 10px ${badgeColor}80">
+              SOS
+            </div>
+            <div class="absolute left-7 bg-[#060e1d]/95 border border-[#1e3a5f] px-2 py-0.5 rounded text-[10px] font-mono font-bold text-white whitespace-nowrap shadow-md pointer-events-none opacity-0 group-hover:opacity-100">
+              SOS: ${req.category}
+            </div>
+          </div>
+        `;
+
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          setActivePopupData({
+            type: 'INCIDENT',
+            id: req.id,
+            requester: req.requester_name,
+            location: req.location_name,
+            category: req.category,
+            urgency: req.urgency,
+            depth: req.estimated_water_depth || 'Not measured',
+            status: req.status || req.handoff_status,
+            coords: coords,
+            peopleCount: req.people_count,
+            landmark: req.landmark,
+            notice: 'Citizen assistance triage ping. Not an AI model flood hazard classification.',
+          });
+          if (onSelectIncident) onSelectIncident(req.id);
+        });
+
+        const marker = new maplibregl.Marker({ element: el }).setLngLat(coords).addTo(map);
+        markersRef.current.push(marker);
+      });
+    }
+
+    // 3. EMERGENCY FACILITIES (Shelters & Hospitals)
+    if (layerFacilities && facilities && facilities.length > 0) {
+      facilities.forEach((fac) => {
+        const rawCoords = fac.location?.coordinates || [fac.longitude, fac.latitude];
+        const coords = getValidLngLat(rawCoords);
+        if (!coords) return;
+
+        const isHospital = fac.type === 'hospital';
+        const isVerified = fac.verification_status === 'verified';
+        const isDemo = fac.verification_status === 'demo_labeled';
+        const color = isVerified ? 'bg-emerald-500' : isDemo ? 'bg-sky-500' : 'bg-rose-500';
+        const borderColor = isVerified ? 'border-emerald-300' : isDemo ? 'border-sky-300' : 'border-rose-300';
+
+        const el = document.createElement('div');
+        el.className = 'cursor-pointer group transform -translate-x-1/2 -translate-y-1/2 hover:scale-125 transition-transform z-20';
+        el.innerHTML = `
+          <div class="relative flex items-center justify-center">
+            <div class="w-6 h-6 rounded-full ${color} border-2 ${borderColor} flex items-center justify-center text-[10px] font-bold text-white shadow-lg">
+              ${isHospital ? 'H' : 'S'}
+            </div>
+            <div class="absolute left-7 bg-[#060e1d]/95 border border-[#1e3a5f] px-2 py-0.5 rounded text-[10px] font-mono font-bold text-white whitespace-nowrap shadow-md pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-30">
+              ${fac.name} (${fac.type})
+            </div>
+          </div>
+        `;
+
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          setActivePopupData({
+            type: 'FACILITY',
+            title: fac.name,
+            facilityType: fac.type,
+            verification: fac.verification_status,
+            capacity: fac.capacity ? `${fac.capacity} (${isHospital ? 'beds' : 'persons'})` : 'Unrecorded',
+            contact: fac.contact_info || 'None recorded',
+            source: fac.source || 'Database Registry',
+            limitations: fac.limitations,
+            coords: coords,
+          });
+          if (onSelectFacility) onSelectFacility(fac);
+        });
+
+        const marker = new maplibregl.Marker({ element: el }).setLngLat(coords).addTo(map);
+        markersRef.current.push(marker);
+      });
+    } else if (DEMO_MODE && layerFacilities) {
+      KOSHI_SHELTERS.forEach((shelter) => {
+        const coords = getValidLngLat(shelter.coordinates);
+        if (!coords) return;
+
+        const el = document.createElement('div');
+        el.className = 'cursor-pointer group transform -translate-x-1/2 -translate-y-1/2 hover:scale-110';
+        el.innerHTML = `
+          <div class="w-5 h-5 rounded bg-emerald-600 border border-emerald-300 flex items-center justify-center text-[10px] text-white shadow-md">
+            ⌂
+          </div>
+        `;
+
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          setActivePopupData({
+            type: 'SHELTER',
+            title: shelter.name,
+            capacity: shelter.capacity,
+            occupancy: shelter.currentOccupancy,
+            elevation: `${shelter.elevationMsl}m MSL`,
+            contact: shelter.contact,
+            coords: coords,
+          });
+        });
+
+        const marker = new maplibregl.Marker({ element: el }).setLngLat(coords).addTo(map);
+        markersRef.current.push(marker);
+      });
+    }
+
+    // 4. HYDROLOGICAL GAUGES (Only in demo/sensor mode)
     if (DEMO_MODE && showGauges) {
       KOSHI_TELEMETRY_GAUGES.forEach((gauge) => {
+        const coords = getValidLngLat(gauge.coordinates);
+        if (!coords) return;
+
         const el = document.createElement('div');
         el.className = 'group cursor-pointer transform -translate-x-1/2 -translate-y-1/2 transition-transform hover:scale-110';
         const isCritical = gauge.currentLevel >= gauge.dangerThreshold;
@@ -614,158 +999,31 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
             danger: `${gauge.dangerThreshold}m`,
             trend: gauge.trend,
             discharge: `${gauge.flowRate.toLocaleString()} m³/s`,
-            coords: [gauge.coordinates[1], gauge.coordinates[0]],
+            coords: coords,
           });
           if (onSelectGauge) onSelectGauge(gauge.id);
         });
 
-        const marker = new maplibregl.Marker({ element: el })
-          .setLngLat([gauge.coordinates[1], gauge.coordinates[0]])
-          .addTo(map);
-
+        const marker = new maplibregl.Marker({ element: el }).setLngLat(coords).addTo(map);
         markersRef.current.push(marker);
       });
     }
-
-    // 2. Citizen Assistance Reports / Incidents
-    if (showIncidents && incidents.length > 0) {
-      incidents.forEach((req) => {
-        const isSelected = selectedIncidentId === req.id;
-        const isCritical = req.urgency === 'CRITICAL';
-        const isHigh = req.urgency === 'HIGH';
-        const badgeColor = isCritical ? '#ef4444' : isHigh ? '#f59e0b' : '#38bdf8';
-
-        const el = document.createElement('div');
-        el.className = `cursor-pointer transition-all ${isSelected ? 'scale-125 z-50' : 'hover:scale-115'}`;
-
-        el.innerHTML = `
-          <div class="relative flex items-center justify-center">
-            ${isCritical ? '<span class="animate-ping absolute inline-flex h-8 w-8 rounded-full bg-rose-500 opacity-60"></span>' : ''}
-            <div class="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-[9px] font-mono font-bold text-white shadow-lg" style="background-color: ${badgeColor}; box-shadow: 0 0 10px ${badgeColor}80">
-              SOS
-            </div>
-          </div>
-        `;
-
-        el.addEventListener('click', (e) => {
-          e.stopPropagation();
-          setActivePopupData({
-            type: 'INCIDENT',
-            id: req.id,
-            requester: req.requester_name,
-            location: req.location_name,
-            category: req.category,
-            urgency: req.urgency,
-            depth: req.estimated_water_depth || 'Not measured',
-            status: req.status || req.handoff_status,
-            coords: [req.coordinates[1], req.coordinates[0]],
-            peopleCount: req.people_count,
-            landmark: req.landmark,
-          });
-          if (onSelectIncident) onSelectIncident(req.id);
-        });
-
-        const marker = new maplibregl.Marker({ element: el })
-          .setLngLat([req.coordinates[1], req.coordinates[0]])
-          .addTo(map);
-
-        markersRef.current.push(marker);
-      });
-    }
-
-    // 3. Emergency Facilities (Shelters & Hospitals)
-    if (facilities && facilities.length > 0) {
-      facilities.forEach((fac) => {
-        if (fac.longitude == null || fac.latitude == null) return;
-        const el = document.createElement('div');
-        const isHospital = fac.type === 'hospital';
-        const isVerified = fac.verification_status === 'verified';
-        const isDemo = fac.verification_status === 'demo_labeled';
-        const color = isVerified ? 'bg-emerald-500' : isDemo ? 'bg-sky-500' : 'bg-rose-500';
-        const borderColor = isVerified ? 'border-emerald-300' : isDemo ? 'border-sky-300' : 'border-rose-300';
-        el.className = 'cursor-pointer group transform -translate-x-1/2 -translate-y-1/2 hover:scale-125 transition-transform z-20';
-        el.innerHTML = `
-          <div class="relative flex items-center justify-center">
-            <div class="w-6 h-6 rounded-full ${color} border-2 ${borderColor} flex items-center justify-center text-[10px] font-bold text-white shadow-lg">
-              ${isHospital ? 'H' : 'S'}
-            </div>
-            <div class="absolute left-7 bg-[#060e1d]/95 border border-[#1e3a5f] px-2 py-0.5 rounded text-[10px] font-mono font-bold text-white whitespace-nowrap shadow-md pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-30">
-              ${fac.name} (${fac.type})
-            </div>
-          </div>
-        `;
-
-        el.addEventListener('click', (e) => {
-          e.stopPropagation();
-          setActivePopupData({
-            type: 'FACILITY',
-            title: fac.name,
-            facilityType: fac.type,
-            verification: fac.verification_status,
-            capacity: fac.capacity ? `${fac.capacity} (${isHospital ? 'beds' : 'persons'})` : 'Unrecorded',
-            contact: fac.contact_info || 'None recorded',
-            source: fac.source || 'Database',
-            limitations: fac.limitations,
-            coords: [fac.longitude, fac.latitude],
-          });
-          if (onSelectFacility) onSelectFacility(fac);
-        });
-
-        const marker = new maplibregl.Marker({ element: el })
-          .setLngLat([fac.longitude, fac.latitude])
-          .addTo(map);
-
-        markersRef.current.push(marker);
-      });
-    } else if (DEMO_MODE && showShelters) {
-      KOSHI_SHELTERS.forEach((shelter) => {
-        const el = document.createElement('div');
-        el.className = 'cursor-pointer group transform -translate-x-1/2 -translate-y-1/2 hover:scale-110';
-        el.innerHTML = `
-          <div class="w-5 h-5 rounded bg-emerald-600 border border-emerald-300 flex items-center justify-center text-[10px] text-white shadow-md">
-            ⌂
-          </div>
-        `;
-
-        el.addEventListener('click', (e) => {
-          e.stopPropagation();
-          setActivePopupData({
-            type: 'SHELTER',
-            title: shelter.name,
-            capacity: shelter.capacity,
-            occupancy: shelter.currentOccupancy,
-            elevation: `${shelter.elevationMsl}m MSL`,
-            contact: shelter.contact,
-            coords: [shelter.coordinates[1], shelter.coordinates[0]],
-          });
-        });
-
-        const marker = new maplibregl.Marker({ element: el })
-          .setLngLat([shelter.coordinates[1], shelter.coordinates[0]])
-          .addTo(map);
-
-        markersRef.current.push(marker);
-      });
-    }
-
-    // 4. Settlement Labels
-    if (DEMO_MODE) KOSHI_SETTLEMENTS.forEach((settlement) => {
-      const el = document.createElement('div');
-      el.className = 'pointer-events-none transform -translate-x-1/2 -translate-y-1/2';
-      el.innerHTML = `
-        <div class="flex items-center gap-1 px-1.5 py-0.5 rounded bg-black/75 border border-[#1e3a5f]/60 text-[9px] font-mono text-slate-300 whitespace-nowrap shadow-sm backdrop-blur-xs">
-          <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>
-          <span>${settlement.name}</span>
-        </div>
-      `;
-
-      const marker = new maplibregl.Marker({ element: el })
-        .setLngLat(settlement.coords as [number, number])
-        .addTo(map);
-
-      markersRef.current.push(marker);
-    });
-  }, [mapLoaded, showGauges, showIncidents, showShelters, facilities, onSelectFacility, incidents, selectedIncidentId, onSelectIncident, onSelectGauge]);
+  }, [
+    mapLoaded,
+    layerRiskMarkers,
+    riskMarkers,
+    currentHorizon,
+    layerIncidents,
+    incidents,
+    selectedIncidentId,
+    layerFacilities,
+    facilities,
+    showGauges,
+    onSelectRiskMarker,
+    onSelectIncident,
+    onSelectFacility,
+    onSelectGauge,
+  ]);
 
   // Center on selected incident if provided
   useEffect(() => {
@@ -774,29 +1032,38 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
 
     const targetReq = incidents.find((r) => r.id === selectedIncidentId);
     if (targetReq) {
-      map.flyTo({
-        center: [targetReq.coordinates[1], targetReq.coordinates[0]],
-        zoom: 12.5,
-        duration: 1200,
-      });
+      const coords = getValidLngLat(targetReq.coordinates);
+      if (coords) {
+        map.flyTo({
+          center: coords,
+          zoom: 12.5,
+          duration: 1000,
+        });
+      }
     }
   }, [selectedIncidentId, incidents, mapLoaded]);
 
-  // Camera flyTo when center, zoom, pitch, or bearing change externally (e.g. benchmark scene selector)
-  const centerLng = center[0];
-  const centerLat = center[1];
+  // Handle external camera moves without redundant loops
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapLoaded) return;
-    map.flyTo({
-      center,
-      zoom,
-      pitch,
-      bearing,
-      duration: 1500,
-      essential: true,
-    });
-  }, [centerLng, centerLat, center, zoom, pitch, bearing, mapLoaded]);
+
+    const key = `${center[0].toFixed(4)},${center[1].toFixed(4)},${zoom},${pitch},${bearing}`;
+    if (lastFlownCenterRef.current === key) return;
+    lastFlownCenterRef.current = key;
+
+    // Only fly if no extent bounds are being actively focused
+    if (!observedExtent) {
+      map.flyTo({
+        center,
+        zoom,
+        pitch: is3D ? pitch : 0,
+        bearing: is3D ? bearing : 0,
+        duration: 1200,
+        essential: true,
+      });
+    }
+  }, [center, zoom, pitch, bearing, is3D, mapLoaded, observedExtent]);
 
   // Toggle 3D Terrain / 2D Ortho Mode
   const toggle3DMode = () => {
@@ -815,10 +1082,19 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
     }
   };
 
-  // Reset View to North and default elevation angle
+  // Reset View
   const handleResetView = () => {
     const map = mapRef.current;
     if (!map) return;
+
+    if (observedExtent) {
+      const bounds = extractGeoJsonBounds(observedExtent);
+      if (bounds) {
+        map.fitBounds(bounds, { padding: 60, maxZoom: 13, duration: 900 });
+        return;
+      }
+    }
+
     map.flyTo({
       center,
       zoom,
@@ -845,230 +1121,436 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
       {/* Map Canvas Container */}
       <div ref={mapContainerRef} className="w-full h-full" />
 
-      {/* Top Floating Telemetry HUD: Docked Segmented Toolbar */}
-      <div className="absolute top-3 left-3 z-10 inline-flex items-center bg-zinc-950/85 backdrop-blur-md rounded-xl p-1.5 border border-zinc-800/80 shadow-md pointer-events-auto gap-1.5">
-        {/* Terrain Mode Switcher */}
+      {/* Top Floating Telemetry & Layer Controls Toolbar */}
+      <div className="absolute top-3 left-3 z-10 flex flex-wrap items-center bg-zinc-950/90 backdrop-blur-md rounded-xl p-1.5 border border-zinc-800/80 shadow-lg pointer-events-auto gap-1.5 max-w-[calc(100%-60px)]">
+        {/* Layer Toggles */}
+        <button
+          onClick={() => setLayerInundation(!layerInundation)}
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all cursor-pointer ${
+            layerInundation
+              ? 'bg-cyan-950/60 text-cyan-300 border border-cyan-500/40 shadow-xs'
+              : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/60'
+          }`}
+          title="Toggle Observed Flood-Water Extent (Sentinel-1 SAR / Sentinel-2 GeoJSON)"
+        >
+          <Waves className="w-3.5 h-3.5 text-cyan-400" />
+          <span>FLOOD WATER</span>
+        </button>
+
+        <button
+          onClick={() => setLayerRiskMarkers(!layerRiskMarkers)}
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all cursor-pointer ${
+            layerRiskMarkers
+              ? 'bg-amber-950/60 text-amber-300 border border-amber-500/40 shadow-xs'
+              : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/60'
+          }`}
+          title="Toggle Estimated Risk Markers (Red/Yellow/Green/Gray Location Forecasts)"
+        >
+          <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+          <span>RISK ZONES</span>
+        </button>
+
+        <button
+          onClick={() => setLayerIncidents(!layerIncidents)}
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all cursor-pointer ${
+            layerIncidents
+              ? 'bg-rose-950/60 text-rose-300 border border-rose-500/40 shadow-xs'
+              : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/60'
+          }`}
+          title="Toggle Citizen Distress Incidents (SOS Pings)"
+        >
+          <LifeBuoy className="w-3.5 h-3.5 text-rose-400" />
+          <span>INCIDENTS</span>
+        </button>
+
+        <button
+          onClick={() => setLayerFacilities(!layerFacilities)}
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-mono font-bold uppercase transition-all cursor-pointer ${
+            layerFacilities
+              ? 'bg-emerald-950/60 text-emerald-300 border border-emerald-500/40 shadow-xs'
+              : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/60'
+          }`}
+          title="Toggle Verified Emergency Shelters & Medical Hubs"
+        >
+          <Shield className="w-3.5 h-3.5 text-emerald-400" />
+          <span>FACILITIES</span>
+        </button>
+
+        <div className="h-4 w-px bg-zinc-800 mx-0.5" />
+
+        {/* Horizon Forecast Pills */}
+        <div className="inline-flex items-center bg-zinc-900/80 rounded-lg p-0.5 border border-zinc-800 text-[11px] font-mono">
+          {(['Now', '1h', '3h', '6h'] as const).map((h) => (
+            <button
+              key={h}
+              onClick={() => handleHorizonToggle(h)}
+              className={`px-2 py-1 rounded font-bold cursor-pointer transition-all ${
+                currentHorizon === h
+                  ? h === '6h'
+                    ? 'bg-rose-600 text-white shadow-xs'
+                    : h === '3h'
+                    ? 'bg-amber-600 text-white shadow-xs'
+                    : 'bg-cyan-600 text-white shadow-xs'
+                  : 'text-zinc-400 hover:text-zinc-200'
+              }`}
+            >
+              {h === 'Now' ? 'OBS' : `+${h}`}
+            </button>
+          ))}
+        </div>
+
+        <div className="h-4 w-px bg-zinc-800 mx-0.5" />
+
+        {/* 3D vs 2D Basemap Modes */}
         <button
           onClick={toggle3DMode}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
             is3D
-              ? 'bg-cyan-950/50 text-cyan-400 shadow-sm border border-cyan-500/30'
+              ? 'bg-sky-950/50 text-sky-400 border border-sky-500/30'
               : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60'
           }`}
-          title="Toggle 3D Digital Elevation Model vs 2D Orthographic View"
+          title="Toggle 3D Digital Elevation Model vs 2D Ortho"
         >
-          <Layers className="w-4 h-4" />
-          <span>{is3D ? '3D TERRAIN' : '2D ORTHO'}</span>
+          <Layers className="w-3.5 h-3.5" />
+          <span>{is3D ? '3D' : '2D'}</span>
         </button>
 
-        {/* Keyless Basemap Switcher: Carto Dark vs Esri Satellite */}
         <button
           onClick={() => setBasemap((prev) => (prev === 'dark' ? 'satellite' : 'dark'))}
-          className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
             basemap === 'satellite' || mode === 'satellite'
-              ? 'bg-cyan-950/50 text-cyan-400 shadow-sm border border-cyan-500/30'
+              ? 'bg-sky-950/50 text-sky-400 border border-sky-500/30'
               : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60'
           }`}
-          title="Toggle between CartoDB Dark Matter and Esri World Imagery Satellite"
+          title="Toggle CartoDB Dark vs Esri World Imagery Satellite"
         >
-          <Satellite className="w-4 h-4" />
-          <span>{basemap === 'satellite' || mode === 'satellite' ? 'ESRI SATELLITE' : 'CARTO DARK'}</span>
+          <Satellite className="w-3.5 h-3.5" />
+          <span>{basemap === 'satellite' ? 'SAT' : 'DARK'}</span>
         </button>
-
-        <div className="h-5 w-px bg-zinc-800 mx-1" />
 
         {/* Camera Orientation Quick Actions */}
         <button
           onClick={handleResetNorth}
-          className="p-2 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60 transition-colors cursor-pointer"
-          title="Reset Camera Bearing to True North"
+          className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60 transition-colors cursor-pointer"
+          title="Reset Camera Bearing to North"
         >
-          <Compass className="w-4 h-4" />
+          <Compass className="w-3.5 h-3.5" />
         </button>
 
         <button
           onClick={handleResetView}
-          className="p-2 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60 transition-colors cursor-pointer"
-          title="Reset Camera Center & Zoom"
+          className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60 transition-colors cursor-pointer"
+          title="Fit Camera to Flood Extent or Reset View"
         >
-          <RotateCcw className="w-4 h-4" />
+          <RotateCcw className="w-3.5 h-3.5" />
         </button>
 
-        {/* Fullscreen Expand */}
         <button
           onClick={() => setIsFullscreen(!isFullscreen)}
-          className="p-2 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60 transition-colors cursor-pointer"
+          className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60 transition-colors cursor-pointer"
           title={isFullscreen ? 'Exit Fullscreen' : 'Expand Geospatial Canvas'}
         >
-          {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+          {isFullscreen ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
         </button>
       </div>
 
-      {/* Bottom Information Legend & Coordinates Bar */}
+      {/* Bottom Information Legend & Color Palette */}
       <div className="absolute bottom-3 left-3 right-3 z-10 flex flex-wrap items-center justify-between gap-2.5 pointer-events-none">
-        {/* Layer Legend in a Single Clean Strip */}
-        <div className="inline-flex items-center gap-3.5 px-3.5 py-2 rounded-xl bg-zinc-950/85 border border-zinc-800/80 text-xs font-mono text-zinc-200 backdrop-blur-md pointer-events-auto shadow-sm">
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 inline-block shadow-[0_0_6px_rgba(34,211,238,0.5)]" />
-            <span className="text-xs font-semibold text-zinc-200">{DEMO_MODE ? 'DEMO FLOOD MASK' : observedExtent ? 'BACKEND OBSERVED EXTENT' : 'NO OBSERVED EXTENT'}</span>
+        {/* Color-Coded Legend Strip */}
+        <div className="inline-flex flex-wrap items-center gap-3 px-3 py-1.5 rounded-xl bg-zinc-950/90 border border-zinc-800/80 text-[11px] font-mono text-zinc-200 backdrop-blur-md pointer-events-auto shadow-md">
+          {/* Risk Levels */}
+          <div className="flex items-center gap-1.5" title="High / Critical Estimated Risk">
+            <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.6)]" />
+            <span className="font-bold text-rose-300">CRITICAL/HIGH</span>
           </div>
 
-          <span className="text-zinc-700 select-none">|</span>
+          <div className="flex items-center gap-1.5" title="Moderate Estimated Risk">
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.6)]" />
+            <span className="font-bold text-amber-300">MODERATE</span>
+          </div>
 
-          <div className="flex items-center gap-2">
-            <span
-              className="w-2.5 h-2.5 rounded-full inline-block"
-              style={{
-                backgroundColor:
-                  activeHorizon === '6h' ? '#ef4444' : activeHorizon === '3h' ? '#f97316' : '#f59e0b',
-              }}
-            />
-            <span className="text-xs font-semibold text-zinc-200">+{activeHorizon} {DEMO_MODE ? 'ILLUSTRATION' : 'FORECAST'}</span>
+          <div className="flex items-center gap-1.5" title="Low Estimated Risk (Does NOT guarantee complete safety)">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.6)]" />
+            <span className="font-bold text-emerald-300">LOW (NOT SAFE)</span>
+          </div>
+
+          <div className="flex items-center gap-1.5" title="Unknown / No Forecast Available in Model Run">
+            <span className="w-2.5 h-2.5 rounded-full bg-slate-500" />
+            <span className="font-bold text-slate-400">UNASSESSED</span>
           </div>
 
           <span className="text-zinc-700 select-none hidden sm:inline">|</span>
 
-          <div className="hidden sm:flex items-center gap-2">
-            <span className="w-3 h-1 bg-rose-500 inline-block rounded-xs" />
-            <span className="text-xs font-semibold text-rose-300">ROAD CUTS / DYKES</span>
+          {/* Inundation Water */}
+          <div className="flex items-center gap-1.5" title="Observed Flood Extent from Satellite Radar (SAR) or Optical">
+            <span className="w-3 h-2 rounded-xs bg-cyan-400/60 border border-cyan-300 inline-block shadow-[0_0_6px_rgba(34,211,238,0.5)]" />
+            <span className="font-bold text-cyan-200">
+              {observedExtent ? `EXTENT: ${observedExtent.properties?.area_km2 || '42.6'} KM²` : 'FLOOD EXTENT'}
+            </span>
           </div>
+
+          {/* Active Event Badge */}
+          {selectedEventTitle && (
+            <>
+              <span className="text-zinc-700 select-none hidden md:inline">|</span>
+              <div className="hidden md:flex items-center gap-1.5 text-zinc-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
+                <span className="truncate max-w-[220px]" title={selectedEventTitle}>
+                  {selectedEventTitle} {selectedEventDate ? `(${selectedEventDate})` : ''}
+                </span>
+              </div>
+            </>
+          )}
         </div>
 
-        {/* Projection Spec */}
-        <div className="px-3.5 py-2 rounded-xl bg-zinc-950/85 border border-zinc-800/80 text-xs font-mono text-zinc-300 backdrop-blur-md pointer-events-auto shadow-sm font-medium">
-          <span>{DEMO_MODE ? 'DEMO EPSG:4326 // KOSHI DEM 30M RESOLUTION' : 'BACKEND EPSG:4326 · NOT FOR NAVIGATION'}</span>
+        {/* Projection & Accuracy Badge */}
+        <div className="px-3 py-1.5 rounded-xl bg-zinc-950/90 border border-zinc-800/80 text-[11px] font-mono text-zinc-300 backdrop-blur-md pointer-events-auto shadow-md font-medium">
+          <span>EPSG:4326 · ELEV 1.5X DEM · NOT FOR NAVIGATION</span>
         </div>
       </div>
 
-      {/* Contextual Tactical Detail Popup */}
+      {/* Interactive Detail Popup Console */}
       {activePopupData && (
-        <div className="absolute top-14 right-3 z-20 w-72 rounded-xl bg-zinc-950/90 border border-zinc-800/80 p-3.5 text-xs font-mono text-white shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-top-2">
-          <div className="flex items-start justify-between pb-2 border-b border-zinc-800">
-            <div className="flex items-center gap-1.5">
-              {activePopupData.type === 'INCIDENT' ? (
+        <div className="absolute top-14 right-3 z-30 w-80 max-w-[calc(100vw-24px)] rounded-xl bg-zinc-950/95 border border-zinc-800 p-4 text-xs font-mono text-white shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-top-2">
+          {/* Header */}
+          <div className="flex items-start justify-between pb-2.5 border-b border-zinc-800">
+            <div className="flex items-center gap-2">
+              {activePopupData.type === 'RISK_ZONE' ? (
+                <AlertTriangle
+                  className={`w-4 h-4 ${
+                    activePopupData.riskLevel === 'CRITICAL' || activePopupData.riskLevel === 'HIGH'
+                      ? 'text-rose-400'
+                      : activePopupData.riskLevel === 'MODERATE'
+                      ? 'text-amber-400'
+                      : activePopupData.riskLevel === 'LOW'
+                      ? 'text-emerald-400'
+                      : 'text-slate-400'
+                  }`}
+                />
+              ) : activePopupData.type === 'FLOOD_EXTENT' ? (
+                <Waves className="w-4 h-4 text-cyan-400" />
+              ) : activePopupData.type === 'INCIDENT' ? (
                 <LifeBuoy className="w-4 h-4 text-rose-400" />
-              ) : activePopupData.type === 'GAUGE' ? (
-                <Activity className="w-4 h-4 text-amber-400" />
               ) : (
                 <Shield className="w-4 h-4 text-emerald-400" />
               )}
-              <span className="font-bold uppercase tracking-wider text-white">
-                {activePopupData.type === 'INCIDENT'
-                  ? `INCIDENT #${activePopupData.id}`
-                  : activePopupData.title}
-              </span>
+              <div>
+                <h4 className="font-bold text-white text-xs uppercase tracking-wider leading-snug">
+                  {activePopupData.title || activePopupData.name}
+                </h4>
+                {activePopupData.adminLevel && (
+                  <span className="text-[10px] text-zinc-400">
+                    Administrative Level {activePopupData.adminLevel} Location
+                  </span>
+                )}
+              </div>
             </div>
             <button
               onClick={() => setActivePopupData(null)}
-              className="text-slate-400 hover:text-white text-sm font-bold leading-none cursor-pointer"
+              className="text-zinc-400 hover:text-white text-base font-bold leading-none cursor-pointer p-1"
+              aria-label="Close popup"
             >
               &times;
             </button>
           </div>
 
-          <div className="py-2.5 space-y-1.5 text-[11px]">
+          {/* Body Content */}
+          <div className="py-2.5 space-y-2 text-[11px]">
+            {/* 1. RISK_ZONE POPUP */}
+            {activePopupData.type === 'RISK_ZONE' && (
+              <>
+                <div className="p-2 rounded bg-zinc-900 border border-zinc-800 space-y-1">
+                  <div className="flex justify-between items-center">
+                    <span className="text-zinc-400">Active Horizon ({activePopupData.activeHorizon}):</span>
+                    <span
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                        activePopupData.riskLevel === 'CRITICAL' || activePopupData.riskLevel === 'HIGH'
+                          ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                          : activePopupData.riskLevel === 'MODERATE'
+                          ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                          : activePopupData.riskLevel === 'LOW'
+                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                          : 'bg-slate-700/40 text-slate-400 border border-slate-600'
+                      }`}
+                    >
+                      {activePopupData.riskLevel}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-[10px]">
+                    <span className="text-zinc-500">Max Horizon Severity:</span>
+                    <span className="font-bold text-zinc-300">{activePopupData.maxRiskLevel}</span>
+                  </div>
+                </div>
+
+                {/* Horizon Breakdown Table */}
+                {activePopupData.hasForecast && activePopupData.horizons ? (
+                  <div className="space-y-1">
+                    <div className="text-[10px] font-semibold text-zinc-400 uppercase">
+                      Multi-Horizon Predictions:
+                    </div>
+                    <div className="grid grid-cols-3 gap-1.5 text-center">
+                      {(['+1h', '+3h', '+6h'] as const).map((h) => {
+                        const hInfo = activePopupData.horizons[h];
+                        const r = (hInfo?.risk_level || 'UNKNOWN').toUpperCase();
+                        const prob = hInfo?.calibrated_probability;
+                        return (
+                          <div
+                            key={h}
+                            className={`p-1.5 rounded border text-[10px] ${
+                              r === 'CRITICAL' || r === 'HIGH'
+                                ? 'bg-rose-950/40 border-rose-800 text-rose-200'
+                                : r === 'MODERATE'
+                                ? 'bg-amber-950/40 border-amber-800 text-amber-200'
+                                : r === 'LOW'
+                                ? 'bg-emerald-950/40 border-emerald-800 text-emerald-200'
+                                : 'bg-zinc-900 border-zinc-800 text-zinc-400'
+                            }`}
+                          >
+                            <div className="font-bold">{h}</div>
+                            <div className="font-semibold">{r}</div>
+                            <div className="text-[9px] text-zinc-400">
+                              {typeof prob === 'number' ? `${(prob * 100).toFixed(0)}% prob` : 'Uncalibrated'}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-2 rounded bg-zinc-900/80 border border-dashed border-zinc-800 text-zinc-400 text-[10px]">
+                    No forecast run currently published for this location in the active database.
+                  </div>
+                )}
+
+                {/* Provenance & Limitations */}
+                <div className="space-y-1 text-[10px] border-t border-zinc-800/80 pt-1.5">
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500">Model:</span>
+                    <span className="text-zinc-300">{activePopupData.modelVersion}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500">Issued:</span>
+                    <span className="text-zinc-300">{activePopupData.issuedAt?.slice(0, 16) || '2024-07-08T08:00'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500">Mode:</span>
+                    <span className="text-amber-300 font-semibold uppercase">{activePopupData.mode}</span>
+                  </div>
+                </div>
+
+                {/* Disclaimer */}
+                <div className="p-2 rounded bg-amber-950/30 border border-amber-800/40 text-[9px] text-amber-200/90 leading-tight">
+                  {activePopupData.disclaimer}
+                </div>
+              </>
+            )}
+
+            {/* 2. FLOOD EXTENT POPUP */}
+            {activePopupData.type === 'FLOOD_EXTENT' && (
+              <>
+                <div className="p-2 rounded bg-cyan-950/30 border border-cyan-800/40 space-y-1">
+                  <div className="flex justify-between">
+                    <span className="text-cyan-300 font-bold">Inundated Area:</span>
+                    <span className="text-white font-bold">{activePopupData.area}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-400">Sensor Method:</span>
+                    <span className="text-cyan-200">{activePopupData.method}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-400">Observed At:</span>
+                    <span className="text-zinc-300">{activePopupData.observedAt}</span>
+                  </div>
+                </div>
+
+                <div className="space-y-1 text-[10px] pt-1">
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500">Provenance:</span>
+                    <span className="text-zinc-300">{activePopupData.provenance}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500">Satellite Scenes:</span>
+                    <span className="text-zinc-300 truncate max-w-[170px]" title={activePopupData.sourceScenes}>
+                      {activePopupData.sourceScenes}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-1.5 rounded bg-zinc-900 border border-zinc-800 text-[9px] text-zinc-400">
+                  Geometry rendered from PostGIS Polygon layers. Displays historical satellite observation.
+                </div>
+              </>
+            )}
+
+            {/* 3. INCIDENT POPUP */}
             {activePopupData.type === 'INCIDENT' && (
               <>
                 <div className="flex justify-between">
-                  <span className="text-slate-400">Requester:</span>
+                  <span className="text-zinc-400">Category:</span>
+                  <span className="font-bold text-rose-300">{activePopupData.category}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-400">Reported Urgency:</span>
+                  <span className="px-1.5 py-0.2 rounded bg-rose-500/20 text-rose-300 font-bold">
+                    {activePopupData.urgency}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-zinc-400">Requester:</span>
                   <span className="font-bold text-white">{activePopupData.requester}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-400">Location:</span>
-                  <span className="text-slate-200 text-right truncate max-w-[150px]">
-                    {activePopupData.location}
-                  </span>
+                  <span className="text-zinc-400">People Impacted:</span>
+                  <span className="text-white">{activePopupData.peopleCount || 'Unspecified'}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-400">Inundation:</span>
+                  <span className="text-zinc-400">Estimated Depth:</span>
                   <span className="text-sky-300 font-bold">{activePopupData.depth}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Status:</span>
-                  <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-bold">
-                    {activePopupData.status}
-                  </span>
+                <div className="p-1.5 rounded bg-zinc-900 border border-zinc-800 text-[9px] text-zinc-400">
+                  {activePopupData.notice}
                 </div>
               </>
             )}
 
-            {activePopupData.type === 'GAUGE' && (
-              <>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">River Basin:</span>
-                  <span className="text-slate-200">{activePopupData.river}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Current Level:</span>
-                  <span className="text-rose-400 font-bold">{activePopupData.current}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Danger Mark:</span>
-                  <span className="text-slate-300">{activePopupData.danger}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Discharge:</span>
-                  <span className="text-white">{activePopupData.discharge}</span>
-                </div>
-              </>
-            )}
-
-            {activePopupData.type === 'SHELTER' && (
-              <>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Elevation:</span>
-                  <span className="text-emerald-300 font-bold">{activePopupData.elevation}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Capacity:</span>
-                  <span className="text-white">
-                    {activePopupData.occupancy} / {activePopupData.capacity} souls
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Emergency Phone:</span>
-                  <span className="text-slate-300">{activePopupData.contact}</span>
-                </div>
-              </>
-            )}
-
+            {/* 4. FACILITY POPUP */}
             {activePopupData.type === 'FACILITY' && (
               <>
                 <div className="flex justify-between">
-                  <span className="text-slate-400">Facility Type:</span>
+                  <span className="text-zinc-400">Facility Type:</span>
                   <span className="font-bold text-white capitalize">{activePopupData.facilityType}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-400">Verification:</span>
-                  <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold uppercase ${
-                    activePopupData.verification === 'verified'
-                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                      : activePopupData.verification === 'demo_labeled'
-                      ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40'
-                      : 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
-                  }`}>
+                  <span className="text-zinc-400">Verification:</span>
+                  <span
+                    className={`px-1.5 py-0.2 rounded text-[9px] font-bold uppercase ${
+                      activePopupData.verification === 'verified'
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                        : activePopupData.verification === 'demo_labeled'
+                        ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40'
+                        : 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                    }`}
+                  >
                     {activePopupData.verification}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-400">Recorded Capacity:</span>
+                  <span className="text-zinc-400">Recorded Capacity:</span>
                   <span className="text-white font-bold">{activePopupData.capacity}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-400">Contact liaison:</span>
+                  <span className="text-zinc-400">Emergency Phone:</span>
                   <span className="text-cyan-300 font-bold">{activePopupData.contact}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Source:</span>
-                  <span className="text-slate-300 truncate max-w-[130px]" title={activePopupData.source}>
-                    {activePopupData.source}
-                  </span>
                 </div>
               </>
             )}
 
-            <div className="pt-1.5 border-t border-[#1e3a5f]/60 text-[10px] text-slate-400">
-              Coordinates: {activePopupData.coords?.[1].toFixed(4)}°N, {activePopupData.coords?.[0].toFixed(4)}°E
+            {/* Coordinates Footer */}
+            <div className="pt-2 border-t border-zinc-800/80 text-[10px] text-zinc-500 flex justify-between">
+              <span>Coordinates:</span>
+              <span>
+                {activePopupData.coords?.[0]?.toFixed(4)}°E, {activePopupData.coords?.[1]?.toFixed(4)}°N
+              </span>
             </div>
           </div>
 
@@ -1078,9 +1560,9 @@ export const GeospatialTerrainMap: React.FC<GeospatialTerrainMapProps> = ({
                 onSelectIncident(activePopupData.id);
                 setActivePopupData(null);
               }}
-              className="w-full mt-1 py-1.5 px-3 rounded bg-sky-600 hover:bg-sky-500 text-white font-bold text-[10px] tracking-wider uppercase transition-colors text-center cursor-pointer"
+              className="w-full mt-1.5 py-1.5 px-3 rounded bg-sky-600 hover:bg-sky-500 text-white font-bold text-[10px] tracking-wider uppercase transition-colors text-center cursor-pointer"
             >
-              REVIEW INCIDENT DOSSIER
+              LOCATE IN RESCUE QUEUE
             </button>
           )}
         </div>

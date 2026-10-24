@@ -306,6 +306,142 @@ export async function listLocations(allowInDemo = false): Promise<LocationItem[]
   return request<LocationItem[]>('/locations', {}, allowInDemo);
 }
 
+export interface RiskLocationMarker {
+  id: string;
+  name: string;
+  adminLevel: number;
+  coordinates: [number, number]; // [lng, lat]
+  geometryType: string;
+  hasForecast: boolean;
+  activeRiskLevel: 'CRITICAL' | 'HIGH' | 'MODERATE' | 'LOW' | 'UNKNOWN';
+  maxRiskLevel: 'CRITICAL' | 'HIGH' | 'MODERATE' | 'LOW' | 'UNKNOWN';
+  horizons: Record<string, { risk_level: string; calibrated_probability: number | null }>;
+  modelVersion?: string;
+  issuedAt?: string | null;
+  mode?: string;
+  dataQuality?: string;
+  limitations?: string[];
+  disclaimer: string;
+}
+
+/**
+ * Builds data-grounded risk markers from active backend endpoints (/locations and /predictions/map).
+ * Missing forecast runs are explicitly categorized as UNKNOWN rather than inferred or labeled safe.
+ */
+export async function getRiskLocationMarkers(): Promise<RiskLocationMarker[]> {
+  const [locations, predictionMap] = await Promise.all([
+    listLocations().catch(() => [] as LocationItem[]),
+    getPredictedRiskZones().catch(() => null),
+  ]);
+
+  const predictionsByLocId = new Map<string, PredictionMapResponse['features'][0]>();
+  if (predictionMap?.features && Array.isArray(predictionMap.features)) {
+    for (const f of predictionMap.features) {
+      if (f.id) predictionsByLocId.set(f.id, f);
+      const locId = (f.properties as { location_id?: string })?.location_id;
+      if (locId) predictionsByLocId.set(locId, f);
+    }
+  }
+
+  const markers: RiskLocationMarker[] = [];
+
+  for (const loc of locations) {
+    let coords: [number, number] | null = null;
+    const geom = loc.geometry as { type?: string; coordinates?: unknown };
+
+    if (geom?.type === 'Point' && Array.isArray(geom.coordinates) && geom.coordinates.length >= 2) {
+      const c0 = Number(geom.coordinates[0]);
+      const c1 = Number(geom.coordinates[1]);
+      if (Number.isFinite(c0) && Number.isFinite(c1)) {
+        // Longitude in Nepal is ~80-89, latitude ~26-31
+        coords = c0 > 50 ? [c0, c1] : [c1, c0];
+      }
+    } else if (geom?.type === 'Polygon' && Array.isArray((geom.coordinates as unknown[][])?.[0])) {
+      const ring = (geom.coordinates as unknown[][])[0] as unknown[];
+      if (ring.length > 0) {
+        let sumLng = 0;
+        let sumLat = 0;
+        let validPts = 0;
+        for (const pt of ring) {
+          if (Array.isArray(pt) && pt.length >= 2) {
+            const p0 = Number(pt[0]);
+            const p1 = Number(pt[1]);
+            if (Number.isFinite(p0) && Number.isFinite(p1)) {
+              sumLng += p0 > 50 ? p0 : p1;
+              sumLat += p0 > 50 ? p1 : p0;
+              validPts++;
+            }
+          }
+        }
+        if (validPts > 0) {
+          coords = [sumLng / validPts, sumLat / validPts];
+        }
+      }
+    }
+
+    if (!coords || !Number.isFinite(coords[0]) || !Number.isFinite(coords[1])) continue;
+
+    const predFeature = predictionsByLocId.get(loc.id);
+    const hasForecast = Boolean(predFeature && predFeature.properties?.horizons);
+    const rawHorizons = (predFeature?.properties?.horizons || {}) as Record<
+      string,
+      { risk_level?: string; calibrated_probability?: number | null }
+    >;
+
+    const horizons: Record<string, { risk_level: string; calibrated_probability: number | null }> = {};
+    for (const [hKey, hVal] of Object.entries(rawHorizons)) {
+      horizons[hKey] = {
+        risk_level: (hVal.risk_level || 'UNKNOWN').toUpperCase(),
+        calibrated_probability: typeof hVal.calibrated_probability === 'number' ? hVal.calibrated_probability : null,
+      };
+    }
+
+    let maxRisk: 'CRITICAL' | 'HIGH' | 'MODERATE' | 'LOW' | 'UNKNOWN' = 'UNKNOWN';
+    if (hasForecast) {
+      const rawMax = ((predFeature?.properties as { max_risk_level?: string })?.max_risk_level || '').toUpperCase();
+      if (['CRITICAL', 'HIGH', 'MODERATE', 'LOW'].includes(rawMax)) {
+        maxRisk = rawMax as 'CRITICAL' | 'HIGH' | 'MODERATE' | 'LOW';
+      } else {
+        const priority = { CRITICAL: 4, HIGH: 3, MODERATE: 2, LOW: 1, UNKNOWN: 0 };
+        for (const h of Object.values(horizons)) {
+          const r = h.risk_level as keyof typeof priority;
+          if (priority[r] && priority[r] > priority[maxRisk]) {
+            maxRisk = r as 'CRITICAL' | 'HIGH' | 'MODERATE' | 'LOW';
+          }
+        }
+      }
+    }
+
+    markers.push({
+      id: loc.id,
+      name: loc.name,
+      adminLevel: loc.admin_level,
+      coordinates: coords,
+      geometryType: geom?.type || 'Point',
+      hasForecast,
+      activeRiskLevel: maxRisk,
+      maxRiskLevel: maxRisk,
+      horizons,
+      modelVersion: predFeature?.properties?.model_version || predictionMap?.model_version || undefined,
+      issuedAt: predictionMap?.issued_at || undefined,
+      mode: (predFeature?.properties as Record<string, unknown> | undefined)?.mode as string | undefined || predictionMap?.mode || undefined,
+      dataQuality: predFeature?.properties?.data_quality || predictionMap?.data_quality || undefined,
+      limitations: [
+        'Model predictions are historical or simulated estimates for emergency coordination.',
+        'Low estimated risk does not guarantee absence of localized flash flooding.',
+        'Always follow directives from official Civil Defense and District Emergency Operations Centers (DEOC).'
+      ],
+      disclaimer: maxRisk === 'LOW'
+        ? 'LOW ESTIMATED FLOOD RISK · Does NOT guarantee complete safety or absence of localized flash pooling.'
+        : maxRisk === 'UNKNOWN'
+        ? 'NO ACTIVE FORECAST RUN · Risk level unassessed in current model window.'
+        : 'ESTIMATED FLOOD RISK · Model prediction only; not operational dispatch confirmation.'
+    });
+  }
+
+  return markers;
+}
+
 export async function listResearchModels(): Promise<ModelResearchRecord[]> {
   return request<ModelResearchRecord[]>('/models');
 }
